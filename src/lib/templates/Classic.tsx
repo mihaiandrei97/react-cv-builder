@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
 export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   return (
     <Document>
-      {/* Page 1 */}
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.hero}>
@@ -196,7 +195,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Experience</Text>
             {cv.experiences.map((exp) => (
-              <View key={exp.id} style={styles.experienceItem}>
+              <View key={exp.id} style={styles.experienceItem} wrap={false}>
                 <View style={styles.experienceHeader}>
                   <Text style={styles.experienceTitle}>
                     {exp.role} – {exp.company}
@@ -215,16 +214,13 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
             ))}
           </View>
         )}
-      </Page>
 
-      {/* Page 2 */}
-      <Page size="A4" style={styles.page}>
         {/* Projects */}
         {cv.projects.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Selected Projects</Text>
             {cv.projects.map((project) => (
-              <View key={project.id} style={styles.projectItem}>
+              <View key={project.id} style={styles.projectItem} wrap={false}>
                 <Text style={styles.projectName}>{project.name}</Text>
                 <Text style={styles.projectDesc}>{project.description}</Text>
                 <Text style={styles.projectStack}>{project.stack}</Text>
@@ -238,7 +234,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Education</Text>
             {cv.education.map((edu) => (
-              <View key={edu.id} style={styles.experienceItem}>
+              <View key={edu.id} style={styles.experienceItem} wrap={false}>
                 <View style={styles.experienceHeader}>
                   <Text style={styles.experienceTitle}>{edu.degree}</Text>
                   <Text style={styles.experiencePeriod}>{edu.period}</Text>

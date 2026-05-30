@@ -20,17 +20,26 @@ const MAIN_WIDTH = '64%'
 
 const styles = StyleSheet.create({
   page: {
-    flexDirection: 'row',
     fontSize: 10,
     backgroundColor: MAIN_BG,
   },
 
-  // Sidebar
-  sidebar: {
+  // Sidebar background – fixed so it repeats on every overflow page
+  sidebarBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
     width: SIDEBAR_WIDTH,
+    height: '100%',
     backgroundColor: SIDEBAR_BG,
-    paddingTop: '14mm',
-    paddingBottom: '14mm',
+  },
+
+  // Sidebar content – absolutely positioned, appears on page 1 only
+  sidebar: {
+    position: 'absolute',
+    top: '14mm',
+    left: 0,
+    width: SIDEBAR_WIDTH,
     paddingLeft: '10mm',
     paddingRight: '10mm',
     flexDirection: 'column',
@@ -96,9 +105,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  // Main content
+  // Main content – flows naturally; marginLeft reserves space for sidebar
   main: {
-    width: MAIN_WIDTH,
+    marginLeft: SIDEBAR_WIDTH,
     paddingTop: '14mm',
     paddingBottom: '14mm',
     paddingLeft: '11mm',
@@ -185,9 +194,11 @@ const styles = StyleSheet.create({
 export function ModernDocument({ cv }: { cv: ModernCvData }) {
   return (
     <Document>
-      {/* Page 1 */}
       <Page size="A4" style={styles.page}>
-        {/* Sidebar */}
+        {/* Dark sidebar background — fixed so it appears on every overflow page */}
+        <View style={styles.sidebarBg} fixed />
+
+        {/* Sidebar content — not fixed, so only renders on page 1 */}
         <View style={styles.sidebar}>
           <View>
             <Text style={styles.sidebarName}>{cv.profile.name}</Text>
@@ -224,7 +235,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
           )}
         </View>
 
-        {/* Main */}
+        {/* Main content — all sections together, auto-flows to page 2 if needed */}
         <View style={styles.main}>
           <View>
             <Text style={styles.sectionTitle}>Profile</Text>
@@ -235,7 +246,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             <View>
               <Text style={styles.sectionTitle}>Experience</Text>
               {cv.experiences.map((exp) => (
-                <View key={exp.id} style={styles.entry}>
+                <View key={exp.id} style={styles.entry} wrap={false}>
                   <View style={styles.entryHeader}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.entryRole}>{exp.role}</Text>
@@ -255,21 +266,12 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               ))}
             </View>
           )}
-        </View>
-      </Page>
 
-      {/* Page 2 */}
-      <Page size="A4" style={styles.page}>
-        {/* Sidebar continuation (empty dark column) */}
-        <View style={[styles.sidebar, { gap: 0 }]} />
-
-        {/* Main */}
-        <View style={styles.main}>
           {cv.projects.length > 0 && (
             <View>
               <Text style={styles.sectionTitle}>Selected Projects</Text>
               {cv.projects.map((project) => (
-                <View key={project.id} style={styles.entry}>
+                <View key={project.id} style={styles.entry} wrap={false}>
                   <View style={styles.entryHeader}>
                     <Text style={styles.entryRole}>{project.name}</Text>
                     <Text style={[styles.entryPeriod, styles.projectStack]}>{project.stack}</Text>
@@ -284,7 +286,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             <View>
               <Text style={styles.sectionTitle}>Education</Text>
               {cv.education.map((edu) => (
-                <View key={edu.id} style={styles.entry}>
+                <View key={edu.id} style={styles.entry} wrap={false}>
                   <View style={styles.entryHeader}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.entryRole}>{edu.degree}</Text>
