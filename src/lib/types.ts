@@ -93,6 +93,15 @@ export type FullCvData = {
   languages: Language[];
 };
 
+export type CvProfile = {
+  id: string
+  name: string
+  templateId: string
+  data: FullCvData
+  createdAt: number
+  updatedAt: number
+}
+
 export function projectCv(full: FullCvData, templateId: string): CvData {
   switch (templateId) {
     case 'modern':

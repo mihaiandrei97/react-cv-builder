@@ -23,11 +23,13 @@ export const Route = createFileRoute('/cv/edit')({
 // ── Nav ──────────────────────────────────────────────────────────────────────
 
 function TopBar({
+  profileName,
   templateName,
   saveStatus,
   onSave,
   onReset,
 }: {
+  profileName: string
   templateName: string
   saveStatus: string
   onSave: () => void
@@ -38,6 +40,7 @@ function TopBar({
       <div style={s.topBarLeft}>
         <h1 style={s.topBarTitle}>CV Editor</h1>
         <nav style={{ display: 'flex', gap: '0.25rem' }}>
+          <NavLink to="/profiles" label="Profiles" />
           <NavLink to="/templates" label="Templates" />
           <NavLink to="/cv/edit" label="Edit" active />
           <NavLink to="/cv/print" label="Preview" />
@@ -45,6 +48,7 @@ function TopBar({
       </div>
       <div style={s.topBarActions}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
+        <span style={s.templateBadge}>{profileName}</span>
         <span style={s.templateBadge}>{templateName}</span>
         <button type="button" style={s.btnSecondary} onClick={onReset}>
           Reset
@@ -135,8 +139,9 @@ function Textarea({ value, onChange, rows = 3 }: { value: string; onChange: (v: 
 // ── Main component ────────────────────────────────────────────────────────────
 
 function EditPage() {
-  const fullData = useSelector(cvStore, (s) => s.fullData)
-  const templateId = useSelector(cvStore, (s) => s.templateId)
+  const fullData = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).data)
+  const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
+  const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
@@ -313,6 +318,7 @@ function EditPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar
+        profileName={profileName}
         templateName={template.name}
         saveStatus={saveStatus}
         onSave={save}

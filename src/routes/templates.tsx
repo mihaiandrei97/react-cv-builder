@@ -165,8 +165,8 @@ function IframePreview({ url }: { url: string }) {
 }
 
 function TemplatesPage() {
-  const fullData = useSelector(cvStore, (s) => s.fullData)
-  const templateId = useSelector(cvStore, (s) => s.templateId)
+  const fullData = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).data)
+  const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
   const navigate = useNavigate()
 
   function selectTemplate(id: string) {

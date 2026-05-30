@@ -67,7 +67,7 @@ const PdfViewer = memo(function PdfViewer({
 
 function PrintPage() {
   const cv = useSelector(cvDerived, (s) => s)
-  const templateId = useSelector(cvStore, (s) => s.templateId)
+  const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
   const blobUrlRef = useRef<string | null>(null)
 
   const template = getTemplate(templateId)
@@ -107,6 +107,7 @@ function PrintPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>CV Preview</h1>
           <nav style={{ display: 'flex', gap: '0.25rem' }}>
+            <NavLink to="/profiles" label="Profiles" />
             <NavLink to="/templates" label="Templates" />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" active />
