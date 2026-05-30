@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
-import { pdf, BlobProvider } from '@react-pdf/renderer'
+import { useRef, useMemo, memo, useCallback, useEffect } from 'react'
+import { BlobProvider } from '@react-pdf/renderer'
+import type { ReactElement } from 'react'
+import type { DocumentProps } from '@react-pdf/renderer'
 import { useCv } from '../lib/cv-context'
 import { getTemplate } from '../lib/templates'
 
@@ -28,31 +30,65 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
   )
 }
 
+function BlobUrlCapture({ url, onUrl }: { url: string | null; onUrl: (u: string | null) => void }) {
+  useEffect(() => { onUrl(url) }, [url, onUrl])
+  return null
+}
+
+const PdfViewer = memo(function PdfViewer({
+  docElement,
+  onUrl,
+}: {
+  docElement: ReactElement<DocumentProps>
+  onUrl: (url: string | null) => void
+}) {
+  return (
+    <BlobProvider document={docElement}>
+      {({ url, loading, error }) => {
+        if (loading) return <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Rendering PDF…</p>
+        if (error) return <p style={{ color: '#9c2f1f', fontSize: '0.9rem' }}>Error rendering PDF: {error.message}</p>
+        if (!url) return null
+        return (
+          <>
+            <BlobUrlCapture url={url} onUrl={onUrl} />
+            <iframe
+              src={`${url}#toolbar=0&navpanes=0`}
+              style={{
+                width: '100%',
+                maxWidth: 794,
+                height: 'calc(100vh - 100px)',
+                minHeight: 600,
+                border: 'none',
+                borderRadius: '0.25rem',
+                boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
+              }}
+              title="CV PDF Preview"
+            />
+          </>
+        )
+      }}
+    </BlobProvider>
+  )
+})
+
 function PrintPage() {
   const { cv, templateId } = useCv()
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generationError, setGenerationError] = useState('')
+  const blobUrlRef = useRef<string | null>(null)
 
   const template = getTemplate(templateId)
   const Doc = template.component
+  const docElement = useMemo(() => <Doc cv={cv} />, [Doc, cv])
 
-  async function generatePdf() {
-    if (isGenerating) return
-    setIsGenerating(true)
-    setGenerationError('')
-    try {
-      const blob = await pdf(<Doc cv={cv} />).toBlob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'cv.pdf'
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (err) {
-      setGenerationError(err instanceof Error ? `Could not generate PDF: ${err.message}` : 'Could not generate PDF')
-    } finally {
-      setIsGenerating(false)
-    }
+  const handleUrl = useCallback((url: string | null) => {
+    blobUrlRef.current = url
+  }, [])
+
+  function downloadPdf() {
+    if (!blobUrlRef.current) return
+    const a = document.createElement('a')
+    a.href = blobUrlRef.current
+    a.download = 'cv.pdf'
+    a.click()
   }
 
   return (
@@ -95,13 +131,9 @@ function PrintPage() {
           >
             {template.name}
           </span>
-          {generationError && (
-            <span style={{ fontSize: '0.82rem', color: '#9c2f1f' }}>{generationError}</span>
-          )}
           <button
             type="button"
-            disabled={isGenerating}
-            onClick={generatePdf}
+            onClick={downloadPdf}
             style={{
               fontFamily: 'inherit',
               fontWeight: 700,
@@ -111,12 +143,11 @@ function PrintPage() {
               border: 0,
               borderRadius: '0.25rem',
               padding: '0.45rem 1rem',
-              cursor: isGenerating ? 'wait' : 'pointer',
-              opacity: isGenerating ? 0.7 : 1,
+              cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
           >
-            {isGenerating ? 'Generating…' : 'Download PDF'}
+            Download PDF
           </button>
         </div>
       </header>
@@ -133,28 +164,7 @@ function PrintPage() {
           background: 'radial-gradient(circle at 20% 20%, #ece9de 0%, #ece9de 20%, transparent 20%), linear-gradient(160deg, #f6f3e8 0%, #efeadd 55%, #e6e0d3 100%)',
         }}
       >
-        <BlobProvider document={<Doc cv={cv} />}>
-          {({ url, loading, error }) => {
-            if (loading) return <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Rendering PDF…</p>
-            if (error) return <p style={{ color: '#9c2f1f', fontSize: '0.9rem' }}>Error rendering PDF: {error.message}</p>
-            if (!url) return null
-            return (
-              <iframe
-                src={`${url}#toolbar=0&navpanes=0`}
-                style={{
-                  width: '100%',
-                  maxWidth: 794,
-                  height: 'calc(100vh - 100px)',
-                  minHeight: 600,
-                  border: 'none',
-                  borderRadius: '0.25rem',
-                  boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
-                }}
-                title="CV PDF Preview"
-              />
-            )
-          }}
-        </BlobProvider>
+        <PdfViewer docElement={docElement} onUrl={handleUrl} />
       </main>
     </div>
   )

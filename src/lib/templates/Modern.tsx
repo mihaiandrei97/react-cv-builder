@@ -1,5 +1,5 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
-import type { CvData } from '../types'
+import type { ModernCvData } from '../types'
 
 // Modern uses Helvetica (react-pdf built-in sans-serif)
 const SIDEBAR_BG = '#1e2b3c'
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
 })
 
-export function ModernDocument({ cv }: { cv: CvData }) {
+export function ModernDocument({ cv }: { cv: ModernCvData }) {
   return (
     <Document>
       {/* Page 1 */}

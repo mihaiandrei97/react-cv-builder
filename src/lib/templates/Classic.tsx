@@ -1,5 +1,5 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
-import type { CvData } from '../types'
+import type { ClassicCvData } from '../types'
 import '../fonts'
 
 const PAPER = '#fcfcf8'
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
 })
 
-export function ClassicDocument({ cv }: { cv: CvData }) {
+export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   return (
     <Document>
       {/* Page 1 */}

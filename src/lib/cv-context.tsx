@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
-import { type CvData, DEFAULT_CV } from './types'
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { type FullCvData, type CvData, DEFAULT_FULL_CV, projectCv } from './types'
 
 // Deep clone helper
 function deepClone<T>(obj: T): T {
@@ -7,12 +7,19 @@ function deepClone<T>(obj: T): T {
 }
 
 // localStorage helpers
-function loadCv(): CvData {
+function loadFullCv(): FullCvData {
   try {
     const raw = localStorage.getItem('cv-data')
-    if (raw) return JSON.parse(raw) as CvData
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<FullCvData>
+      // Migrate: fill in fields added after initial save
+      return {
+        ...deepClone(DEFAULT_FULL_CV),
+        ...parsed,
+      }
+    }
   } catch {}
-  return deepClone(DEFAULT_CV)
+  return deepClone(DEFAULT_FULL_CV)
 }
 
 function loadTemplatePref(): string {
@@ -25,7 +32,8 @@ function loadTemplatePref(): string {
 
 type CvContextValue = {
   cv: CvData
-  setCv: React.Dispatch<React.SetStateAction<CvData>>
+  fullData: FullCvData
+  setFullData: React.Dispatch<React.SetStateAction<FullCvData>>
   templateId: string
   setTemplateId: (id: string) => void
   saveCv: () => void
@@ -36,11 +44,13 @@ type CvContextValue = {
 const CvContext = createContext<CvContextValue | null>(null)
 
 export function CvProvider({ children }: { children: React.ReactNode }) {
-  const [cv, setCv] = useState<CvData>(() => loadCv())
+  const [fullData, setFullData] = useState<FullCvData>(() => loadFullCv())
   const [templateId, setTemplateIdState] = useState<string>(() => loadTemplatePref())
 
+  const cv = useMemo(() => projectCv(fullData, templateId), [fullData, templateId])
+
   const saveCv = useCallback(() => {
-    setCv((current) => {
+    setFullData((current) => {
       localStorage.setItem('cv-data', JSON.stringify(current))
       return current
     })
@@ -52,8 +62,8 @@ export function CvProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const resetCv = useCallback(() => {
-    const fresh = deepClone(DEFAULT_CV)
-    setCv(fresh)
+    const fresh = deepClone(DEFAULT_FULL_CV)
+    setFullData(fresh)
     localStorage.setItem('cv-data', JSON.stringify(fresh))
   }, [])
 
@@ -62,7 +72,7 @@ export function CvProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <CvContext.Provider value={{ cv, setCv, templateId, setTemplateId, saveCv, saveTemplatePref, resetCv }}>
+    <CvContext.Provider value={{ cv, fullData, setFullData, templateId, setTemplateId, saveCv, saveTemplatePref, resetCv }}>
       {children}
     </CvContext.Provider>
   )

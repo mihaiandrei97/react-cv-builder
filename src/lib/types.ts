@@ -29,7 +29,23 @@ export type Education = {
   period: string;
 };
 
-export type CvData = {
+export type Certification = {
+  id: string;
+  name: string;
+  issuer: string;
+  year: string;
+};
+
+export type Language = {
+  id: string;
+  language: string;
+  proficiency: string;
+};
+
+// ── Per-template CV shapes (discriminated union) ─────────────────────────────
+
+export type ClassicCvData = {
+  kind: 'classic';
   profile: Profile;
   skills: string[];
   experiences: Experience[];
@@ -37,7 +53,60 @@ export type CvData = {
   education: Education[];
 };
 
-export const DEFAULT_CV: CvData = {
+export type ModernCvData = {
+  kind: 'modern';
+  profile: Profile;
+  skills: string[];
+  experiences: Experience[];
+  projects: Project[];
+  education: Education[];
+};
+
+export type ExecutiveCvData = {
+  kind: 'executive';
+  profile: Profile;
+  experiences: Experience[];
+  education: Education[];
+  certifications: Certification[];
+};
+
+export type CompactCvData = {
+  kind: 'compact';
+  profile: Profile;
+  skills: string[];
+  languages: Language[];
+  experiences: Experience[];
+  education: Education[];
+};
+
+export type CvData = ClassicCvData | ModernCvData | ExecutiveCvData | CompactCvData;
+
+// ── Full store: superset of all template fields ───────────────────────────────
+
+export type FullCvData = {
+  profile: Profile;
+  skills: string[];
+  experiences: Experience[];
+  projects: Project[];
+  education: Education[];
+  certifications: Certification[];
+  languages: Language[];
+};
+
+export function projectCv(full: FullCvData, templateId: string): CvData {
+  switch (templateId) {
+    case 'modern':
+      return { kind: 'modern', profile: full.profile, skills: full.skills, experiences: full.experiences, projects: full.projects, education: full.education };
+    case 'executive':
+      return { kind: 'executive', profile: full.profile, experiences: full.experiences, education: full.education, certifications: full.certifications };
+    case 'compact':
+      return { kind: 'compact', profile: full.profile, skills: full.skills, languages: full.languages, experiences: full.experiences, education: full.education };
+    default:
+      return { kind: 'classic', profile: full.profile, skills: full.skills, experiences: full.experiences, projects: full.projects, education: full.education };
+  }
+}
+
+export const DEFAULT_FULL_CV: FullCvData = {
   profile: {
     name: 'Mihai Example',
     title: 'Senior Frontend Engineer',
@@ -124,5 +193,24 @@ export const DEFAULT_CV: CvData = {
       institution: 'Politehnica University of Bucharest',
       period: '2011 - 2014',
     },
+  ],
+  certifications: [
+    {
+      id: crypto.randomUUID(),
+      name: 'AWS Certified Solutions Architect',
+      issuer: 'Amazon Web Services',
+      year: '2023',
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Professional Scrum Master I',
+      issuer: 'Scrum.org',
+      year: '2021',
+    },
+  ],
+  languages: [
+    { id: crypto.randomUUID(), language: 'English', proficiency: 'Fluent' },
+    { id: crypto.randomUUID(), language: 'Romanian', proficiency: 'Native' },
+    { id: crypto.randomUUID(), language: 'French', proficiency: 'Intermediate' },
   ],
 };

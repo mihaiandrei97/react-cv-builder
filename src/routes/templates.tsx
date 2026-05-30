@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES } from '../lib/templates'
 import { useCv } from '../lib/cv-context'
+import { projectCv, type CvData } from '../lib/types'
 
 export const Route = createFileRoute('/templates')({
   component: TemplatesPage,
@@ -18,7 +19,7 @@ function TemplateCard({
 }: {
   tpl: (typeof TEMPLATES)[0]
   isActive: boolean
-  cv: Parameters<(typeof TEMPLATES)[0]['component']>[0]['cv']
+  cv: CvData
   onSelect: () => void
 }) {
   const Doc = tpl.component
@@ -33,8 +34,34 @@ function TemplateCard({
         display: 'flex',
         flexDirection: 'column',
         transition: 'box-shadow 0.15s, border-color 0.15s',
+        position: 'relative',
       }}
     >
+      {/* Active ribbon */}
+      {isActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: -22,
+            width: 90,
+            textAlign: 'center',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: '0.6rem',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            padding: '0.25rem 0',
+            transform: 'rotate(45deg)',
+            transformOrigin: 'center',
+            zIndex: 2,
+            pointerEvents: 'none',
+          }}
+        >
+          Active
+        </div>
+      )}
       {/* Preview */}
       <BlobProvider document={<Doc cv={cv} />}>
         {({ url, loading }) => (
@@ -81,19 +108,6 @@ function TemplateCard({
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
           <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tpl.name}</span>
-          {isActive && (
-            <span
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--accent)',
-              }}
-            >
-              Active
-            </span>
-          )}
           <p
             style={{
               margin: 0,
@@ -106,25 +120,26 @@ function TemplateCard({
             {tpl.description}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onSelect}
-          style={{
-            fontFamily: 'inherit',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            color: '#fff',
-            background: isActive ? 'var(--accent)' : 'var(--green)',
-            border: 0,
-            borderRadius: '0.25rem',
-            padding: '0.5rem 0.9rem',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          {isActive ? 'Edit with this' : 'Use this template'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={onSelect}
+            style={{
+              fontFamily: 'inherit',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              color: '#fff',
+              background: 'var(--green)',
+              border: 0,
+              borderRadius: '0.25rem',
+              padding: '0.5rem 0.9rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Use template
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -149,7 +164,7 @@ function IframePreview({ url }: { url: string }) {
 }
 
 function TemplatesPage() {
-  const { cv, templateId, saveTemplatePref } = useCv()
+  const { fullData, templateId, saveTemplatePref } = useCv()
   const navigate = useNavigate()
 
   function selectTemplate(id: string) {
@@ -210,7 +225,7 @@ function TemplatesPage() {
             key={tpl.id}
             tpl={tpl}
             isActive={templateId === tpl.id}
-            cv={cv}
+            cv={projectCv(fullData, tpl.id)}
             onSelect={() => selectTemplate(tpl.id)}
           />
         ))}

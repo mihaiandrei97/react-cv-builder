@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import type { CvData } from '../lib/types'
+import type { FullCvData, Experience, Project, Education, Certification, Language } from '../lib/types'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -13,7 +13,6 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 import { useCv } from '../lib/cv-context'
 import { getTemplate } from '../lib/templates'
-import type { Experience, Project, Education } from '../lib/types'
 
 export const Route = createFileRoute('/cv/edit')({
   component: EditPage,
@@ -99,11 +98,13 @@ function Field({
 function Input({
   value,
   onChange,
+  onBlur,
   type = 'text',
   placeholder,
 }: {
   value: string
   onChange: (v: string) => void
+  onBlur?: () => void
   type?: string
   placeholder?: string
 }) {
@@ -113,6 +114,7 @@ function Input({
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       style={s.input}
     />
   )
@@ -132,10 +134,11 @@ function Textarea({ value, onChange, rows = 3 }: { value: string; onChange: (v: 
 // ── Main component ────────────────────────────────────────────────────────────
 
 function EditPage() {
-  const { cv, setCv, templateId, saveCv, resetCv } = useCv()
+  const { cv, fullData, setFullData, templateId, saveCv, resetCv } = useCv()
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
   const [newSkill, setNewSkill] = useState('')
+  const [newLang, setNewLang] = useState('')
 
   const template = getTemplate(templateId)
 
@@ -152,24 +155,24 @@ function EditPage() {
   }
 
   // Profile mutations
-  function updateProfile(field: keyof CvData['profile'], value: string) {
-    setCv((prev) => ({ ...prev, profile: { ...prev.profile, [field]: value } }))
+  function updateProfile(field: keyof FullCvData['profile'], value: string) {
+    setFullData((prev) => ({ ...prev, profile: { ...prev.profile, [field]: value } }))
   }
 
   // Skills
   function addSkill() {
     const trimmed = newSkill.trim()
     if (!trimmed) return
-    setCv((prev) => ({ ...prev, skills: [...prev.skills, trimmed] }))
+    setFullData((prev) => ({ ...prev, skills: [...prev.skills, trimmed] }))
     setNewSkill('')
     save()
   }
   function removeSkill(i: number) {
-    setCv((prev) => ({ ...prev, skills: prev.skills.filter((_, idx) => idx !== i) }))
+    setFullData((prev) => ({ ...prev, skills: prev.skills.filter((_, idx) => idx !== i) }))
     save()
   }
   function updateSkill(i: number, value: string) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const skills = [...prev.skills]
       skills[i] = value
       return { ...prev, skills }
@@ -179,29 +182,29 @@ function EditPage() {
   // Experience
   function addExperience() {
     const entry: Experience = { id: crypto.randomUUID(), company: '', role: '', period: '', highlights: [''] }
-    setCv((prev) => ({ ...prev, experiences: [...prev.experiences, entry] }))
+    setFullData((prev) => ({ ...prev, experiences: [...prev.experiences, entry] }))
     save()
   }
   function removeExperience(i: number) {
-    setCv((prev) => ({ ...prev, experiences: prev.experiences.filter((_, idx) => idx !== i) }))
+    setFullData((prev) => ({ ...prev, experiences: prev.experiences.filter((_, idx) => idx !== i) }))
     save()
   }
   function updateExperience(i: number, field: keyof Omit<Experience, 'id' | 'highlights'>, value: string) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const experiences = [...prev.experiences]
       experiences[i] = { ...experiences[i], [field]: value }
       return { ...prev, experiences }
     })
   }
   function addHighlight(expI: number) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const experiences = [...prev.experiences]
       experiences[expI] = { ...experiences[expI], highlights: [...experiences[expI].highlights, ''] }
       return { ...prev, experiences }
     })
   }
   function removeHighlight(expI: number, hI: number) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const experiences = [...prev.experiences]
       experiences[expI] = {
         ...experiences[expI],
@@ -212,7 +215,7 @@ function EditPage() {
     save()
   }
   function updateHighlight(expI: number, hI: number, value: string) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const experiences = [...prev.experiences]
       const highlights = [...experiences[expI].highlights]
       highlights[hI] = value
@@ -224,15 +227,15 @@ function EditPage() {
   // Projects
   function addProject() {
     const entry: Project = { id: crypto.randomUUID(), name: '', description: '', stack: '' }
-    setCv((prev) => ({ ...prev, projects: [...prev.projects, entry] }))
+    setFullData((prev) => ({ ...prev, projects: [...prev.projects, entry] }))
     save()
   }
   function removeProject(i: number) {
-    setCv((prev) => ({ ...prev, projects: prev.projects.filter((_, idx) => idx !== i) }))
+    setFullData((prev) => ({ ...prev, projects: prev.projects.filter((_, idx) => idx !== i) }))
     save()
   }
   function updateProject(i: number, field: keyof Omit<Project, 'id'>, value: string) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const projects = [...prev.projects]
       projects[i] = { ...projects[i], [field]: value }
       return { ...prev, projects }
@@ -242,20 +245,64 @@ function EditPage() {
   // Education
   function addEducation() {
     const entry: Education = { id: crypto.randomUUID(), degree: '', institution: '', period: '' }
-    setCv((prev) => ({ ...prev, education: [...prev.education, entry] }))
+    setFullData((prev) => ({ ...prev, education: [...prev.education, entry] }))
     save()
   }
   function removeEducation(i: number) {
-    setCv((prev) => ({ ...prev, education: prev.education.filter((_, idx) => idx !== i) }))
+    setFullData((prev) => ({ ...prev, education: prev.education.filter((_, idx) => idx !== i) }))
     save()
   }
   function updateEducation(i: number, field: keyof Omit<Education, 'id'>, value: string) {
-    setCv((prev) => {
+    setFullData((prev) => {
       const education = [...prev.education]
       education[i] = { ...education[i], [field]: value }
       return { ...prev, education }
     })
   }
+
+  // Certifications
+  function addCertification() {
+    const entry: Certification = { id: crypto.randomUUID(), name: '', issuer: '', year: '' }
+    setFullData((prev) => ({ ...prev, certifications: [...prev.certifications, entry] }))
+    save()
+  }
+  function removeCertification(i: number) {
+    setFullData((prev) => ({ ...prev, certifications: prev.certifications.filter((_, idx) => idx !== i) }))
+    save()
+  }
+  function updateCertification(i: number, field: keyof Omit<Certification, 'id'>, value: string) {
+    setFullData((prev) => {
+      const certifications = [...prev.certifications]
+      certifications[i] = { ...certifications[i], [field]: value }
+      return { ...prev, certifications }
+    })
+  }
+
+  // Languages
+  function addLanguage() {
+    const trimmed = newLang.trim()
+    if (!trimmed) return
+    const entry: Language = { id: crypto.randomUUID(), language: trimmed, proficiency: '' }
+    setFullData((prev) => ({ ...prev, languages: [...prev.languages, entry] }))
+    setNewLang('')
+    save()
+  }
+  function removeLanguage(i: number) {
+    setFullData((prev) => ({ ...prev, languages: prev.languages.filter((_, idx) => idx !== i) }))
+    save()
+  }
+  function updateLanguage(i: number, field: keyof Omit<Language, 'id'>, value: string) {
+    setFullData((prev) => {
+      const languages = [...prev.languages]
+      languages[i] = { ...languages[i], [field]: value }
+      return { ...prev, languages }
+    })
+  }
+
+  const showSkills = cv.kind === 'classic' || cv.kind === 'modern' || cv.kind === 'compact'
+  const showProjects = cv.kind === 'classic' || cv.kind === 'modern'
+  const showCertifications = cv.kind === 'executive'
+  const showLanguages = cv.kind === 'compact'
 
   const Doc = template.component
   const previewDoc = useMemo(() => <Doc cv={debouncedCv} />, [debouncedCv, Doc])
@@ -277,59 +324,97 @@ function EditPage() {
             <h2 style={s.cardTitle}>Profile</h2>
             <div style={s.fieldGrid}>
               <Field label="Full Name">
-                <Input value={cv.profile.name} onChange={(v) => updateProfile('name', v)} />
+                <Input value={fullData.profile.name} onChange={(v) => updateProfile('name', v)} />
               </Field>
               <Field label="Job Title">
-                <Input value={cv.profile.title} onChange={(v) => updateProfile('title', v)} />
+                <Input value={fullData.profile.title} onChange={(v) => updateProfile('title', v)} />
               </Field>
               <Field label="Location">
-                <Input value={cv.profile.location} onChange={(v) => updateProfile('location', v)} />
+                <Input value={fullData.profile.location} onChange={(v) => updateProfile('location', v)} />
               </Field>
               <Field label="Email">
-                <Input type="email" value={cv.profile.email} onChange={(v) => updateProfile('email', v)} />
+                <Input type="email" value={fullData.profile.email} onChange={(v) => updateProfile('email', v)} />
               </Field>
               <Field label="Website">
-                <Input value={cv.profile.website} onChange={(v) => updateProfile('website', v)} />
+                <Input value={fullData.profile.website} onChange={(v) => updateProfile('website', v)} />
               </Field>
             </div>
             <Field label="Summary" fullWidth>
-              <Textarea value={cv.profile.summary} onChange={(v) => updateProfile('summary', v)} rows={3} />
+              <Textarea value={fullData.profile.summary} onChange={(v) => updateProfile('summary', v)} rows={3} />
             </Field>
           </section>
 
           {/* Skills */}
-          <section style={s.card}>
-            <h2 style={s.cardTitle}>Core Skills</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {cv.skills.map((skill, i) => (
-                <div key={i} style={s.skillTag}>
-                  <input
-                    type="text"
-                    value={skill}
-                    onChange={(e) => updateSkill(i, e.target.value)}
-                    onBlur={save}
-                    style={s.skillTagInput}
-                  />
-                  <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label="Remove skill">
-                    ×
-                  </button>
+          {showSkills && (
+            <section style={s.card}>
+              <h2 style={s.cardTitle}>Core Skills</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {fullData.skills.map((skill, i) => (
+                  <div key={i} style={s.skillTag}>
+                    <input
+                      type="text"
+                      value={skill}
+                      onChange={(e) => updateSkill(i, e.target.value)}
+                      onBlur={save}
+                      style={s.skillTagInput}
+                    />
+                    <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label="Remove skill">
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="New skill..."
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
+                  style={{ ...s.input, flex: 1, maxWidth: 200 }}
+                />
+                <button type="button" style={s.btnAdd} onClick={addSkill}>
+                  Add
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* Languages */}
+          {showLanguages && (
+            <section style={s.card}>
+              <h2 style={s.cardTitle}>Languages</h2>
+              {fullData.languages.map((lang, i) => (
+                <div key={lang.id} style={s.itemBlock}>
+                  <div style={s.itemHeader}>
+                    <span style={s.itemNumber}>#{i + 1}</span>
+                    <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
+                  </div>
+                  <div style={s.fieldGrid}>
+                    <Field label="Language">
+                      <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} onBlur={save} />
+                    </Field>
+                    <Field label="Proficiency">
+                      <Input value={lang.proficiency} placeholder="e.g. Native, Fluent" onChange={(v) => updateLanguage(i, 'proficiency', v)} onBlur={save} />
+                    </Field>
+                  </div>
                 </div>
               ))}
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="New skill..."
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
-                style={{ ...s.input, flex: 1, maxWidth: 200 }}
-              />
-              <button type="button" style={s.btnAdd} onClick={addSkill}>
-                Add
-              </button>
-            </div>
-          </section>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Language name..."
+                  value={newLang}
+                  onChange={(e) => setNewLang(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLanguage() } }}
+                  style={{ ...s.input, flex: 1, maxWidth: 200 }}
+                />
+                <button type="button" style={s.btnAdd} onClick={addLanguage}>
+                  Add
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* Experience */}
           <section style={s.card}>
@@ -337,7 +422,7 @@ function EditPage() {
               <h2 style={s.cardTitle}>Experience</h2>
               <button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>
             </div>
-            {cv.experiences.map((exp, i) => (
+            {fullData.experiences.map((exp, i) => (
               <div key={exp.id} style={s.itemBlock}>
                 <div style={s.itemHeader}>
                   <span style={s.itemNumber}>#{i + 1}</span>
@@ -380,31 +465,33 @@ function EditPage() {
           </section>
 
           {/* Projects */}
-          <section style={s.card}>
-            <div style={s.sectionHeader}>
-              <h2 style={s.cardTitle}>Selected Projects</h2>
-              <button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>
-            </div>
-            {cv.projects.map((project, i) => (
-              <div key={project.id} style={s.itemBlock}>
-                <div style={s.itemHeader}>
-                  <span style={s.itemNumber}>#{i + 1}</span>
-                  <button type="button" style={s.removeBtnText} onClick={() => removeProject(i)}>Remove</button>
-                </div>
-                <div style={s.fieldGrid}>
-                  <Field label="Name">
-                    <Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} />
-                  </Field>
-                  <Field label="Tech Stack">
-                    <Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} />
-                  </Field>
-                </div>
-                <Field label="Description" fullWidth>
-                  <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
-                </Field>
+          {showProjects && (
+            <section style={s.card}>
+              <div style={s.sectionHeader}>
+                <h2 style={s.cardTitle}>Selected Projects</h2>
+                <button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>
               </div>
-            ))}
-          </section>
+              {fullData.projects.map((project, i) => (
+                <div key={project.id} style={s.itemBlock}>
+                  <div style={s.itemHeader}>
+                    <span style={s.itemNumber}>#{i + 1}</span>
+                    <button type="button" style={s.removeBtnText} onClick={() => removeProject(i)}>Remove</button>
+                  </div>
+                  <div style={s.fieldGrid}>
+                    <Field label="Name">
+                      <Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} />
+                    </Field>
+                    <Field label="Tech Stack">
+                      <Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} />
+                    </Field>
+                  </div>
+                  <Field label="Description" fullWidth>
+                    <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
+                  </Field>
+                </div>
+              ))}
+            </section>
+          )}
 
           {/* Education */}
           <section style={s.card}>
@@ -412,7 +499,7 @@ function EditPage() {
               <h2 style={s.cardTitle}>Education</h2>
               <button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>
             </div>
-            {cv.education.map((edu, i) => (
+            {fullData.education.map((edu, i) => (
               <div key={edu.id} style={s.itemBlock}>
                 <div style={s.itemHeader}>
                   <span style={s.itemNumber}>#{i + 1}</span>
@@ -432,6 +519,35 @@ function EditPage() {
               </div>
             ))}
           </section>
+
+          {/* Certifications */}
+          {showCertifications && (
+            <section style={s.card}>
+              <div style={s.sectionHeader}>
+                <h2 style={s.cardTitle}>Certifications</h2>
+                <button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>
+              </div>
+              {fullData.certifications.map((cert, i) => (
+                <div key={cert.id} style={s.itemBlock}>
+                  <div style={s.itemHeader}>
+                    <span style={s.itemNumber}>#{i + 1}</span>
+                    <button type="button" style={s.removeBtnText} onClick={() => removeCertification(i)}>Remove</button>
+                  </div>
+                  <div style={s.fieldGrid}>
+                    <Field label="Name" fullWidth>
+                      <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} onBlur={save} />
+                    </Field>
+                    <Field label="Issuer">
+                      <Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} onBlur={save} />
+                    </Field>
+                    <Field label="Year">
+                      <Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} onBlur={save} />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
         </main>
 
         {/* Live preview panel */}
