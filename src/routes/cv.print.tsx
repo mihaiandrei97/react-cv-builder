@@ -1,0 +1,161 @@
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useState } from 'react'
+import { pdf, BlobProvider } from '@react-pdf/renderer'
+import { useCv } from '../lib/cv-context'
+import { getTemplate } from '../lib/templates'
+
+export const Route = createFileRoute('/cv/print')({
+  component: PrintPage,
+})
+
+function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
+  return (
+    <Link
+      to={to}
+      style={{
+        fontFamily: 'inherit',
+        fontSize: '0.9rem',
+        textDecoration: 'none',
+        color: active ? 'var(--ink)' : 'var(--muted)',
+        padding: '0.35rem 0.75rem',
+        borderRadius: '0.25rem',
+        border: active ? '1px solid var(--line)' : '1px solid transparent',
+        background: active ? 'var(--paper)' : 'transparent',
+      }}
+    >
+      {label}
+    </Link>
+  )
+}
+
+function PrintPage() {
+  const { cv, templateId } = useCv()
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState('')
+
+  const template = getTemplate(templateId)
+  const Doc = template.component
+
+  async function generatePdf() {
+    if (isGenerating) return
+    setIsGenerating(true)
+    setGenerationError('')
+    try {
+      const blob = await pdf(<Doc cv={cv} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'cv.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setGenerationError(err instanceof Error ? `Could not generate PDF: ${err.message}` : 'Could not generate PDF')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Top bar */}
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1rem',
+          padding: '0.75rem 1.5rem',
+          background: '#fffdf7',
+          borderBottom: '1px solid var(--line)',
+          boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>CV Preview</h1>
+          <nav style={{ display: 'flex', gap: '0.25rem' }}>
+            <NavLink to="/templates" label="Templates" />
+            <NavLink to="/cv/edit" label="Edit" />
+            <NavLink to="/cv/print" label="Preview" active />
+          </nav>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <span
+            style={{
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              color: 'var(--accent)',
+              background: '#fdf0e6',
+              border: '1px solid #f0c89a',
+              borderRadius: '0.25rem',
+              padding: '0.2rem 0.55rem',
+            }}
+          >
+            {template.name}
+          </span>
+          {generationError && (
+            <span style={{ fontSize: '0.82rem', color: '#9c2f1f' }}>{generationError}</span>
+          )}
+          <button
+            type="button"
+            disabled={isGenerating}
+            onClick={generatePdf}
+            style={{
+              fontFamily: 'inherit',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              color: '#fff',
+              background: 'var(--green)',
+              border: 0,
+              borderRadius: '0.25rem',
+              padding: '0.45rem 1rem',
+              cursor: isGenerating ? 'wait' : 'pointer',
+              opacity: isGenerating ? 0.7 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isGenerating ? 'Generating…' : 'Download PDF'}
+          </button>
+        </div>
+      </header>
+
+      {/* PDF viewer */}
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '2rem 1rem 4rem',
+          gap: '1rem',
+          background: 'radial-gradient(circle at 20% 20%, #ece9de 0%, #ece9de 20%, transparent 20%), linear-gradient(160deg, #f6f3e8 0%, #efeadd 55%, #e6e0d3 100%)',
+        }}
+      >
+        <BlobProvider document={<Doc cv={cv} />}>
+          {({ url, loading, error }) => {
+            if (loading) return <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Rendering PDF…</p>
+            if (error) return <p style={{ color: '#9c2f1f', fontSize: '0.9rem' }}>Error rendering PDF: {error.message}</p>
+            if (!url) return null
+            return (
+              <iframe
+                src={`${url}#toolbar=0&navpanes=0`}
+                style={{
+                  width: '100%',
+                  maxWidth: 794,
+                  height: 'calc(100vh - 100px)',
+                  minHeight: 600,
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
+                }}
+                title="CV PDF Preview"
+              />
+            )
+          }}
+        </BlobProvider>
+      </main>
+    </div>
+  )
+}

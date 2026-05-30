@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/400-italic.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-serif-4/700.css";
+
+:root {
+  --paper: #fcfcf8;
+  --ink: #222222;
+  --muted: #5d5d55;
+  --line: #d4d0c4;
+  --accent: #c06b31;
+  --green: #2d5d4c;
+
+  font-family: 'Source Serif 4', 'Georgia', serif;
+  color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+}
