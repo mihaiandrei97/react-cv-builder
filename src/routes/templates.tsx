@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES } from '../lib/templates'
-import { useCv } from '../lib/cv-context'
+import { useSelector } from '@tanstack/react-store'
+import { cvStore, saveTemplatePref } from '../lib/cv-store'
 import { projectCv, type CvData } from '../lib/types'
 
 export const Route = createFileRoute('/templates')({
@@ -164,7 +165,8 @@ function IframePreview({ url }: { url: string }) {
 }
 
 function TemplatesPage() {
-  const { fullData, templateId, saveTemplatePref } = useCv()
+  const fullData = useSelector(cvStore, (s) => s.fullData)
+  const templateId = useSelector(cvStore, (s) => s.templateId)
   const navigate = useNavigate()
 
   function selectTemplate(id: string) {

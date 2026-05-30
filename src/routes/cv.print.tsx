@@ -3,7 +3,8 @@ import { useRef, useMemo, memo, useCallback, useEffect } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
-import { useCv } from '../lib/cv-context'
+import { useSelector } from '@tanstack/react-store'
+import { cvStore, cvDerived } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 export const Route = createFileRoute('/cv/print')({
@@ -72,7 +73,8 @@ const PdfViewer = memo(function PdfViewer({
 })
 
 function PrintPage() {
-  const { cv, templateId } = useCv()
+  const cv = useSelector(cvDerived, (s) => s)
+  const templateId = useSelector(cvStore, (s) => s.templateId)
   const blobUrlRef = useRef<string | null>(null)
 
   const template = getTemplate(templateId)

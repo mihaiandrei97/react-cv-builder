@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import type { FullCvData, Experience, Project, Education, Certification, Language } from '../lib/types'
+import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
+import { useSelector } from '@tanstack/react-store'
+import { cvStore, cvDerived, setFullData, saveCv, resetCv } from '../lib/cv-store'
+import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -11,8 +14,6 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay])
   return debounced
 }
-import { useCv } from '../lib/cv-context'
-import { getTemplate } from '../lib/templates'
 
 export const Route = createFileRoute('/cv/edit')({
   component: EditPage,
@@ -134,7 +135,9 @@ function Textarea({ value, onChange, rows = 3 }: { value: string; onChange: (v: 
 // ── Main component ────────────────────────────────────────────────────────────
 
 function EditPage() {
-  const { cv, fullData, setFullData, templateId, saveCv, resetCv } = useCv()
+  const fullData = useSelector(cvStore, (s) => s.fullData)
+  const templateId = useSelector(cvStore, (s) => s.templateId)
+  const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
   const [newSkill, setNewSkill] = useState('')
@@ -146,7 +149,7 @@ function EditPage() {
     saveCv()
     setSaveStatus('Saved')
     setTimeout(() => setSaveStatus(''), 2000)
-  }, [saveCv])
+  }, [])
 
   function handleReset() {
     if (confirm('Reset all CV data to defaults? This cannot be undone.')) {
@@ -155,7 +158,7 @@ function EditPage() {
   }
 
   // Profile mutations
-  function updateProfile(field: keyof FullCvData['profile'], value: string) {
+  function updateProfile(field: keyof Profile, value: string) {
     setFullData((prev) => ({ ...prev, profile: { ...prev.profile, [field]: value } }))
   }
 
