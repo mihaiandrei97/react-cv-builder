@@ -153,8 +153,12 @@ const styles = StyleSheet.create({
 })
 
 export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
+  const ordered = ['skills', 'experience', 'projects', 'education'].sort(
+    (a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b)
+  )
+
   return (
-    <Document>
+    <Document key={cv.sectionOrder.join(',')}>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.hero}>
@@ -170,80 +174,72 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           </View>
         </View>
 
-        {/* Profile */}
+        {/* Profile — always first */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
-        {/* Skills */}
-        {cv.skills.length > 0 && (
-          <View style={styles.section} break={cv.pageBreaks.includes('skills')}>
-            <Text style={styles.sectionTitle}>Core Skills</Text>
-            <View style={styles.skillGrid}>
-              {cv.skills.map((skill, i) => (
-                <Text key={i} style={styles.skillItem}>
-                  {skill}
-                </Text>
+        {ordered.map((key) => {
+          if (key === 'skills' && cv.skills.length > 0) return (
+            <View key="skills" style={styles.section} break={cv.pageBreaks.includes('skills')}>
+              <Text style={styles.sectionTitle}>Core Skills</Text>
+              <View style={styles.skillGrid}>
+                {cv.skills.map((skill, i) => (
+                  <Text key={i} style={styles.skillItem}>{skill}</Text>
+                ))}
+              </View>
+            </View>
+          )
+          if (key === 'experience' && cv.experiences.length > 0) return (
+            <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
+              <Text style={styles.sectionTitle}>Experience</Text>
+              {cv.experiences.map((exp) => (
+                <View key={exp.id} style={styles.experienceItem} wrap={false}>
+                  <View style={styles.experienceHeader}>
+                    <Text style={styles.experienceTitle}>{exp.role} – {exp.company}</Text>
+                    <Text style={styles.experiencePeriod}>{exp.period}</Text>
+                  </View>
+                  <View style={styles.bulletList}>
+                    {exp.highlights.map((h, i) => (
+                      <View key={i} style={styles.bulletItem}>
+                        <Text style={styles.bulletDot}>•</Text>
+                        <Text style={styles.bulletText}>{h}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               ))}
             </View>
-          </View>
-        )}
-
-        {/* Experience */}
-        {cv.experiences.length > 0 && (
-          <View style={styles.section} break={cv.pageBreaks.includes('experience')}>
-            <Text style={styles.sectionTitle}>Experience</Text>
-            {cv.experiences.map((exp) => (
-              <View key={exp.id} style={styles.experienceItem} wrap={false}>
-                <View style={styles.experienceHeader}>
-                  <Text style={styles.experienceTitle}>
-                    {exp.role} – {exp.company}
-                  </Text>
-                  <Text style={styles.experiencePeriod}>{exp.period}</Text>
+          )
+          if (key === 'projects' && cv.projects.length > 0) return (
+            <View key="projects" style={styles.section} break={cv.pageBreaks.includes('projects')}>
+              <Text style={styles.sectionTitle}>Selected Projects</Text>
+              {cv.projects.map((project) => (
+                <View key={project.id} style={styles.projectItem} wrap={false}>
+                  <Text style={styles.projectName}>{project.name}</Text>
+                  <Text style={styles.projectDesc}>{project.description}</Text>
+                  <Text style={styles.projectStack}>{project.stack}</Text>
                 </View>
-                <View style={styles.bulletList}>
-                  {exp.highlights.map((h, i) => (
-                    <View key={i} style={styles.bulletItem}>
-                      <Text style={styles.bulletDot}>•</Text>
-                      <Text style={styles.bulletText}>{h}</Text>
-                    </View>
-                  ))}
+              ))}
+            </View>
+          )
+          if (key === 'education' && cv.education.length > 0) return (
+            <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
+              <Text style={styles.sectionTitle}>Education</Text>
+              {cv.education.map((edu) => (
+                <View key={edu.id} style={styles.experienceItem} wrap={false}>
+                  <View style={styles.experienceHeader}>
+                    <Text style={styles.experienceTitle}>{edu.degree}</Text>
+                    <Text style={styles.experiencePeriod}>{edu.period}</Text>
+                  </View>
+                  <Text style={{ fontSize: 9, color: MUTED, marginTop: 1 }}>{edu.institution}</Text>
                 </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Projects */}
-        {cv.projects.length > 0 && (
-          <View style={styles.section} break={cv.pageBreaks.includes('projects')}>
-            <Text style={styles.sectionTitle}>Selected Projects</Text>
-            {cv.projects.map((project) => (
-              <View key={project.id} style={styles.projectItem} wrap={false}>
-                <Text style={styles.projectName}>{project.name}</Text>
-                <Text style={styles.projectDesc}>{project.description}</Text>
-                <Text style={styles.projectStack}>{project.stack}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Education */}
-        {cv.education.length > 0 && (
-          <View style={styles.section} break={cv.education.length > 0 && cv.pageBreaks.includes('education')}>
-            <Text style={styles.sectionTitle}>Education</Text>
-            {cv.education.map((edu) => (
-              <View key={edu.id} style={styles.experienceItem} wrap={false}>
-                <View style={styles.experienceHeader}>
-                  <Text style={styles.experienceTitle}>{edu.degree}</Text>
-                  <Text style={styles.experiencePeriod}>{edu.period}</Text>
-                </View>
-                <Text style={{ fontSize: 9, color: MUTED, marginTop: 1 }}>{edu.institution}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+              ))}
+            </View>
+          )
+          return null
+        })}
       </Page>
     </Document>
   )

@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 
 export function ModernDocument({ cv }: { cv: ModernCvData }) {
   return (
-    <Document>
+    <Document key={cv.sectionOrder.join(',')}>
       <Page size="A4" style={styles.page}>
         {/* Dark sidebar background — fixed so it appears on every overflow page */}
         <View style={styles.sidebarBg} fixed />
@@ -242,62 +242,66 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             <Text style={styles.paragraph}>{cv.profile.summary}</Text>
           </View>
 
-          {cv.experiences.length > 0 && (
-            <View break={cv.pageBreaks.includes('experience')}>
-              <Text style={styles.sectionTitle}>Experience</Text>
-              {cv.experiences.map((exp) => (
-                <View key={exp.id} style={styles.entry} wrap={false}>
-                  <View style={styles.entryHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.entryRole}>{exp.role}</Text>
-                      <Text style={styles.entryCompany}>{exp.company}</Text>
-                    </View>
-                    <Text style={styles.entryPeriod}>{exp.period}</Text>
-                  </View>
-                  <View style={styles.bulletList}>
-                    {exp.highlights.map((h, i) => (
-                      <View key={i} style={styles.bulletItem}>
-                        <Text style={styles.bulletDot}>•</Text>
-                        <Text style={styles.bulletText}>{h}</Text>
+          {['experience', 'projects', 'education']
+            .sort((a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b))
+            .map((key) => {
+              if (key === 'experience' && cv.experiences.length > 0) return (
+                <View key="experience" break={cv.pageBreaks.includes('experience')}>
+                  <Text style={styles.sectionTitle}>Experience</Text>
+                  {cv.experiences.map((exp) => (
+                    <View key={exp.id} style={styles.entry} wrap={false}>
+                      <View style={styles.entryHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.entryRole}>{exp.role}</Text>
+                          <Text style={styles.entryCompany}>{exp.company}</Text>
+                        </View>
+                        <Text style={styles.entryPeriod}>{exp.period}</Text>
                       </View>
-                    ))}
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {cv.projects.length > 0 && (
-            <View break={cv.pageBreaks.includes('projects')}>
-              <Text style={styles.sectionTitle}>Selected Projects</Text>
-              {cv.projects.map((project) => (
-                <View key={project.id} style={styles.entry} wrap={false}>
-                  <View style={styles.entryHeader}>
-                    <Text style={styles.entryRole}>{project.name}</Text>
-                    <Text style={[styles.entryPeriod, styles.projectStack]}>{project.stack}</Text>
-                  </View>
-                  <Text style={styles.projectDesc}>{project.description}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {cv.education.length > 0 && (
-            <View break={cv.pageBreaks.includes('education')}>
-              <Text style={styles.sectionTitle}>Education</Text>
-              {cv.education.map((edu) => (
-                <View key={edu.id} style={styles.entry} wrap={false}>
-                  <View style={styles.entryHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.entryRole}>{edu.degree}</Text>
-                      <Text style={styles.entryCompany}>{edu.institution}</Text>
+                      <View style={styles.bulletList}>
+                        {exp.highlights.map((h, i) => (
+                          <View key={i} style={styles.bulletItem}>
+                            <Text style={styles.bulletDot}>•</Text>
+                            <Text style={styles.bulletText}>{h}</Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
-                    <Text style={styles.entryPeriod}>{edu.period}</Text>
-                  </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          )}
+              )
+              if (key === 'projects' && cv.projects.length > 0) return (
+                <View key="projects" break={cv.pageBreaks.includes('projects')}>
+                  <Text style={styles.sectionTitle}>Selected Projects</Text>
+                  {cv.projects.map((project) => (
+                    <View key={project.id} style={styles.entry} wrap={false}>
+                      <View style={styles.entryHeader}>
+                        <Text style={styles.entryRole}>{project.name}</Text>
+                        <Text style={[styles.entryPeriod, styles.projectStack]}>{project.stack}</Text>
+                      </View>
+                      <Text style={styles.projectDesc}>{project.description}</Text>
+                    </View>
+                  ))}
+                </View>
+              )
+              if (key === 'education' && cv.education.length > 0) return (
+                <View key="education" break={cv.pageBreaks.includes('education')}>
+                  <Text style={styles.sectionTitle}>Education</Text>
+                  {cv.education.map((edu) => (
+                    <View key={edu.id} style={styles.entry} wrap={false}>
+                      <View style={styles.entryHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.entryRole}>{edu.degree}</Text>
+                          <Text style={styles.entryCompany}>{edu.institution}</Text>
+                        </View>
+                        <Text style={styles.entryPeriod}>{edu.period}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )
+              return null
+            })
+          }
         </View>
       </Page>
     </Document>

@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak } from '../lib/cv-store'
+import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -142,6 +142,8 @@ function CollapsibleSection({
   sectionKey,
   hiddenSections,
   pageBreaks,
+  isFirst,
+  isLast,
   addButton,
   children,
 }: {
@@ -149,6 +151,8 @@ function CollapsibleSection({
   sectionKey: string
   hiddenSections: string[]
   pageBreaks: string[]
+  isFirst?: boolean
+  isLast?: boolean
   addButton?: React.ReactNode
   children: React.ReactNode
 }) {
@@ -168,6 +172,24 @@ function CollapsibleSection({
               ⏎ Page break
             </button>
           )}
+          <div style={{ display: 'flex', gap: '0.15rem' }}>
+            <button
+              type="button"
+              style={{ ...s.btnMove, ...(isFirst ? { opacity: 0.3, cursor: 'default' } : {}) }}
+              disabled={isFirst}
+              onClick={() => moveSection(sectionKey, 'up')}
+              title="Move up"
+              aria-label="Move section up"
+            >↑</button>
+            <button
+              type="button"
+              style={{ ...s.btnMove, ...(isLast ? { opacity: 0.3, cursor: 'default' } : {}) }}
+              disabled={isLast}
+              onClick={() => moveSection(sectionKey, 'down')}
+              title="Move down"
+              aria-label="Move section down"
+            >↓</button>
+          </div>
           <button type="button" style={s.btnToggle} onClick={() => toggleSection(sectionKey)}>
             {isHidden ? 'Show in PDF' : 'Hide'}
           </button>
@@ -184,6 +206,7 @@ function EditPage() {
   const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
   const hiddenSections = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).hiddenSections ?? [])
   const pageBreaks = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).pageBreaks ?? [])
+  const sectionOrder = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionOrder ?? [...DEFAULT_SECTION_ORDER])
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
@@ -354,6 +377,15 @@ function EditPage() {
   const showCertifications = cv.kind === 'executive'
   const showLanguages = cv.kind === 'compact'
 
+  const TEMPLATE_SECTIONS: Record<string, string[]> = {
+    classic: ['skills', 'experience', 'projects', 'education'],
+    modern: ['skills', 'experience', 'projects', 'education'],
+    executive: ['experience', 'education', 'certifications'],
+    compact: ['skills', 'languages', 'experience', 'education'],
+  }
+  const templateSections = TEMPLATE_SECTIONS[templateId] ?? TEMPLATE_SECTIONS.classic
+  const orderedSections = [...templateSections].sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
+
   const Doc = template.component
   const previewDoc = useMemo(() => <Doc cv={debouncedCv} />, [debouncedCv, Doc])
 
@@ -395,216 +427,169 @@ function EditPage() {
             </Field>
           </section>
 
-          {/* Skills */}
-          {showSkills && (
-            <CollapsibleSection title="Core Skills" sectionKey="skills" hiddenSections={hiddenSections} pageBreaks={pageBreaks}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                {fullData.skills.map((skill, i) => (
-                  <div key={i} style={s.skillTag}>
-                    <input
-                      type="text"
-                      value={skill}
-                      onChange={(e) => updateSkill(i, e.target.value)}
-                      onBlur={save}
-                      style={s.skillTagInput}
-                    />
-                    <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label="Remove skill">
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  placeholder="New skill..."
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
-                  style={{ ...s.input, flex: 1, maxWidth: 200 }}
-                />
-                <button type="button" style={s.btnAdd} onClick={addSkill}>
-                  Add
-                </button>
-              </div>
-            </CollapsibleSection>
-          )}
+          {orderedSections.map((key, idx) => {
+            const isFirst = idx === 0
+            const isLast = idx === orderedSections.length - 1
+            const sharedProps = { hiddenSections, pageBreaks, isFirst, isLast }
 
-          {/* Languages */}
-          {showLanguages && (
-            <CollapsibleSection title="Languages" sectionKey="languages" hiddenSections={hiddenSections} pageBreaks={pageBreaks}>
-              {fullData.languages.map((lang, i) => (
-                <div key={lang.id} style={s.itemBlock}>
-                  <div style={s.itemHeader}>
-                    <span style={s.itemNumber}>#{i + 1}</span>
-                    <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
-                  </div>
-                  <div style={s.fieldGrid}>
-                    <Field label="Language">
-                      <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} onBlur={save} />
-                    </Field>
-                    <Field label="Proficiency">
-                      <Input value={lang.proficiency} placeholder="e.g. Native, Fluent" onChange={(v) => updateLanguage(i, 'proficiency', v)} onBlur={save} />
-                    </Field>
-                  </div>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  placeholder="Language name..."
-                  value={newLang}
-                  onChange={(e) => setNewLang(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLanguage() } }}
-                  style={{ ...s.input, flex: 1, maxWidth: 200 }}
-                />
-                <button type="button" style={s.btnAdd} onClick={addLanguage}>
-                  Add
-                </button>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* Experience */}
-          <CollapsibleSection
-            title="Experience"
-            sectionKey="experience"
-            hiddenSections={hiddenSections}
-            pageBreaks={pageBreaks}
-            addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
-          >
-            {fullData.experiences.map((exp, i) => (
-              <div key={exp.id} style={s.itemBlock}>
-                <div style={s.itemHeader}>
-                  <span style={s.itemNumber}>#{i + 1}</span>
-                  <button type="button" style={s.removeBtnText} onClick={() => removeExperience(i)}>Remove</button>
-                </div>
-                <div style={s.fieldGrid}>
-                  <Field label="Role">
-                    <Input value={exp.role} onChange={(v) => updateExperience(i, 'role', v)} />
-                  </Field>
-                  <Field label="Company">
-                    <Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} />
-                  </Field>
-                  <Field label="Period">
-                    <Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} />
-                  </Field>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={s.fieldLabel}>Highlights</span>
-                  {exp.highlights.map((h, hi) => (
-                    <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            if (key === 'skills' && showSkills) return (
+              <CollapsibleSection key="skills" title="Core Skills" sectionKey="skills" {...sharedProps}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {fullData.skills.map((skill, i) => (
+                    <div key={i} style={s.skillTag}>
                       <input
                         type="text"
-                        value={h}
-                        placeholder="Bullet point..."
-                        onChange={(e) => updateHighlight(i, hi, e.target.value)}
+                        value={skill}
+                        onChange={(e) => updateSkill(i, e.target.value)}
                         onBlur={save}
-                        style={{ ...s.input, flex: 1 }}
+                        style={s.skillTagInput}
                       />
-                      <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">
-                        ×
-                      </button>
+                      <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label="Remove skill">×</button>
                     </div>
                   ))}
-                  <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>
-                    + Add bullet
-                  </button>
                 </div>
-              </div>
-            ))}
-          </CollapsibleSection>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="New skill..."
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
+                    style={{ ...s.input, flex: 1, maxWidth: 200 }}
+                  />
+                  <button type="button" style={s.btnAdd} onClick={addSkill}>Add</button>
+                </div>
+              </CollapsibleSection>
+            )
 
-          {/* Projects */}
-          {showProjects && (
-            <CollapsibleSection
-              title="Selected Projects"
-              sectionKey="projects"
-              hiddenSections={hiddenSections}
-              pageBreaks={pageBreaks}
-              addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
-            >
-              {fullData.projects.map((project, i) => (
-                <div key={project.id} style={s.itemBlock}>
-                  <div style={s.itemHeader}>
-                    <span style={s.itemNumber}>#{i + 1}</span>
-                    <button type="button" style={s.removeBtnText} onClick={() => removeProject(i)}>Remove</button>
+            if (key === 'languages' && showLanguages) return (
+              <CollapsibleSection key="languages" title="Languages" sectionKey="languages" {...sharedProps}>
+                {fullData.languages.map((lang, i) => (
+                  <div key={lang.id} style={s.itemBlock}>
+                    <div style={s.itemHeader}>
+                      <span style={s.itemNumber}>#{i + 1}</span>
+                      <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
+                    </div>
+                    <div style={s.fieldGrid}>
+                      <Field label="Language">
+                        <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} onBlur={save} />
+                      </Field>
+                      <Field label="Proficiency">
+                        <Input value={lang.proficiency} placeholder="e.g. Native, Fluent" onChange={(v) => updateLanguage(i, 'proficiency', v)} onBlur={save} />
+                      </Field>
+                    </div>
                   </div>
-                  <div style={s.fieldGrid}>
-                    <Field label="Name">
-                      <Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} />
-                    </Field>
-                    <Field label="Tech Stack">
-                      <Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} />
-                    </Field>
-                  </div>
-                  <Field label="Description" fullWidth>
-                    <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
-                  </Field>
+                ))}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Language name..."
+                    value={newLang}
+                    onChange={(e) => setNewLang(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLanguage() } }}
+                    style={{ ...s.input, flex: 1, maxWidth: 200 }}
+                  />
+                  <button type="button" style={s.btnAdd} onClick={addLanguage}>Add</button>
                 </div>
-              ))}
-            </CollapsibleSection>
-          )}
+              </CollapsibleSection>
+            )
 
-          {/* Education */}
-          <CollapsibleSection
-            title="Education"
-            sectionKey="education"
-            hiddenSections={hiddenSections}
-            pageBreaks={pageBreaks}
-            addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
-          >
-            {fullData.education.map((edu, i) => (
-              <div key={edu.id} style={s.itemBlock}>
-                <div style={s.itemHeader}>
-                  <span style={s.itemNumber}>#{i + 1}</span>
-                  <button type="button" style={s.removeBtnText} onClick={() => removeEducation(i)}>Remove</button>
-                </div>
-                <div style={s.fieldGrid}>
-                  <Field label="Degree">
-                    <Input value={edu.degree} onChange={(v) => updateEducation(i, 'degree', v)} />
-                  </Field>
-                  <Field label="Institution">
-                    <Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} />
-                  </Field>
-                  <Field label="Period">
-                    <Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} />
-                  </Field>
-                </div>
-              </div>
-            ))}
-          </CollapsibleSection>
+            if (key === 'experience') return (
+              <CollapsibleSection key="experience" title="Experience" sectionKey="experience" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
+              >
+                {fullData.experiences.map((exp, i) => (
+                  <div key={exp.id} style={s.itemBlock}>
+                    <div style={s.itemHeader}>
+                      <span style={s.itemNumber}>#{i + 1}</span>
+                      <button type="button" style={s.removeBtnText} onClick={() => removeExperience(i)}>Remove</button>
+                    </div>
+                    <div style={s.fieldGrid}>
+                      <Field label="Role"><Input value={exp.role} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
+                      <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
+                      <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <span style={s.fieldLabel}>Highlights</span>
+                      {exp.highlights.map((h, hi) => (
+                        <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} onBlur={save} style={{ ...s.input, flex: 1 }} />
+                          <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
+                        </div>
+                      ))}
+                      <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>+ Add bullet</button>
+                    </div>
+                  </div>
+                ))}
+              </CollapsibleSection>
+            )
 
-          {/* Certifications */}
-          {showCertifications && (
-            <CollapsibleSection
-              title="Certifications"
-              sectionKey="certifications"
-              hiddenSections={hiddenSections}
-              pageBreaks={pageBreaks}
-              addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
-            >
-              {fullData.certifications.map((cert, i) => (
-                <div key={cert.id} style={s.itemBlock}>
-                  <div style={s.itemHeader}>
-                    <span style={s.itemNumber}>#{i + 1}</span>
-                    <button type="button" style={s.removeBtnText} onClick={() => removeCertification(i)}>Remove</button>
-                  </div>
-                  <div style={s.fieldGrid}>
-                    <Field label="Name" fullWidth>
-                      <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} onBlur={save} />
-                    </Field>
-                    <Field label="Issuer">
-                      <Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} onBlur={save} />
-                    </Field>
-                    <Field label="Year">
-                      <Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} onBlur={save} />
+            if (key === 'projects' && showProjects) return (
+              <CollapsibleSection key="projects" title="Selected Projects" sectionKey="projects" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
+              >
+                {fullData.projects.map((project, i) => (
+                  <div key={project.id} style={s.itemBlock}>
+                    <div style={s.itemHeader}>
+                      <span style={s.itemNumber}>#{i + 1}</span>
+                      <button type="button" style={s.removeBtnText} onClick={() => removeProject(i)}>Remove</button>
+                    </div>
+                    <div style={s.fieldGrid}>
+                      <Field label="Name"><Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} /></Field>
+                      <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
+                    </div>
+                    <Field label="Description" fullWidth>
+                      <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
                     </Field>
                   </div>
-                </div>
-              ))}
-            </CollapsibleSection>
-          )}
+                ))}
+              </CollapsibleSection>
+            )
+
+            if (key === 'education') return (
+              <CollapsibleSection key="education" title="Education" sectionKey="education" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
+              >
+                {fullData.education.map((edu, i) => (
+                  <div key={edu.id} style={s.itemBlock}>
+                    <div style={s.itemHeader}>
+                      <span style={s.itemNumber}>#{i + 1}</span>
+                      <button type="button" style={s.removeBtnText} onClick={() => removeEducation(i)}>Remove</button>
+                    </div>
+                    <div style={s.fieldGrid}>
+                      <Field label="Degree"><Input value={edu.degree} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
+                      <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
+                      <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
+                    </div>
+                  </div>
+                ))}
+              </CollapsibleSection>
+            )
+
+            if (key === 'certifications' && showCertifications) return (
+              <CollapsibleSection key="certifications" title="Certifications" sectionKey="certifications" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
+              >
+                {fullData.certifications.map((cert, i) => (
+                  <div key={cert.id} style={s.itemBlock}>
+                    <div style={s.itemHeader}>
+                      <span style={s.itemNumber}>#{i + 1}</span>
+                      <button type="button" style={s.removeBtnText} onClick={() => removeCertification(i)}>Remove</button>
+                    </div>
+                    <div style={s.fieldGrid}>
+                      <Field label="Name" fullWidth>
+                        <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} onBlur={save} />
+                      </Field>
+                      <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} onBlur={save} /></Field>
+                      <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} onBlur={save} /></Field>
+                    </div>
+                  </div>
+                ))}
+              </CollapsibleSection>
+            )
+
+            return null
+          })}
         </main>
 
         {/* Live preview panel */}
@@ -824,6 +809,17 @@ const s: Record<string, React.CSSProperties> = {
     border: '1px solid var(--accent)',
     borderRadius: '0.25rem',
     padding: '0.2rem 0.6rem',
+    cursor: 'pointer',
+  },
+  btnMove: {
+    fontFamily: 'inherit',
+    fontSize: '0.8rem',
+    lineHeight: '1',
+    color: 'var(--muted)',
+    background: 'transparent',
+    border: '1px solid var(--line)',
+    borderRadius: '0.2rem',
+    padding: '0.15rem 0.4rem',
     cursor: 'pointer',
   },
   fieldGrid: {

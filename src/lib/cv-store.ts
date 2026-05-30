@@ -7,6 +7,8 @@ function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
+export const DEFAULT_SECTION_ORDER = ['skills', 'languages', 'experience', 'projects', 'education', 'certifications']
+
 function makeProfile(name: string, templateId = 'classic', data?: FullCvData): CvProfile {
   return {
     id: crypto.randomUUID(),
@@ -15,6 +17,7 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData): C
     data: data ? deepClone(data) : deepClone(DEFAULT_FULL_CV),
     hiddenSections: [],
     pageBreaks: [],
+    sectionOrder: [...DEFAULT_SECTION_ORDER],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -53,6 +56,7 @@ function sanitizeProfiles(state: ProfilesState): ProfilesState {
       ...p,
       hiddenSections: p.hiddenSections ?? [],
       pageBreaks: p.pageBreaks ?? [],
+      sectionOrder: p.sectionOrder ?? [...DEFAULT_SECTION_ORDER],
     })),
   }
 }
@@ -69,7 +73,7 @@ export const cvStore = createStore<ProfilesState>(loadState())
 export const cvDerived = createStore<CvData>(() => {
   const { profiles, activeProfileId } = cvStore.state
   const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [])
+  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [], active.sectionOrder ?? DEFAULT_SECTION_ORDER)
 })
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -180,6 +184,23 @@ export function togglePageBreak(section: string) {
         ? breaks.filter((s) => s !== section)
         : [...breaks, section]
       return { ...p, pageBreaks, updatedAt: Date.now() }
+    }),
+  }))
+  persist()
+}
+
+export function moveSection(section: string, direction: 'up' | 'down') {
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) => {
+      if (p.id !== state.activeProfileId) return p
+      const order = [...(p.sectionOrder ?? DEFAULT_SECTION_ORDER)]
+      const idx = order.indexOf(section)
+      if (idx < 0) return p
+      const swapWith = direction === 'up' ? idx - 1 : idx + 1
+      if (swapWith < 0 || swapWith >= order.length) return p
+      ;[order[idx], order[swapWith]] = [order[swapWith], order[idx]]
+      return { ...p, sectionOrder: order, updatedAt: Date.now() }
     }),
   }))
   persist()

@@ -169,8 +169,12 @@ const styles = StyleSheet.create({
 })
 
 export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
+  const ordered = ['experience', 'education', 'certifications'].sort(
+    (a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b)
+  )
+
   return (
-    <Document>
+    <Document key={cv.sectionOrder.join(',')}>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
@@ -185,66 +189,64 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           </View>
         </View>
 
-        {/* Profile */}
+        {/* Profile — always first */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Executive Summary</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
-        {/* Experience */}
-        {cv.experiences.length > 0 && (
-          <View style={styles.section} break={cv.pageBreaks.includes('experience')}>
-            <Text style={styles.sectionTitle}>Professional Experience</Text>
-            {cv.experiences.map((exp) => (
-              <View key={exp.id} style={styles.expItem}>
-                <View style={styles.expHeader}>
-                  <Text style={styles.expRole}>{exp.role}</Text>
-                  <Text style={styles.expPeriod}>{exp.period}</Text>
+        {ordered.map((key) => {
+          if (key === 'experience' && cv.experiences.length > 0) return (
+            <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
+              <Text style={styles.sectionTitle}>Professional Experience</Text>
+              {cv.experiences.map((exp) => (
+                <View key={exp.id} style={styles.expItem}>
+                  <View style={styles.expHeader}>
+                    <Text style={styles.expRole}>{exp.role}</Text>
+                    <Text style={styles.expPeriod}>{exp.period}</Text>
+                  </View>
+                  <Text style={styles.expCompany}>{exp.company}</Text>
+                  <View style={styles.bulletList}>
+                    {exp.highlights.map((h, i) => (
+                      <View key={i} style={styles.bulletItem}>
+                        <Text style={styles.bulletDot}>–</Text>
+                        <Text style={styles.bulletText}>{h}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-                <Text style={styles.expCompany}>{exp.company}</Text>
-                <View style={styles.bulletList}>
-                  {exp.highlights.map((h, i) => (
-                    <View key={i} style={styles.bulletItem}>
-                      <Text style={styles.bulletDot}>–</Text>
-                      <Text style={styles.bulletText}>{h}</Text>
-                    </View>
-                  ))}
-                </View>
+              ))}
+            </View>
+          )
+          if (key === 'education' && cv.education.length > 0) return (
+            <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
+              <Text style={styles.sectionTitle}>Education</Text>
+              <View style={styles.eduGrid}>
+                {cv.education.map((edu) => (
+                  <View key={edu.id} style={styles.eduItem}>
+                    <Text style={styles.eduDegree}>{edu.degree}</Text>
+                    <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                    <Text style={styles.eduPeriod}>{edu.period}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* Education */}
-        {cv.education.length > 0 && (
-          <View style={styles.section} break={cv.pageBreaks.includes('education')}>
-            <Text style={styles.sectionTitle}>Education</Text>
-            <View style={styles.eduGrid}>
-              {cv.education.map((edu) => (
-                <View key={edu.id} style={styles.eduItem}>
-                  <Text style={styles.eduDegree}>{edu.degree}</Text>
-                  <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                  <Text style={styles.eduPeriod}>{edu.period}</Text>
-                </View>
-              ))}
             </View>
-          </View>
-        )}
-
-        {/* Certifications */}
-        {cv.certifications.length > 0 && (
-          <View style={styles.section} break={cv.pageBreaks.includes('certifications')}>
-            <Text style={styles.sectionTitle}>Certifications</Text>
-            <View style={styles.certRow}>
-              {cv.certifications.map((cert) => (
-                <View key={cert.id} style={styles.certItem}>
-                  <Text style={styles.certName}>{cert.name}</Text>
-                  <Text style={styles.certMeta}>{cert.issuer} · {cert.year}</Text>
-                </View>
-              ))}
+          )
+          if (key === 'certifications' && cv.certifications.length > 0) return (
+            <View key="certifications" style={styles.section} break={cv.pageBreaks.includes('certifications')}>
+              <Text style={styles.sectionTitle}>Certifications</Text>
+              <View style={styles.certRow}>
+                {cv.certifications.map((cert) => (
+                  <View key={cert.id} style={styles.certItem}>
+                    <Text style={styles.certName}>{cert.name}</Text>
+                    <Text style={styles.certMeta}>{cert.issuer} · {cert.year}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )
+          return null
+        })}
       </Page>
     </Document>
   )
