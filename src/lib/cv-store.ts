@@ -141,3 +141,54 @@ export function deleteProfile(id: string) {
   })
   persist()
 }
+
+export function exportProfile(id: string) {
+  const profile = cvStore.state.profiles.find((p) => p.id === id)
+  if (!profile) return
+  const json = JSON.stringify(profile, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${profile.name.replace(/\s+/g, '-').toLowerCase()}-cv-backup.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function importProfile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target?.result as string)
+        // Basic shape validation
+        if (
+          typeof parsed !== 'object' ||
+          typeof parsed.name !== 'string' ||
+          typeof parsed.templateId !== 'string' ||
+          typeof parsed.data !== 'object'
+        ) {
+          reject(new Error('Invalid backup file format.'))
+          return
+        }
+        const profile: CvProfile = {
+          ...parsed,
+          id: crypto.randomUUID(), // fresh ID to avoid collisions
+          name: parsed.name,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }
+        cvStore.setState((state) => ({
+          profiles: [...state.profiles, profile],
+          activeProfileId: profile.id,
+        }))
+        persist()
+        resolve(profile.id)
+      } catch {
+        reject(new Error('Could not parse backup file.'))
+      }
+    }
+    reader.onerror = () => reject(new Error('Failed to read file.'))
+    reader.readAsText(file)
+  })
+}

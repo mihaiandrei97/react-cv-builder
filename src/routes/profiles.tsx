@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useSelector } from '@tanstack/react-store'
 import {
   cvStore,
@@ -8,6 +8,8 @@ import {
   deleteProfile,
   renameProfile,
   switchProfile,
+  exportProfile,
+  importProfile,
 } from '../lib/cv-store'
 import { TEMPLATES } from '../lib/templates'
 import type { CvProfile } from '../lib/types'
@@ -33,6 +35,7 @@ function ProfileCard({
   onActivate,
   onDuplicate,
   onDelete,
+  onExport,
   onRenameStart,
   onRenameChange,
   onRenameCommit,
@@ -46,6 +49,7 @@ function ProfileCard({
   onActivate: () => void
   onDuplicate: () => void
   onDelete: () => void
+  onExport: () => void
   onRenameStart: () => void
   onRenameChange: (v: string) => void
   onRenameCommit: () => void
@@ -174,6 +178,9 @@ function ProfileCard({
         <button type="button" style={s.btnSecondary} onClick={onDuplicate}>
           Duplicate
         </button>
+        <button type="button" style={s.btnSecondary} onClick={onExport}>
+          Export
+        </button>
         {canDelete && (
           <button type="button" style={s.btnDanger} onClick={onDelete}>
             Delete
@@ -195,6 +202,22 @@ function ProfilesPage() {
   const [newName, setNewName] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [importError, setImportError] = useState<string | null>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!importInputRef.current) return
+    importInputRef.current.value = ''
+    if (!file) return
+    setImportError(null)
+    try {
+      await importProfile(file)
+      navigate({ to: '/cv/edit' })
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed.')
+    }
+  }
 
   function handleCreate() {
     if (!newName.trim()) {
@@ -244,22 +267,44 @@ function ProfilesPage() {
           </Link>
           <h1 style={s.title}>CV Profiles</h1>
         </div>
-        {!creatingNew && (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleImport}
+          />
           <button
             type="button"
-            style={s.btnPrimary}
-            onClick={() => {
-              setCreatingNew(true)
-              setNewName('')
-            }}
+            style={s.btnSecondary}
+            onClick={() => importInputRef.current?.click()}
           >
-            + New Profile
+            Import backup
           </button>
-        )}
+          {!creatingNew && (
+            <button
+              type="button"
+              style={s.btnPrimary}
+              onClick={() => {
+                setCreatingNew(true)
+                setNewName('')
+              }}
+            >
+              + New Profile
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main */}
       <main style={s.main}>
+        {importError && (
+          <div style={{ background: '#fdf2f0', border: '1px solid #f0b8b0', borderRadius: '0.4rem', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#9c2f1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{importError}</span>
+            <button type="button" onClick={() => setImportError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9c2f1f', fontSize: '1rem', lineHeight: 1 }}>×</button>
+          </div>
+        )}
         {/* New profile inline form */}
         {creatingNew && (
           <div style={s.newCard}>
@@ -304,6 +349,7 @@ function ProfilesPage() {
               onActivate={() => handleActivate(profile.id)}
               onDuplicate={() => handleDuplicate(profile.id)}
               onDelete={() => handleDelete(profile.id)}
+              onExport={() => exportProfile(profile.id)}
               onRenameStart={() => handleRenameStart(profile.id, profile.name)}
               onRenameChange={setRenameValue}
               onRenameCommit={() => handleRenameCommit(profile.id)}
