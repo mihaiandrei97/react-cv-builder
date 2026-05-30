@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
@@ -145,11 +145,11 @@ function EditPage() {
 
   const template = getTemplate(templateId)
 
-  const save = useCallback(() => {
+  function save() {
     saveCv()
     setSaveStatus('Saved')
     setTimeout(() => setSaveStatus(''), 2000)
-  }, [])
+  }
 
   function handleReset() {
     if (confirm('Reset all CV data to defaults? This cannot be undone.')) {

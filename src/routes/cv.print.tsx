@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useRef, useMemo, memo, useCallback, useEffect } from 'react'
+import { useRef, useMemo, memo, useCallback } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
@@ -31,11 +31,6 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
   )
 }
 
-function BlobUrlCapture({ url, onUrl }: { url: string | null; onUrl: (u: string | null) => void }) {
-  useEffect(() => { onUrl(url) }, [url, onUrl])
-  return null
-}
-
 const PdfViewer = memo(function PdfViewer({
   docElement,
   onUrl,
@@ -49,9 +44,8 @@ const PdfViewer = memo(function PdfViewer({
         if (loading) return <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Rendering PDF…</p>
         if (error) return <p style={{ color: '#9c2f1f', fontSize: '0.9rem' }}>Error rendering PDF: {error.message}</p>
         if (!url) return null
+        onUrl(url)
         return (
-          <>
-            <BlobUrlCapture url={url} onUrl={onUrl} />
             <iframe
               src={`${url}#toolbar=0&navpanes=0`}
               style={{
@@ -65,7 +59,6 @@ const PdfViewer = memo(function PdfViewer({
               }}
               title="CV PDF Preview"
             />
-          </>
         )
       }}
     </BlobProvider>
