@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES } from '../lib/templates'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, saveTemplatePref } from '../lib/cv-store'
-import { projectCv, type CvData } from '../lib/types'
+import { cvStore, saveTemplatePref, switchProfile, addProfile } from '../lib/cv-store'
+import { projectCv, type CvData, type CvProfile } from '../lib/types'
 
 export const Route = createFileRoute('/templates')({
   component: TemplatesPage,
@@ -164,6 +165,151 @@ function IframePreview({ url }: { url: string }) {
   )
 }
 
+// ── Profile strip ─────────────────────────────────────────────────────────────
+
+function ProfilePill({
+  profile,
+  isActive,
+  onClick,
+}: {
+  profile: CvProfile
+  isActive: boolean
+  onClick: () => void
+}) {
+  const tpl = TEMPLATES.find((t) => t.id === profile.templateId) ?? TEMPLATES[0]
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        fontFamily: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
+        alignItems: 'flex-start',
+        padding: '0.65rem 1rem',
+        borderRadius: '0.4rem',
+        border: `2px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
+        background: isActive ? '#fdf0e6' : '#fffdf7',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        transition: 'border-color 0.12s, background 0.12s',
+        minWidth: 130,
+        textAlign: 'left',
+      }}
+    >
+      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ink)' }}>
+        {profile.name}
+      </span>
+      <span style={{ fontSize: '0.7rem', color: isActive ? 'var(--accent)' : 'var(--muted)' }}>
+        {tpl.name}
+      </span>
+    </button>
+  )
+}
+
+function ProfileStrip() {
+  const profiles = useSelector(cvStore, (s) => s.profiles)
+  const activeProfileId = useSelector(cvStore, (s) => s.activeProfileId)
+  const [creatingNew, setCreatingNew] = useState(false)
+  const [newName, setNewName] = useState('')
+
+  function handleCreate() {
+    const trimmed = newName.trim()
+    if (trimmed) addProfile(trimmed)
+    setCreatingNew(false)
+    setNewName('')
+  }
+
+  return (
+    <div
+      style={{
+        borderBottom: '1px solid var(--line)',
+        background: '#fffdf7',
+        padding: '0.9rem 2rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+      }}
+    >
+      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
+        Profile
+      </span>
+      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', alignItems: 'center', paddingBottom: 2, flex: 1 }}>
+        {profiles.map((p) => (
+          <ProfilePill
+            key={p.id}
+            profile={p}
+            isActive={p.id === activeProfileId}
+            onClick={() => switchProfile(p.id)}
+          />
+        ))}
+
+        {creatingNew ? (
+          <input
+            autoFocus
+            type="text"
+            placeholder="Profile name…"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCreate()
+              if (e.key === 'Escape') { setCreatingNew(false); setNewName('') }
+            }}
+            onBlur={handleCreate}
+            style={{
+              fontFamily: 'inherit',
+              fontSize: '0.85rem',
+              border: '2px solid var(--accent)',
+              borderRadius: '0.4rem',
+              padding: '0.6rem 0.9rem',
+              outline: 'none',
+              background: '#fff',
+              color: 'var(--ink)',
+              width: 160,
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setCreatingNew(true)}
+            style={{
+              fontFamily: 'inherit',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: 'var(--muted)',
+              background: 'transparent',
+              border: '2px dashed var(--line)',
+              borderRadius: '0.4rem',
+              padding: '0.6rem 0.9rem',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            + New
+          </button>
+        )}
+      </div>
+      <Link
+        to="/profiles"
+        style={{
+          fontFamily: 'inherit',
+          fontSize: '0.78rem',
+          color: 'var(--muted)',
+          textDecoration: 'none',
+          flexShrink: 0,
+        }}
+      >
+        Manage →
+      </Link>
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 function TemplatesPage() {
   const fullData = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).data)
   const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
@@ -207,6 +353,9 @@ function TemplatesPage() {
         </h1>
         <span style={{ width: '2rem' }} />
       </header>
+
+      {/* Profile strip */}
+      <ProfileStrip />
 
       {/* Grid */}
       <main

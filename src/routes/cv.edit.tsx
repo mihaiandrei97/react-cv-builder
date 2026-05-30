@@ -40,7 +40,6 @@ function TopBar({
       <div style={s.topBarLeft}>
         <h1 style={s.topBarTitle}>CV Editor</h1>
         <nav style={{ display: 'flex', gap: '0.25rem' }}>
-          <NavLink to="/profiles" label="Profiles" />
           <NavLink to="/templates" label="Templates" />
           <NavLink to="/cv/edit" label="Edit" active />
           <NavLink to="/cv/print" label="Preview" />
