@@ -13,6 +13,7 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData): C
     name,
     templateId,
     data: data ? deepClone(data) : deepClone(DEFAULT_FULL_CV),
+    hiddenSections: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -25,7 +26,7 @@ type ProfilesState = { profiles: CvProfile[]; activeProfileId: string }
 function loadState(): ProfilesState {
   try {
     const raw = localStorage.getItem('cv-profiles')
-    if (raw) return JSON.parse(raw) as ProfilesState
+    if (raw) return sanitizeProfiles(JSON.parse(raw) as ProfilesState)
   } catch {}
 
   // Migrate from the old single-profile format
@@ -44,6 +45,16 @@ function loadState(): ProfilesState {
   return { profiles: [profile], activeProfileId: profile.id }
 }
 
+function sanitizeProfiles(state: ProfilesState): ProfilesState {
+  return {
+    ...state,
+    profiles: state.profiles.map((p) => ({
+      ...p,
+      hiddenSections: p.hiddenSections ?? [],
+    })),
+  }
+}
+
 function persist() {
   localStorage.setItem('cv-profiles', JSON.stringify(cvStore.state))
 }
@@ -56,7 +67,7 @@ export const cvStore = createStore<ProfilesState>(loadState())
 export const cvDerived = createStore<CvData>(() => {
   const { profiles, activeProfileId } = cvStore.state
   const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  return projectCv(active.data, active.templateId)
+  return projectCv(active.data, active.templateId, active.hiddenSections ?? [])
 })
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -139,6 +150,21 @@ export function deleteProfile(id: string) {
       state.activeProfileId === id ? remaining[0].id : state.activeProfileId
     return { profiles: remaining, activeProfileId }
   })
+  persist()
+}
+
+export function toggleSection(section: string) {
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) => {
+      if (p.id !== state.activeProfileId) return p
+      const hidden = p.hiddenSections ?? []
+      const hiddenSections = hidden.includes(section)
+        ? hidden.filter((s) => s !== section)
+        : [...hidden, section]
+      return { ...p, hiddenSections, updatedAt: Date.now() }
+    }),
+  }))
   persist()
 }
 

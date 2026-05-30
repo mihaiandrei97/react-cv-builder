@@ -98,20 +98,22 @@ export type CvProfile = {
   name: string
   templateId: string
   data: FullCvData
+  hiddenSections: string[]
   createdAt: number
   updatedAt: number
 }
 
-export function projectCv(full: FullCvData, templateId: string): CvData {
+export function projectCv(full: FullCvData, templateId: string, hiddenSections: string[] = []): CvData {
+  const hide = new Set(hiddenSections)
   switch (templateId) {
     case 'modern':
-      return { kind: 'modern', profile: full.profile, skills: full.skills, experiences: full.experiences, projects: full.projects, education: full.education };
+      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education };
     case 'executive':
-      return { kind: 'executive', profile: full.profile, experiences: full.experiences, education: full.education, certifications: full.certifications };
+      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications };
     case 'compact':
-      return { kind: 'compact', profile: full.profile, skills: full.skills, languages: full.languages, experiences: full.experiences, education: full.education };
+      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education };
     default:
-      return { kind: 'classic', profile: full.profile, skills: full.skills, experiences: full.experiences, projects: full.projects, education: full.education };
+      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education };
   }
 }
 

@@ -192,40 +192,44 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
         </View>
 
         {/* Experience */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Professional Experience</Text>
-          {cv.experiences.map((exp) => (
-            <View key={exp.id} style={styles.expItem}>
-              <View style={styles.expHeader}>
-                <Text style={styles.expRole}>{exp.role}</Text>
-                <Text style={styles.expPeriod}>{exp.period}</Text>
-              </View>
-              <Text style={styles.expCompany}>{exp.company}</Text>
-              <View style={styles.bulletList}>
-                {exp.highlights.map((h, i) => (
-                  <View key={i} style={styles.bulletItem}>
-                    <Text style={styles.bulletDot}>–</Text>
-                    <Text style={styles.bulletText}>{h}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Education */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Education</Text>
-          <View style={styles.eduGrid}>
-            {cv.education.map((edu) => (
-              <View key={edu.id} style={styles.eduItem}>
-                <Text style={styles.eduDegree}>{edu.degree}</Text>
-                <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                <Text style={styles.eduPeriod}>{edu.period}</Text>
+        {cv.experiences.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Professional Experience</Text>
+            {cv.experiences.map((exp) => (
+              <View key={exp.id} style={styles.expItem}>
+                <View style={styles.expHeader}>
+                  <Text style={styles.expRole}>{exp.role}</Text>
+                  <Text style={styles.expPeriod}>{exp.period}</Text>
+                </View>
+                <Text style={styles.expCompany}>{exp.company}</Text>
+                <View style={styles.bulletList}>
+                  {exp.highlights.map((h, i) => (
+                    <View key={i} style={styles.bulletItem}>
+                      <Text style={styles.bulletDot}>–</Text>
+                      <Text style={styles.bulletText}>{h}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             ))}
           </View>
-        </View>
+        )}
+
+        {/* Education */}
+        {cv.education.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Education</Text>
+            <View style={styles.eduGrid}>
+              {cv.education.map((edu) => (
+                <View key={edu.id} style={styles.eduItem}>
+                  <Text style={styles.eduDegree}>{edu.degree}</Text>
+                  <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                  <Text style={styles.eduPeriod}>{edu.period}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Certifications */}
         {cv.certifications.length > 0 && (

@@ -210,16 +210,18 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             </View>
           </View>
 
-          <View>
-            <Text style={styles.sidebarSectionTitle}>Skills</Text>
-            <View style={styles.skillsWrap}>
-              {cv.skills.map((skill, i) => (
-                <Text key={i} style={styles.skillChip}>
-                  {skill}
-                </Text>
-              ))}
+          {cv.skills.length > 0 && (
+            <View>
+              <Text style={styles.sidebarSectionTitle}>Skills</Text>
+              <View style={styles.skillsWrap}>
+                {cv.skills.map((skill, i) => (
+                  <Text key={i} style={styles.skillChip}>
+                    {skill}
+                  </Text>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
         </View>
 
         {/* Main */}
@@ -229,28 +231,30 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             <Text style={styles.paragraph}>{cv.profile.summary}</Text>
           </View>
 
-          <View>
-            <Text style={styles.sectionTitle}>Experience</Text>
-            {cv.experiences.map((exp) => (
-              <View key={exp.id} style={styles.entry}>
-                <View style={styles.entryHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.entryRole}>{exp.role}</Text>
-                    <Text style={styles.entryCompany}>{exp.company}</Text>
-                  </View>
-                  <Text style={styles.entryPeriod}>{exp.period}</Text>
-                </View>
-                <View style={styles.bulletList}>
-                  {exp.highlights.map((h, i) => (
-                    <View key={i} style={styles.bulletItem}>
-                      <Text style={styles.bulletDot}>•</Text>
-                      <Text style={styles.bulletText}>{h}</Text>
+          {cv.experiences.length > 0 && (
+            <View>
+              <Text style={styles.sectionTitle}>Experience</Text>
+              {cv.experiences.map((exp) => (
+                <View key={exp.id} style={styles.entry}>
+                  <View style={styles.entryHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.entryRole}>{exp.role}</Text>
+                      <Text style={styles.entryCompany}>{exp.company}</Text>
                     </View>
-                  ))}
+                    <Text style={styles.entryPeriod}>{exp.period}</Text>
+                  </View>
+                  <View style={styles.bulletList}>
+                    {exp.highlights.map((h, i) => (
+                      <View key={i} style={styles.bulletItem}>
+                        <Text style={styles.bulletDot}>•</Text>
+                        <Text style={styles.bulletText}>{h}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       </Page>
 
@@ -261,33 +265,37 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
 
         {/* Main */}
         <View style={styles.main}>
-          <View>
-            <Text style={styles.sectionTitle}>Selected Projects</Text>
-            {cv.projects.map((project) => (
-              <View key={project.id} style={styles.entry}>
-                <View style={styles.entryHeader}>
-                  <Text style={styles.entryRole}>{project.name}</Text>
-                  <Text style={[styles.entryPeriod, styles.projectStack]}>{project.stack}</Text>
-                </View>
-                <Text style={styles.projectDesc}>{project.description}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View>
-            <Text style={styles.sectionTitle}>Education</Text>
-            {cv.education.map((edu) => (
-              <View key={edu.id} style={styles.entry}>
-                <View style={styles.entryHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.entryRole}>{edu.degree}</Text>
-                    <Text style={styles.entryCompany}>{edu.institution}</Text>
+          {cv.projects.length > 0 && (
+            <View>
+              <Text style={styles.sectionTitle}>Selected Projects</Text>
+              {cv.projects.map((project) => (
+                <View key={project.id} style={styles.entry}>
+                  <View style={styles.entryHeader}>
+                    <Text style={styles.entryRole}>{project.name}</Text>
+                    <Text style={[styles.entryPeriod, styles.projectStack]}>{project.stack}</Text>
                   </View>
-                  <Text style={styles.entryPeriod}>{edu.period}</Text>
+                  <Text style={styles.projectDesc}>{project.description}</Text>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
+
+          {cv.education.length > 0 && (
+            <View>
+              <Text style={styles.sectionTitle}>Education</Text>
+              {cv.education.map((edu) => (
+                <View key={edu.id} style={styles.entry}>
+                  <View style={styles.entryHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.entryRole}>{edu.degree}</Text>
+                      <Text style={styles.entryCompany}>{edu.institution}</Text>
+                    </View>
+                    <Text style={styles.entryPeriod}>{edu.period}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </Page>
     </Document>

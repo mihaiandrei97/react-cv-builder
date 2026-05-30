@@ -68,6 +68,7 @@ const PdfViewer = memo(function PdfViewer({
 function PrintPage() {
   const cv = useSelector(cvDerived, (s) => s)
   const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
+  const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
   const blobUrlRef = useRef<string | null>(null)
 
   const template = getTemplate(templateId)
@@ -82,7 +83,8 @@ function PrintPage() {
     if (!blobUrlRef.current) return
     const a = document.createElement('a')
     a.href = blobUrlRef.current
-    a.download = 'cv.pdf'
+    const safeName = profileName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    a.download = `${safeName || 'cv'}.pdf`
     a.click()
   }
 

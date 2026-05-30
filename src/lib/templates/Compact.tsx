@@ -242,14 +242,16 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             </View>
 
             {/* Skills */}
-            <View style={styles.sideSection}>
-              <Text style={styles.sideSectionTitle}>Skills</Text>
-              {cv.skills.map((skill, i) => (
-                <View key={i} style={styles.skillRow}>
-                  <Text style={styles.skillLabel}>{skill}</Text>
-                </View>
-              ))}
-            </View>
+            {cv.skills.length > 0 && (
+              <View style={styles.sideSection}>
+                <Text style={styles.sideSectionTitle}>Skills</Text>
+                {cv.skills.map((skill, i) => (
+                  <View key={i} style={styles.skillRow}>
+                    <Text style={styles.skillLabel}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* Languages */}
             {cv.languages.length > 0 && (
@@ -268,38 +270,42 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
           {/* Right column */}
           <View style={styles.rightCol}>
             {/* Experience */}
-            <View style={styles.mainSection}>
-              <Text style={styles.mainSectionTitle}>Experience</Text>
-              {cv.experiences.map((exp) => (
-                <View key={exp.id} style={styles.expItem}>
-                  <View style={styles.expHeader}>
-                    <Text style={styles.expRole}>{exp.role}</Text>
-                    <Text style={styles.expPeriod}>{exp.period}</Text>
-                  </View>
-                  <Text style={styles.expCompany}>{exp.company}</Text>
-                  {exp.highlights.map((h, i) => (
-                    <View key={i} style={styles.bulletItem}>
-                      <Text style={styles.bulletDot}>·</Text>
-                      <Text style={styles.bulletText}>{h}</Text>
+            {cv.experiences.length > 0 && (
+              <View style={styles.mainSection}>
+                <Text style={styles.mainSectionTitle}>Experience</Text>
+                {cv.experiences.map((exp) => (
+                  <View key={exp.id} style={styles.expItem}>
+                    <View style={styles.expHeader}>
+                      <Text style={styles.expRole}>{exp.role}</Text>
+                      <Text style={styles.expPeriod}>{exp.period}</Text>
                     </View>
-                  ))}
-                </View>
-              ))}
-            </View>
+                    <Text style={styles.expCompany}>{exp.company}</Text>
+                    {exp.highlights.map((h, i) => (
+                      <View key={i} style={styles.bulletItem}>
+                        <Text style={styles.bulletDot}>·</Text>
+                        <Text style={styles.bulletText}>{h}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* Education */}
-            <View style={styles.mainSection}>
-              <Text style={styles.mainSectionTitle}>Education</Text>
-              {cv.education.map((edu) => (
-                <View key={edu.id} style={styles.eduItem}>
-                  <View style={styles.eduHeader}>
-                    <Text style={styles.eduDegree}>{edu.degree}</Text>
-                    <Text style={styles.eduPeriod}>{edu.period}</Text>
+            {cv.education.length > 0 && (
+              <View style={styles.mainSection}>
+                <Text style={styles.mainSectionTitle}>Education</Text>
+                {cv.education.map((edu) => (
+                  <View key={edu.id} style={styles.eduItem}>
+                    <View style={styles.eduHeader}>
+                      <Text style={styles.eduDegree}>{edu.degree}</Text>
+                      <Text style={styles.eduPeriod}>{edu.period}</Text>
+                    </View>
+                    <Text style={styles.eduInstitution}>{edu.institution}</Text>
                   </View>
-                  <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
       </Page>
