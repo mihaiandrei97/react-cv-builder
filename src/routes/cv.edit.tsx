@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection } from '../lib/cv-store'
+import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -141,16 +141,19 @@ function CollapsibleSection({
   title,
   sectionKey,
   hiddenSections,
+  pageBreaks,
   addButton,
   children,
 }: {
   title: string
   sectionKey: string
   hiddenSections: string[]
+  pageBreaks: string[]
   addButton?: React.ReactNode
   children: React.ReactNode
 }) {
   const isHidden = hiddenSections.includes(sectionKey)
+  const hasBreak = pageBreaks.includes(sectionKey)
   return (
     <section style={isHidden ? { ...s.card, opacity: 0.7 } : s.card}>
       <div style={s.sectionHeader}>
@@ -160,6 +163,11 @@ function CollapsibleSection({
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {isHidden && <span style={s.hiddenBadge}>Hidden from PDF</span>}
+          {!isHidden && (
+            <button type="button" style={hasBreak ? s.btnBreakActive : s.btnBreak} onClick={() => togglePageBreak(sectionKey)} title="Start this section on a new page">
+              ⏎ Page break
+            </button>
+          )}
           <button type="button" style={s.btnToggle} onClick={() => toggleSection(sectionKey)}>
             {isHidden ? 'Show in PDF' : 'Hide'}
           </button>
@@ -175,6 +183,7 @@ function EditPage() {
   const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
   const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
   const hiddenSections = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).hiddenSections ?? [])
+  const pageBreaks = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).pageBreaks ?? [])
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
@@ -388,7 +397,7 @@ function EditPage() {
 
           {/* Skills */}
           {showSkills && (
-            <CollapsibleSection title="Core Skills" sectionKey="skills" hiddenSections={hiddenSections}>
+            <CollapsibleSection title="Core Skills" sectionKey="skills" hiddenSections={hiddenSections} pageBreaks={pageBreaks}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {fullData.skills.map((skill, i) => (
                   <div key={i} style={s.skillTag}>
@@ -423,7 +432,7 @@ function EditPage() {
 
           {/* Languages */}
           {showLanguages && (
-            <CollapsibleSection title="Languages" sectionKey="languages" hiddenSections={hiddenSections}>
+            <CollapsibleSection title="Languages" sectionKey="languages" hiddenSections={hiddenSections} pageBreaks={pageBreaks}>
               {fullData.languages.map((lang, i) => (
                 <div key={lang.id} style={s.itemBlock}>
                   <div style={s.itemHeader}>
@@ -461,6 +470,7 @@ function EditPage() {
             title="Experience"
             sectionKey="experience"
             hiddenSections={hiddenSections}
+            pageBreaks={pageBreaks}
             addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
           >
             {fullData.experiences.map((exp, i) => (
@@ -511,6 +521,7 @@ function EditPage() {
               title="Selected Projects"
               sectionKey="projects"
               hiddenSections={hiddenSections}
+              pageBreaks={pageBreaks}
               addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
             >
               {fullData.projects.map((project, i) => (
@@ -540,6 +551,7 @@ function EditPage() {
             title="Education"
             sectionKey="education"
             hiddenSections={hiddenSections}
+            pageBreaks={pageBreaks}
             addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
           >
             {fullData.education.map((edu, i) => (
@@ -569,6 +581,7 @@ function EditPage() {
               title="Certifications"
               sectionKey="certifications"
               hiddenSections={hiddenSections}
+              pageBreaks={pageBreaks}
               addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
             >
               {fullData.certifications.map((cert, i) => (
@@ -787,6 +800,28 @@ const s: Record<string, React.CSSProperties> = {
     color: 'var(--muted)',
     background: 'transparent',
     border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.2rem 0.6rem',
+    cursor: 'pointer',
+  },
+  btnBreak: {
+    fontFamily: 'inherit',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    color: 'var(--muted)',
+    background: 'transparent',
+    border: '1px dashed var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.2rem 0.6rem',
+    cursor: 'pointer',
+  },
+  btnBreakActive: {
+    fontFamily: 'inherit',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'var(--accent)',
+    background: '#fdf0e6',
+    border: '1px solid var(--accent)',
     borderRadius: '0.25rem',
     padding: '0.2rem 0.6rem',
     cursor: 'pointer',

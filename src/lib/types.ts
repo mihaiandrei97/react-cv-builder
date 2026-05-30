@@ -51,6 +51,7 @@ export type ClassicCvData = {
   experiences: Experience[];
   projects: Project[];
   education: Education[];
+  pageBreaks: string[];
 };
 
 export type ModernCvData = {
@@ -60,6 +61,7 @@ export type ModernCvData = {
   experiences: Experience[];
   projects: Project[];
   education: Education[];
+  pageBreaks: string[];
 };
 
 export type ExecutiveCvData = {
@@ -68,6 +70,7 @@ export type ExecutiveCvData = {
   experiences: Experience[];
   education: Education[];
   certifications: Certification[];
+  pageBreaks: string[];
 };
 
 export type CompactCvData = {
@@ -77,6 +80,7 @@ export type CompactCvData = {
   languages: Language[];
   experiences: Experience[];
   education: Education[];
+  pageBreaks: string[];
 };
 
 export type CvData = ClassicCvData | ModernCvData | ExecutiveCvData | CompactCvData;
@@ -99,21 +103,22 @@ export type CvProfile = {
   templateId: string
   data: FullCvData
   hiddenSections: string[]
+  pageBreaks: string[]
   createdAt: number
   updatedAt: number
 }
 
-export function projectCv(full: FullCvData, templateId: string, hiddenSections: string[] = []): CvData {
+export function projectCv(full: FullCvData, templateId: string, hiddenSections: string[] = [], pageBreaks: string[] = []): CvData {
   const hide = new Set(hiddenSections)
   switch (templateId) {
     case 'modern':
-      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education };
+      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks };
     case 'executive':
-      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications };
+      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, pageBreaks };
     case 'compact':
-      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education };
+      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, pageBreaks };
     default:
-      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education };
+      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks };
   }
 }
 

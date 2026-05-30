@@ -14,6 +14,7 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData): C
     templateId,
     data: data ? deepClone(data) : deepClone(DEFAULT_FULL_CV),
     hiddenSections: [],
+    pageBreaks: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -51,6 +52,7 @@ function sanitizeProfiles(state: ProfilesState): ProfilesState {
     profiles: state.profiles.map((p) => ({
       ...p,
       hiddenSections: p.hiddenSections ?? [],
+      pageBreaks: p.pageBreaks ?? [],
     })),
   }
 }
@@ -67,7 +69,7 @@ export const cvStore = createStore<ProfilesState>(loadState())
 export const cvDerived = createStore<CvData>(() => {
   const { profiles, activeProfileId } = cvStore.state
   const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  return projectCv(active.data, active.templateId, active.hiddenSections ?? [])
+  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [])
 })
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -163,6 +165,21 @@ export function toggleSection(section: string) {
         ? hidden.filter((s) => s !== section)
         : [...hidden, section]
       return { ...p, hiddenSections, updatedAt: Date.now() }
+    }),
+  }))
+  persist()
+}
+
+export function togglePageBreak(section: string) {
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) => {
+      if (p.id !== state.activeProfileId) return p
+      const breaks = p.pageBreaks ?? []
+      const pageBreaks = breaks.includes(section)
+        ? breaks.filter((s) => s !== section)
+        : [...breaks, section]
+      return { ...p, pageBreaks, updatedAt: Date.now() }
     }),
   }))
   persist()

@@ -178,7 +178,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
         {/* Skills */}
         {cv.skills.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.pageBreaks.includes('skills')}>
             <Text style={styles.sectionTitle}>Core Skills</Text>
             <View style={styles.skillGrid}>
               {cv.skills.map((skill, i) => (
@@ -192,7 +192,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
         {/* Experience */}
         {cv.experiences.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.pageBreaks.includes('experience')}>
             <Text style={styles.sectionTitle}>Experience</Text>
             {cv.experiences.map((exp) => (
               <View key={exp.id} style={styles.experienceItem} wrap={false}>
@@ -217,7 +217,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
         {/* Projects */}
         {cv.projects.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.pageBreaks.includes('projects')}>
             <Text style={styles.sectionTitle}>Selected Projects</Text>
             {cv.projects.map((project) => (
               <View key={project.id} style={styles.projectItem} wrap={false}>
@@ -231,7 +231,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
         {/* Education */}
         {cv.education.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.education.length > 0 && cv.pageBreaks.includes('education')}>
             <Text style={styles.sectionTitle}>Education</Text>
             {cv.education.map((edu) => (
               <View key={edu.id} style={styles.experienceItem} wrap={false}>

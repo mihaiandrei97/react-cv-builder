@@ -243,7 +243,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
           </View>
 
           {cv.experiences.length > 0 && (
-            <View>
+            <View break={cv.pageBreaks.includes('experience')}>
               <Text style={styles.sectionTitle}>Experience</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.entry} wrap={false}>
@@ -268,7 +268,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
           )}
 
           {cv.projects.length > 0 && (
-            <View>
+            <View break={cv.pageBreaks.includes('projects')}>
               <Text style={styles.sectionTitle}>Selected Projects</Text>
               {cv.projects.map((project) => (
                 <View key={project.id} style={styles.entry} wrap={false}>
@@ -283,7 +283,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
           )}
 
           {cv.education.length > 0 && (
-            <View>
+            <View break={cv.pageBreaks.includes('education')}>
               <Text style={styles.sectionTitle}>Education</Text>
               {cv.education.map((edu) => (
                 <View key={edu.id} style={styles.entry} wrap={false}>

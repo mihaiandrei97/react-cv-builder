@@ -193,7 +193,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
         {/* Experience */}
         {cv.experiences.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.pageBreaks.includes('experience')}>
             <Text style={styles.sectionTitle}>Professional Experience</Text>
             {cv.experiences.map((exp) => (
               <View key={exp.id} style={styles.expItem}>
@@ -217,7 +217,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
         {/* Education */}
         {cv.education.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.pageBreaks.includes('education')}>
             <Text style={styles.sectionTitle}>Education</Text>
             <View style={styles.eduGrid}>
               {cv.education.map((edu) => (
@@ -233,7 +233,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
         {/* Certifications */}
         {cv.certifications.length > 0 && (
-          <View style={styles.section}>
+          <View style={styles.section} break={cv.pageBreaks.includes('certifications')}>
             <Text style={styles.sectionTitle}>Certifications</Text>
             <View style={styles.certRow}>
               {cv.certifications.map((cert) => (
