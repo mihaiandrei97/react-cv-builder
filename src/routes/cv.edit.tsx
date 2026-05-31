@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection } from '../lib/cv-store'
+import { cvStore, cvDerived, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -26,13 +26,11 @@ function TopBar({
   profileName,
   templateName,
   saveStatus,
-  onSave,
   onReset,
 }: {
   profileName: string
   templateName: string
   saveStatus: string
-  onSave: () => void
   onReset: () => void
 }) {
   return (
@@ -52,9 +50,6 @@ function TopBar({
         <span style={s.templateBadge}>{templateName}</span>
         <button type="button" style={s.btnSecondary} onClick={onReset}>
           Reset
-        </button>
-        <button type="button" style={s.btnPrimary} onClick={onSave}>
-          Save
         </button>
       </div>
     </header>
@@ -141,6 +136,7 @@ function Textarea({ value, onChange, rows = 3 }: { value: string; onChange: (v: 
 function CollapsibleSection({
   title,
   sectionKey,
+  anchorId,
   hiddenSections,
   pageBreaks,
   isFirst,
@@ -150,6 +146,7 @@ function CollapsibleSection({
 }: {
   title: string
   sectionKey: string
+  anchorId?: string
   hiddenSections: string[]
   pageBreaks: string[]
   isFirst?: boolean
@@ -160,7 +157,7 @@ function CollapsibleSection({
   const isHidden = hiddenSections.includes(sectionKey)
   const hasBreak = pageBreaks.includes(sectionKey)
   return (
-    <section style={isHidden ? { ...s.card, opacity: 0.7 } : s.card}>
+    <section id={anchorId} style={isHidden ? { ...s.card, ...s.anchorCard, opacity: 0.7 } : { ...s.card, ...s.anchorCard }}>
       <div style={s.sectionHeader}>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <h2 style={s.cardTitle}>{title}</h2>
@@ -210,18 +207,26 @@ function EditPage() {
   const sectionOrder = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionOrder ?? [...DEFAULT_SECTION_ORDER])
   const colors = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).colors ?? {})
   const sectionLabels = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionLabels ?? {})
+  const activeUpdatedAt = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).updatedAt)
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
-  const [saveStatus, setSaveStatus] = useState('')
+  const [saveStatus, setSaveStatus] = useState('All changes saved')
+  const lastUpdatedAtRef = useRef(activeUpdatedAt)
   const [newSkill, setNewSkill] = useState('')
   const [newLang, setNewLang] = useState('')
 
   const template = getTemplate(templateId)
 
-  function save() {
-    saveCv()
-    setSaveStatus('Saved')
-    setTimeout(() => setSaveStatus(''), 2000)
+  useEffect(() => {
+    if (lastUpdatedAtRef.current === activeUpdatedAt) return
+    lastUpdatedAtRef.current = activeUpdatedAt
+    setSaveStatus('Saving...')
+    const timer = window.setTimeout(() => setSaveStatus('All changes saved'), 750)
+    return () => window.clearTimeout(timer)
+  }, [activeUpdatedAt])
+
+  function scrollToSection(anchorId: string) {
+    document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function handleReset() {
@@ -241,11 +246,9 @@ function EditPage() {
     if (!trimmed) return
     setFullData((prev) => ({ ...prev, skills: [...prev.skills, trimmed] }))
     setNewSkill('')
-    save()
   }
   function removeSkill(i: number) {
     setFullData((prev) => ({ ...prev, skills: prev.skills.filter((_, idx) => idx !== i) }))
-    save()
   }
   function updateSkill(i: number, value: string) {
     setFullData((prev) => {
@@ -259,11 +262,9 @@ function EditPage() {
   function addExperience() {
     const entry: Experience = { id: crypto.randomUUID(), company: '', role: '', period: '', highlights: [''] }
     setFullData((prev) => ({ ...prev, experiences: [...prev.experiences, entry] }))
-    save()
   }
   function removeExperience(i: number) {
     setFullData((prev) => ({ ...prev, experiences: prev.experiences.filter((_, idx) => idx !== i) }))
-    save()
   }
   function updateExperience(i: number, field: keyof Omit<Experience, 'id' | 'highlights'>, value: string) {
     setFullData((prev) => {
@@ -288,7 +289,6 @@ function EditPage() {
       }
       return { ...prev, experiences }
     })
-    save()
   }
   function updateHighlight(expI: number, hI: number, value: string) {
     setFullData((prev) => {
@@ -304,11 +304,9 @@ function EditPage() {
   function addProject() {
     const entry: Project = { id: crypto.randomUUID(), name: '', description: '', stack: '' }
     setFullData((prev) => ({ ...prev, projects: [...prev.projects, entry] }))
-    save()
   }
   function removeProject(i: number) {
     setFullData((prev) => ({ ...prev, projects: prev.projects.filter((_, idx) => idx !== i) }))
-    save()
   }
   function updateProject(i: number, field: keyof Omit<Project, 'id'>, value: string) {
     setFullData((prev) => {
@@ -322,11 +320,9 @@ function EditPage() {
   function addEducation() {
     const entry: Education = { id: crypto.randomUUID(), degree: '', institution: '', period: '' }
     setFullData((prev) => ({ ...prev, education: [...prev.education, entry] }))
-    save()
   }
   function removeEducation(i: number) {
     setFullData((prev) => ({ ...prev, education: prev.education.filter((_, idx) => idx !== i) }))
-    save()
   }
   function updateEducation(i: number, field: keyof Omit<Education, 'id'>, value: string) {
     setFullData((prev) => {
@@ -340,11 +336,9 @@ function EditPage() {
   function addCertification() {
     const entry: Certification = { id: crypto.randomUUID(), name: '', issuer: '', year: '' }
     setFullData((prev) => ({ ...prev, certifications: [...prev.certifications, entry] }))
-    save()
   }
   function removeCertification(i: number) {
     setFullData((prev) => ({ ...prev, certifications: prev.certifications.filter((_, idx) => idx !== i) }))
-    save()
   }
   function updateCertification(i: number, field: keyof Omit<Certification, 'id'>, value: string) {
     setFullData((prev) => {
@@ -361,11 +355,9 @@ function EditPage() {
     const entry: Language = { id: crypto.randomUUID(), language: trimmed, proficiency: '' }
     setFullData((prev) => ({ ...prev, languages: [...prev.languages, entry] }))
     setNewLang('')
-    save()
   }
   function removeLanguage(i: number) {
     setFullData((prev) => ({ ...prev, languages: prev.languages.filter((_, idx) => idx !== i) }))
-    save()
   }
   function updateLanguage(i: number, field: keyof Omit<Language, 'id'>, value: string) {
     setFullData((prev) => {
@@ -393,6 +385,23 @@ function EditPage() {
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
   })
 
+  const sectionNavItems = [
+    { key: 'profile', title: 'Profile', anchorId: 'section-profile' },
+    { key: 'colors', title: 'Colors', anchorId: 'section-colors' },
+    { key: 'labels', title: 'Section Labels', anchorId: 'section-labels' },
+    ...orderedSections.map((key) => {
+      if (key === 'skills' && showSkills) return { key, title: 'Core Skills', anchorId: `section-${key}` }
+      if (key === 'languages' && showLanguages) return { key, title: 'Languages', anchorId: `section-${key}` }
+      if (key === 'experience') return { key, title: 'Experience', anchorId: `section-${key}` }
+      if (key === 'projects' && showProjects) return { key, title: 'Selected Projects', anchorId: `section-${key}` }
+      if (key === 'education') return { key, title: 'Education', anchorId: `section-${key}` }
+      if (key === 'certifications' && showCertifications) return { key, title: 'Certifications', anchorId: `section-${key}` }
+      const custom = (fullData.customSections ?? []).find((s) => s.id === key)
+      if (custom) return { key, title: custom.title || 'Custom Section', anchorId: `section-${key}` }
+      return null
+    }).filter((item): item is { key: string; title: string; anchorId: string } => item !== null),
+  ]
+
   const Doc = template.component
   const previewDoc = useMemo(() => <Doc cv={debouncedCv} />, [debouncedCv, Doc])
 
@@ -402,15 +411,30 @@ function EditPage() {
         profileName={profileName}
         templateName={template.name}
         saveStatus={saveStatus}
-        onSave={save}
         onReset={handleReset}
       />
 
       <div style={s.split}>
         {/* Form panel */}
         <main style={s.formPanel}>
+          <section style={s.sectionNavigatorCard}>
+            <div style={s.sectionNavigatorHead}>Quick Jump</div>
+            <div style={s.sectionNavigatorGrid}>
+              {sectionNavItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  style={s.sectionNavButton}
+                  onClick={() => scrollToSection(item.anchorId)}
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
+          </section>
+
           {/* Profile */}
-          <section style={s.card}>
+          <section id="section-profile" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>Profile</h2>
             <div style={s.fieldGrid}>
               <Field label="Full Name">
@@ -435,7 +459,7 @@ function EditPage() {
           </section>
 
           {/* Colors */}
-          <section style={s.card}>
+          <section id="section-colors" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>Colors</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', alignItems: 'flex-end' }}>
               {template.colorSlots.map((slot) => {
@@ -464,7 +488,7 @@ function EditPage() {
           </section>
 
           {/* Section Labels */}
-          <section style={s.card}>
+          <section id="section-labels" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>Section Labels</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
               {({
@@ -524,7 +548,7 @@ function EditPage() {
             const sharedProps = { hiddenSections, pageBreaks, isFirst, isLast }
 
             if (key === 'skills' && showSkills) return (
-              <CollapsibleSection key="skills" title="Core Skills" sectionKey="skills" {...sharedProps}>
+              <CollapsibleSection key="skills" title="Core Skills" sectionKey="skills" anchorId="section-skills" {...sharedProps}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {fullData.skills.map((skill, i) => (
                     <div key={i} style={s.skillTag}>
@@ -532,7 +556,6 @@ function EditPage() {
                         type="text"
                         value={skill}
                         onChange={(e) => updateSkill(i, e.target.value)}
-                        onBlur={save}
                         style={s.skillTagInput}
                       />
                       <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label="Remove skill">×</button>
@@ -554,7 +577,7 @@ function EditPage() {
             )
 
             if (key === 'languages' && showLanguages) return (
-              <CollapsibleSection key="languages" title="Languages" sectionKey="languages" {...sharedProps}>
+              <CollapsibleSection key="languages" title="Languages" sectionKey="languages" anchorId="section-languages" {...sharedProps}>
                 {fullData.languages.map((lang, i) => (
                   <div key={lang.id} style={s.itemBlock}>
                     <div style={s.itemHeader}>
@@ -563,10 +586,10 @@ function EditPage() {
                     </div>
                     <div style={s.fieldGrid}>
                       <Field label="Language">
-                        <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} onBlur={save} />
+                        <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} />
                       </Field>
                       <Field label="Proficiency">
-                        <Input value={lang.proficiency} placeholder="e.g. Native, Fluent" onChange={(v) => updateLanguage(i, 'proficiency', v)} onBlur={save} />
+                        <Input value={lang.proficiency} placeholder="e.g. Native, Fluent" onChange={(v) => updateLanguage(i, 'proficiency', v)} />
                       </Field>
                     </div>
                   </div>
@@ -586,7 +609,7 @@ function EditPage() {
             )
 
             if (key === 'experience') return (
-              <CollapsibleSection key="experience" title="Experience" sectionKey="experience" {...sharedProps}
+              <CollapsibleSection key="experience" title="Experience" sectionKey="experience" anchorId="section-experience" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
               >
                 {fullData.experiences.map((exp, i) => (
@@ -604,7 +627,7 @@ function EditPage() {
                       <span style={s.fieldLabel}>Highlights</span>
                       {exp.highlights.map((h, hi) => (
                         <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} onBlur={save} style={{ ...s.input, flex: 1 }} />
+                          <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
                           <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
                         </div>
                       ))}
@@ -616,7 +639,7 @@ function EditPage() {
             )
 
             if (key === 'projects' && showProjects) return (
-              <CollapsibleSection key="projects" title="Selected Projects" sectionKey="projects" {...sharedProps}
+              <CollapsibleSection key="projects" title="Selected Projects" sectionKey="projects" anchorId="section-projects" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
               >
                 {fullData.projects.map((project, i) => (
@@ -638,7 +661,7 @@ function EditPage() {
             )
 
             if (key === 'education') return (
-              <CollapsibleSection key="education" title="Education" sectionKey="education" {...sharedProps}
+              <CollapsibleSection key="education" title="Education" sectionKey="education" anchorId="section-education" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
               >
                 {fullData.education.map((edu, i) => (
@@ -658,7 +681,7 @@ function EditPage() {
             )
 
             if (key === 'certifications' && showCertifications) return (
-              <CollapsibleSection key="certifications" title="Certifications" sectionKey="certifications" {...sharedProps}
+              <CollapsibleSection key="certifications" title="Certifications" sectionKey="certifications" anchorId="section-certifications" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
               >
                 {fullData.certifications.map((cert, i) => (
@@ -669,10 +692,10 @@ function EditPage() {
                     </div>
                     <div style={s.fieldGrid}>
                       <Field label="Name" fullWidth>
-                        <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} onBlur={save} />
+                        <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
                       </Field>
-                      <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} onBlur={save} /></Field>
-                      <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} onBlur={save} /></Field>
+                      <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
+                      <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
                     </div>
                   </div>
                 ))}
@@ -685,12 +708,13 @@ function EditPage() {
                 key={key}
                 title={custom.title || 'Custom Section'}
                 sectionKey={key}
+                anchorId={`section-${key}`}
                 hiddenSections={hiddenSections}
                 pageBreaks={pageBreaks}
                 isFirst={isFirst}
                 isLast={isLast}
                 addButton={
-                  <button type="button" style={s.removeBtnText} onClick={() => { removeCustomSection(key); save() }}>Delete section</button>
+                  <button type="button" style={s.removeBtnText} onClick={() => { removeCustomSection(key) }}>Delete section</button>
                 }
               >
                 <div style={{ marginBottom: '0.75rem' }}>
@@ -704,7 +728,6 @@ function EditPage() {
                           customSections: prev.customSections.map((s) => s.id === key ? { ...s, title: v } : s),
                         }))
                       }}
-                      onBlur={save}
                     />
                   </Field>
                 </div>
@@ -724,7 +747,6 @@ function EditPage() {
                             ),
                           }))
                         }}
-                        onBlur={save}
                         style={{ ...s.input, flex: 1 }}
                       />
                       <button
@@ -737,7 +759,6 @@ function EditPage() {
                               s.id === key ? { ...s, bullets: s.bullets.filter((_, xi) => xi !== bi) } : s
                             ),
                           }))
-                          save()
                         }}
                         aria-label="Remove bullet"
                       >×</button>
@@ -767,7 +788,7 @@ function EditPage() {
             <button
               type="button"
               style={s.btnAdd}
-              onClick={() => { addCustomSection(); save() }}
+              onClick={() => { addCustomSection() }}
             >+ Add Custom Section</button>
           </div>
         </main>
@@ -836,6 +857,10 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: '0.85rem',
     color: 'var(--green)',
     fontWeight: 600,
+    border: '1px solid #b8d8cc',
+    borderRadius: '999px',
+    background: '#edf6f2',
+    padding: '0.2rem 0.55rem',
   },
   templateBadge: {
     fontSize: '0.78rem',
@@ -926,6 +951,43 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '1.25rem',
     borderRight: '1px solid var(--line)',
+  },
+  sectionNavigatorCard: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+    background: '#fff9ef',
+    border: '1px solid #efdbbf',
+    borderRadius: '0.5rem',
+    padding: '0.75rem',
+    boxShadow: '0 8px 18px rgba(192,107,49,0.10)',
+  },
+  sectionNavigatorHead: {
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'var(--accent)',
+    marginBottom: '0.55rem',
+  },
+  sectionNavigatorGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.4rem',
+  },
+  sectionNavButton: {
+    fontFamily: 'inherit',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    background: '#fffdf7',
+    border: '1px solid var(--line)',
+    borderRadius: '999px',
+    padding: '0.25rem 0.6rem',
+    cursor: 'pointer',
+  },
+  anchorCard: {
+    scrollMarginTop: '6rem',
   },
   card: {
     background: '#fffdf7',
