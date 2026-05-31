@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { ModernCvData } from '../types'
+import { getLanguageLevel } from './language-level'
 
 // Modern uses Helvetica (react-pdf built-in sans-serif)
 const SIDEBAR_BG = '#1e2b3c'
@@ -195,6 +196,70 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 2,
   },
+
+  // Languages table
+  langTable: {
+    borderWidth: 1,
+    borderColor: '#dbe4ee',
+  },
+  langMotherRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbe4ee',
+  },
+  langGroupRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fbff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbe4ee',
+  },
+  langSubHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fbff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbe4ee',
+  },
+  langRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbe4ee',
+  },
+  langHeaderCell: {
+    fontSize: 6.8,
+    fontWeight: 700,
+    color: MAIN_MUTED,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 4,
+    paddingRight: 4,
+    borderRightWidth: 1,
+    borderRightColor: '#dbe4ee',
+  },
+  langCell: {
+    fontSize: 7.8,
+    color: MAIN_BODY,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 4,
+    paddingRight: 4,
+    borderRightWidth: 1,
+    borderRightColor: '#dbe4ee',
+  },
+  langColName: {
+    width: '30%',
+  },
+  langColTwo: {
+    width: '28%',
+  },
+  langColLevel: {
+    width: '14%',
+  },
+  langNote: {
+    marginTop: 6,
+    fontSize: 7,
+    lineHeight: 1.35,
+    color: MAIN_MUTED,
+  },
 })
 
 export function ModernDocument({ cv }: { cv: ModernCvData }) {
@@ -203,10 +268,13 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
   const accent = cv.colors.accent ?? MAIN_ACCENT
 
   const customIds = cv.customSections.map((s) => s.id)
-  const orderedMain = [...['experience', 'projects', 'education'], ...customIds].sort((a, b) => {
+  const orderedMain = [...['experience', 'projects', 'education', 'languages'], ...customIds].sort((a, b) => {
     const ai = cv.sectionOrder.indexOf(a); const bi = cv.sectionOrder.indexOf(b)
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
   })
+  const motherTongue = cv.languages[0]
+  const otherLanguages = cv.languages.slice(1)
+  const motherTongueLabel = motherTongue?.language || 'Romanian'
 
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
@@ -311,6 +379,43 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                       </View>
                     </View>
                   ))}
+                </View>
+              )
+              if (key === 'languages' && cv.languages.length > 0) return (
+                <View key="languages" break={cv.pageBreaks.includes('languages')}>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+                  <View style={styles.langTable}>
+                    <View style={styles.langMotherRow}>
+                      <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
+                      <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
+                    </View>
+                    <View style={styles.langGroupRow}>
+                      <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                    </View>
+                    <View style={styles.langSubHeaderRow}>
+                      <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                    </View>
+                    {otherLanguages.map((lang, i) => (
+                      <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
+                        <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+                  <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
                 </View>
               )
               const custom = cv.customSections.find((s) => s.id === key)

@@ -1,6 +1,7 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { ClassicCvData } from '../types'
 import '../fonts'
+import { getLanguageLevel } from './language-level'
 
 const PAPER = '#fcfcf8'
 const INK = '#222222'
@@ -95,6 +96,70 @@ const styles = StyleSheet.create({
     marginBottom: 2.5,
   },
 
+  // Languages table
+  langTable: {
+    borderWidth: 1,
+    borderColor: LINE,
+  },
+  langMotherRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langGroupRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+    backgroundColor: '#f7f4eb',
+  },
+  langSubHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f7f4eb',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langHeaderCell: {
+    fontSize: 7.5,
+    fontWeight: 700,
+    color: MUTED,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 5,
+    paddingRight: 5,
+    borderRightWidth: 1,
+    borderRightColor: LINE,
+  },
+  langCell: {
+    fontSize: 8.5,
+    color: INK,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 5,
+    paddingRight: 5,
+    borderRightWidth: 1,
+    borderRightColor: LINE,
+  },
+  langColName: {
+    width: '30%',
+  },
+  langColTwo: {
+    width: '28%',
+  },
+  langColLevel: {
+    width: '14%',
+  },
+  langNote: {
+    marginTop: 6,
+    fontSize: 7.2,
+    lineHeight: 1.4,
+    color: MUTED,
+  },
+
   // Experience
   experienceItem: {
     marginTop: 7,
@@ -162,12 +227,15 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   const paper = cv.colors.paper ?? PAPER
 
   const customIds = cv.customSections.map((s) => s.id)
-  const ordered = [...['skills', 'experience', 'projects', 'education'], ...customIds].sort(
+  const ordered = [...['skills', 'experience', 'projects', 'education', 'languages'], ...customIds].sort(
     (a, b) => {
       const ai = cv.sectionOrder.indexOf(a); const bi = cv.sectionOrder.indexOf(b)
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
     }
   )
+  const motherTongue = cv.languages[0]
+  const otherLanguages = cv.languages.slice(1)
+  const motherTongueLabel = motherTongue?.language || 'Romanian'
 
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
@@ -247,6 +315,43 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
                   <Text style={{ fontSize: 9, color: MUTED, marginTop: 1 }}>{edu.institution}</Text>
                 </View>
               ))}
+            </View>
+          )
+          if (key === 'languages' && cv.languages.length > 0) return (
+            <View key="languages" style={styles.section} break={cv.pageBreaks.includes('languages')}>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+              <View style={styles.langTable}>
+                <View style={styles.langMotherRow}>
+                  <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
+                  <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
+                </View>
+                <View style={styles.langGroupRow}>
+                  <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                </View>
+                <View style={styles.langSubHeaderRow}>
+                  <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                </View>
+                {otherLanguages.map((lang, i) => (
+                  <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
+                    <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+              <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
             </View>
           )
           const custom = cv.customSections.find((s) => s.id === key)

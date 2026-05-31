@@ -199,6 +199,7 @@ function CollapsibleSection({
 }
 
 function EditPage() {
+  const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
   const fullData = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).data)
   const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
   const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
@@ -352,7 +353,15 @@ function EditPage() {
   function addLanguage() {
     const trimmed = newLang.trim()
     if (!trimmed) return
-    const entry: Language = { id: crypto.randomUUID(), language: trimmed, proficiency: '' }
+    const entry: Language = {
+      id: crypto.randomUUID(),
+      language: trimmed,
+      listening: 'B1',
+      reading: 'B1',
+      dialog: 'B1',
+      reproduce: 'B1',
+      writing: 'B1',
+    }
     setFullData((prev) => ({ ...prev, languages: [...prev.languages, entry] }))
     setNewLang('')
   }
@@ -366,16 +375,25 @@ function EditPage() {
       return { ...prev, languages }
     })
   }
+  function moveLanguage(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const languages = [...prev.languages]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= languages.length) return prev
+      ;[languages[i], languages[swapWith]] = [languages[swapWith], languages[i]]
+      return { ...prev, languages }
+    })
+  }
 
   const showSkills = cv.kind === 'classic' || cv.kind === 'modern' || cv.kind === 'compact'
   const showProjects = cv.kind === 'classic' || cv.kind === 'modern'
   const showCertifications = cv.kind === 'executive'
-  const showLanguages = cv.kind === 'compact'
+  const showLanguages = true
 
   const TEMPLATE_SECTIONS: Record<string, string[]> = {
-    classic: ['skills', 'experience', 'projects', 'education'],
-    modern: ['skills', 'experience', 'projects', 'education'],
-    executive: ['experience', 'education', 'certifications'],
+    classic: ['skills', 'experience', 'projects', 'education', 'languages'],
+    modern: ['skills', 'experience', 'projects', 'education', 'languages'],
+    executive: ['experience', 'education', 'certifications', 'languages'],
     compact: ['skills', 'languages', 'experience', 'education'],
   }
   const customIds = (fullData.customSections ?? []).map((s) => s.id)
@@ -498,6 +516,7 @@ function EditPage() {
                   { key: 'experience', default: 'Experience' },
                   { key: 'projects', default: 'Selected Projects' },
                   { key: 'education', default: 'Education' },
+                  { key: 'languages', default: 'Languages' },
                 ] as { key: string; default: string }[],
                 modern: [
                   { key: 'profile', default: 'Profile' },
@@ -506,12 +525,14 @@ function EditPage() {
                   { key: 'experience', default: 'Experience' },
                   { key: 'projects', default: 'Selected Projects' },
                   { key: 'education', default: 'Education' },
+                  { key: 'languages', default: 'Languages' },
                 ] as { key: string; default: string }[],
                 executive: [
                   { key: 'profile', default: 'Executive Summary' },
                   { key: 'experience', default: 'Professional Experience' },
                   { key: 'education', default: 'Education' },
                   { key: 'certifications', default: 'Certifications' },
+                  { key: 'languages', default: 'Languages' },
                 ] as { key: string; default: string }[],
                 compact: [
                   { key: 'about', default: 'About' },
@@ -578,18 +599,66 @@ function EditPage() {
 
             if (key === 'languages' && showLanguages) return (
               <CollapsibleSection key="languages" title="Languages" sectionKey="languages" anchorId="section-languages" {...sharedProps}>
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>
+                  First language row is used as Mother Tongue in the PDF table. Reorder rows to change it.
+                </p>
                 {fullData.languages.map((lang, i) => (
                   <div key={lang.id} style={s.itemBlock}>
                     <div style={s.itemHeader}>
                       <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          style={{ ...s.btnMove, ...(i === 0 ? { opacity: 0.3, cursor: 'default' } : {}) }}
+                          disabled={i === 0}
+                          onClick={() => moveLanguage(i, 'up')}
+                          title="Move up"
+                        >↑</button>
+                        <button
+                          type="button"
+                          style={{ ...s.btnMove, ...(i === fullData.languages.length - 1 ? { opacity: 0.3, cursor: 'default' } : {}) }}
+                          disabled={i === fullData.languages.length - 1}
+                          onClick={() => moveLanguage(i, 'down')}
+                          title="Move down"
+                        >↓</button>
+                        <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
+                      </div>
                     </div>
                     <div style={s.fieldGrid}>
                       <Field label="Language">
                         <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} />
                       </Field>
-                      <Field label="Proficiency">
-                        <Input value={lang.proficiency} placeholder="e.g. Native, Fluent" onChange={(v) => updateLanguage(i, 'proficiency', v)} />
+                      <Field label="Used as">
+                        <div style={{ ...s.input, display: 'flex', alignItems: 'center', minHeight: 34, color: i === 0 ? 'var(--green)' : 'var(--muted)' }}>
+                          {i === 0 ? 'Mother Tongue (first row)' : 'Other language'}
+                        </div>
+                      </Field>
+                    </div>
+                    <div style={s.fieldGrid}>
+                      <Field label="Listening">
+                        <select value={lang.listening ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'listening', e.target.value)} style={s.input}>
+                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Reading">
+                        <select value={lang.reading ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'reading', e.target.value)} style={s.input}>
+                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Dialog">
+                        <select value={lang.dialog ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'dialog', e.target.value)} style={s.input}>
+                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Reproduce">
+                        <select value={lang.reproduce ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'reproduce', e.target.value)} style={s.input}>
+                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      </Field>
+                      <Field label="Writing">
+                        <select value={lang.writing ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'writing', e.target.value)} style={s.input}>
+                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
                       </Field>
                     </div>
                   </div>

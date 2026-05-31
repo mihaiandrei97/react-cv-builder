@@ -8,7 +8,7 @@ function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-export const DEFAULT_SECTION_ORDER = ['skills', 'languages', 'experience', 'projects', 'education', 'certifications']
+export const DEFAULT_SECTION_ORDER = ['skills', 'experience', 'projects', 'education', 'certifications', 'languages']
 
 function makeProfile(name: string, templateId = 'classic', data?: FullCvData): CvProfile {
   return {

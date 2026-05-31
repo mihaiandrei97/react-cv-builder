@@ -39,7 +39,13 @@ export type Certification = {
 export type Language = {
   id: string;
   language: string;
-  proficiency: string;
+  proficiency?: string; // legacy fallback
+  listening?: string;
+  reading?: string;
+  dialog?: string;
+  reproduce?: string;
+  writing?: string;
+  motherTongue?: boolean;
 };
 
 export type CustomSection = {
@@ -54,6 +60,7 @@ export type ClassicCvData = {
   kind: 'classic';
   profile: Profile;
   skills: string[];
+  languages: Language[];
   experiences: Experience[];
   projects: Project[];
   education: Education[];
@@ -68,6 +75,7 @@ export type ModernCvData = {
   kind: 'modern';
   profile: Profile;
   skills: string[];
+  languages: Language[];
   experiences: Experience[];
   projects: Project[];
   education: Education[];
@@ -81,6 +89,7 @@ export type ModernCvData = {
 export type ExecutiveCvData = {
   kind: 'executive';
   profile: Profile;
+  languages: Language[];
   experiences: Experience[];
   education: Education[];
   certifications: Certification[];
@@ -139,13 +148,13 @@ export function projectCv(full: FullCvData, templateId: string, hiddenSections: 
   const customSections = (full.customSections ?? []).filter((s) => !hide.has(s.id))
   switch (templateId) {
     case 'modern':
-      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
     case 'executive':
-      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'executive', profile: full.profile, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
     case 'compact':
       return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
     default:
-      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
   }
 }
 
@@ -252,9 +261,33 @@ export const DEFAULT_FULL_CV: FullCvData = {
     },
   ],
   languages: [
-    { id: crypto.randomUUID(), language: 'English', proficiency: 'Fluent' },
-    { id: crypto.randomUUID(), language: 'Spanish', proficiency: 'Professional Working' },
-    { id: crypto.randomUUID(), language: 'German', proficiency: 'Intermediate' },
+    {
+      id: crypto.randomUUID(),
+      language: 'English',
+      listening: 'A1',
+      reading: 'A1',
+      dialog: 'A1',
+      reproduce: 'A1',
+      writing: 'A1',
+    },
+    {
+      id: crypto.randomUUID(),
+      language: 'Spanish',
+      listening: 'A2',
+      reading: 'A2',
+      dialog: 'A2',
+      reproduce: 'A2',
+      writing: 'A2',
+    },
+    {
+      id: crypto.randomUUID(),
+      language: 'German',
+      listening: 'B1',
+      reading: 'B1',
+      dialog: 'B1',
+      reproduce: 'B1',
+      writing: 'B1',
+    },
   ],
   customSections: [],
 };

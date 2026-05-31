@@ -1,13 +1,13 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { CompactCvData } from '../types'
 import '../fonts'
+import { getLanguageLevel } from './language-level'
 
 const PAPER = '#ffffff'
 const INK = '#111111'
 const MUTED = '#606060'
 const LINE = '#e0ddd4'
 const ACCENT = '#1a5c8a'
-const ACCENT_LIGHT = '#e8f2f9'
 
 export const COLOR_SLOTS = [
   { key: 'accent', label: 'Accent', default: ACCENT },
@@ -109,16 +109,84 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: MUTED,
   },
-  langBadge: {
-    fontSize: 7,
-    color: ACCENT,
-    backgroundColor: ACCENT_LIGHT,
-    borderRadius: 2,
-    paddingTop: 1,
-    paddingBottom: 1,
+  langTable: {
+    borderWidth: 1,
+    borderColor: LINE,
+  },
+  langMotherRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langGroupRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f6fb',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langSubHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f6fb',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langHeaderCell: {
+    fontSize: 6.4,
+    fontWeight: 700,
+    color: MUTED,
+    paddingTop: 3,
+    paddingBottom: 3,
     paddingLeft: 4,
     paddingRight: 4,
-    alignSelf: 'flex-start',
+    borderRightWidth: 1,
+    borderRightColor: LINE,
+  },
+  langCell: {
+    fontSize: 7.2,
+    color: INK,
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 4,
+    paddingRight: 4,
+    borderRightWidth: 1,
+    borderRightColor: LINE,
+  },
+  langColName: {
+    width: '30%',
+  },
+  langColTwo: {
+    width: '28%',
+  },
+  langColLevel: {
+    width: '14%',
+  },
+  langSectionBottom: {
+    paddingTop: '6mm',
+    paddingBottom: '10mm',
+    paddingLeft: '12mm',
+    paddingRight: '12mm',
+  },
+  langSectionTitle: {
+    fontSize: 7.5,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    color: INK,
+    marginBottom: 6,
+    paddingBottom: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  langNote: {
+    marginTop: 5,
+    fontSize: 6.8,
+    lineHeight: 1.35,
+    color: MUTED,
   },
 
   // Right column
@@ -220,7 +288,15 @@ const styles = StyleSheet.create({
 
 export function CompactDocument({ cv }: { cv: CompactCvData }) {
   const accent = cv.colors.accent ?? ACCENT
-  const accentLight = accent === ACCENT ? ACCENT_LIGHT : accent + '22'
+  const motherTongue = cv.languages[0]
+  const otherLanguages = cv.languages.slice(1)
+  const motherTongueLabel = motherTongue?.language || 'Romanian'
+  const customIds = cv.customSections.map((s) => s.id)
+  const orderedMain = [...['experience', 'education', 'languages'], ...customIds].sort((a, b) => {
+    const ai = cv.sectionOrder.indexOf(a)
+    const bi = cv.sectionOrder.indexOf(b)
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+  })
 
   return (
     <Document key={JSON.stringify(cv.colors)}>
@@ -260,72 +336,99 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
               </View>
             )}
 
-            {/* Languages */}
-            {cv.languages.length > 0 && (
-              <View style={styles.sideSection}>
-                <Text style={[styles.sideSectionTitle, { color: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
-                {cv.languages.map((lang) => (
-                  <View key={lang.id} style={styles.langItem}>
-                    <Text style={styles.langName}>{lang.language}</Text>
-                    <Text style={[styles.langBadge, { color: accent, backgroundColor: accentLight }]}>{lang.proficiency}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
           </View>
 
           {/* Right column */}
           <View style={styles.rightCol}>
-            {/* Experience */}
-            {cv.experiences.length > 0 && (
-              <View style={styles.mainSection}>
-                <Text style={styles.mainSectionTitle}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
-                {cv.experiences.map((exp) => (
-                  <View key={exp.id} style={styles.expItem}>
-                    <View style={styles.expHeader}>
-                      <Text style={styles.expRole}>{exp.role}</Text>
-                      <Text style={styles.expPeriod}>{exp.period}</Text>
+            {orderedMain.map((key) => {
+              if (key === 'experience' && cv.experiences.length > 0) return (
+                <View key="experience" style={styles.mainSection} break={cv.pageBreaks.includes('experience')}>
+                  <Text style={styles.mainSectionTitle}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
+                  {cv.experiences.map((exp) => (
+                    <View key={exp.id} style={styles.expItem}>
+                      <View style={styles.expHeader}>
+                        <Text style={styles.expRole}>{exp.role}</Text>
+                        <Text style={styles.expPeriod}>{exp.period}</Text>
+                      </View>
+                      <Text style={[styles.expCompany, { color: accent }]}>{exp.company}</Text>
+                      {exp.highlights.map((h, i) => (
+                        <View key={i} style={styles.bulletItem}>
+                          <Text style={styles.bulletDot}>·</Text>
+                          <Text style={styles.bulletText}>{h}</Text>
+                        </View>
+                      ))}
                     </View>
-                    <Text style={[styles.expCompany, { color: accent }]}>{exp.company}</Text>
-                    {exp.highlights.map((h, i) => (
-                      <View key={i} style={styles.bulletItem}>
-                        <Text style={styles.bulletDot}>·</Text>
-                        <Text style={styles.bulletText}>{h}</Text>
+                  ))}
+                </View>
+              )
+
+              if (key === 'education' && cv.education.length > 0) return (
+                <View key="education" style={styles.mainSection} break={cv.pageBreaks.includes('education')}>
+                  <Text style={styles.mainSectionTitle}>{cv.sectionLabels.education ?? 'Education'}</Text>
+                  {cv.education.map((edu) => (
+                    <View key={edu.id} style={styles.eduItem}>
+                      <View style={styles.eduHeader}>
+                        <Text style={styles.eduDegree}>{edu.degree}</Text>
+                        <Text style={styles.eduPeriod}>{edu.period}</Text>
+                      </View>
+                      <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                    </View>
+                  ))}
+                </View>
+              )
+
+              if (key === 'languages' && cv.languages.length > 0) return (
+                <View key="languages" style={styles.mainSection} break={cv.pageBreaks.includes('languages')}>
+                  <Text style={styles.mainSectionTitle}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+                  <View style={styles.langTable}>
+                    <View style={styles.langMotherRow}>
+                      <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
+                      <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
+                    </View>
+                    <View style={styles.langGroupRow}>
+                      <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                    </View>
+                    <View style={styles.langSubHeaderRow}>
+                      <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                    </View>
+                    {otherLanguages.map((lang, i) => (
+                      <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
+                        <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
                       </View>
                     ))}
                   </View>
-                ))}
-              </View>
-            )}
+                  <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+                  <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
+                </View>
+              )
 
-            {/* Education */}
-            {cv.education.length > 0 && (
-              <View style={styles.mainSection}>
-                <Text style={styles.mainSectionTitle}>{cv.sectionLabels.education ?? 'Education'}</Text>
-                {cv.education.map((edu) => (
-                  <View key={edu.id} style={styles.eduItem}>
-                    <View style={styles.eduHeader}>
-                      <Text style={styles.eduDegree}>{edu.degree}</Text>
-                      <Text style={styles.eduPeriod}>{edu.period}</Text>
+              const custom = cv.customSections.find((section) => section.id === key)
+              if (!custom) return null
+              return (
+                <View key={custom.id} style={styles.mainSection} break={cv.pageBreaks.includes(custom.id)}>
+                  <Text style={styles.mainSectionTitle}>{custom.title}</Text>
+                  {custom.bullets.filter(Boolean).map((b, i) => (
+                    <View key={i} style={styles.bulletItem}>
+                      <Text style={styles.bulletDot}>·</Text>
+                      <Text style={styles.bulletText}>{b}</Text>
                     </View>
-                    <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Custom sections */}
-            {cv.customSections.map((custom) => (
-              <View key={custom.id} style={styles.mainSection}>
-                <Text style={styles.mainSectionTitle}>{custom.title}</Text>
-                {custom.bullets.filter(Boolean).map((b, i) => (
-                  <View key={i} style={styles.bulletItem}>
-                    <Text style={styles.bulletDot}>·</Text>
-                    <Text style={styles.bulletText}>{b}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
+                  ))}
+                </View>
+              )
+            })}
           </View>
         </View>
       </Page>
