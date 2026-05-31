@@ -1,5 +1,5 @@
 {
-  "name": "my-worker",
+  "name": "react-cv-builder",
   // Set this to today's date
   "compatibility_date": "2026-05-31",
   "assets": {
