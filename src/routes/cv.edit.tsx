@@ -26,28 +26,56 @@ function TopBar({
   profileName,
   templateName,
   saveStatus,
+  isCompact,
+  activePane,
+  onPaneChange,
   onReset,
 }: {
   profileName: string
   templateName: string
   saveStatus: string
+  isCompact: boolean
+  activePane: 'form' | 'preview'
+  onPaneChange: (pane: 'form' | 'preview') => void
   onReset: () => void
 }) {
   return (
-    <header style={s.topBar}>
-      <div style={s.topBarLeft}>
+    <header style={{ ...s.topBar, ...(isCompact ? s.topBarCompact : {}) }}>
+      <div style={{ ...s.topBarLeft, ...(isCompact ? s.topBarLeftCompact : {}) }}>
         <h1 style={s.topBarTitle}>CV Editor</h1>
-        <nav style={{ display: 'flex', gap: '0.25rem' }}>
+        <nav style={{ ...s.topBarNav, ...(isCompact ? s.topBarNavCompact : {}) }}>
           <NavLink to="/templates" label="Templates" />
           <NavLink to="/cv/edit" label="Edit" active />
           <NavLink to="/cv/print" label="Preview" />
           <NavLink to="/profiles" label="Profiles" />
         </nav>
       </div>
-      <div style={s.topBarActions}>
+      <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
         <span style={s.templateBadge}>{profileName}</span>
         <span style={s.templateBadge}>{templateName}</span>
+        {isCompact && (
+          <div style={s.viewSwitch}>
+            <button
+              type="button"
+              style={activePane === 'form' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
+              onClick={() => onPaneChange('form')}
+            >
+              Form
+            </button>
+            <button
+              type="button"
+              style={
+                activePane === 'preview'
+                  ? { ...s.viewSwitchBtnActive, borderRight: 0 }
+                  : { ...s.viewSwitchBtn, borderRight: 0 }
+              }
+              onClick={() => onPaneChange('preview')}
+            >
+              Preview
+            </button>
+          </div>
+        )}
         <button type="button" style={s.btnSecondary} onClick={onReset}>
           Reset
         </button>
@@ -63,6 +91,7 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
       style={{
         fontFamily: 'inherit',
         fontSize: '0.9rem',
+        whiteSpace: 'nowrap',
         textDecoration: 'none',
         color: active ? 'var(--ink)' : 'var(--muted)',
         padding: '0.35rem 0.75rem',
@@ -215,6 +244,10 @@ function EditPage() {
   const lastUpdatedAtRef = useRef(activeUpdatedAt)
   const [newSkill, setNewSkill] = useState('')
   const [newLang, setNewLang] = useState('')
+  const [activePane, setActivePane] = useState<'form' | 'preview'>('form')
+  const [isCompactLayout, setIsCompactLayout] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
+  )
 
   const template = getTemplate(templateId)
 
@@ -225,6 +258,22 @@ function EditPage() {
     const timer = window.setTimeout(() => setSaveStatus('All changes saved'), 750)
     return () => window.clearTimeout(timer)
   }, [activeUpdatedAt])
+
+  useEffect(() => {
+    const onResize = () => {
+      setIsCompactLayout(window.innerWidth <= 1100)
+    }
+
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    if (!isCompactLayout) {
+      setActivePane('form')
+    }
+  }, [isCompactLayout])
 
   function scrollToSection(anchorId: string) {
     document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -429,13 +478,17 @@ function EditPage() {
         profileName={profileName}
         templateName={template.name}
         saveStatus={saveStatus}
+        isCompact={isCompactLayout}
+        activePane={activePane}
+        onPaneChange={setActivePane}
         onReset={handleReset}
       />
 
-      <div style={s.split}>
+      <div style={{ ...s.split, ...(isCompactLayout ? s.splitCompact : {}) }}>
         {/* Form panel */}
-        <main style={s.formPanel}>
-          <section style={s.sectionNavigatorCard}>
+        {(!isCompactLayout || activePane === 'form') && (
+          <main style={{ ...s.formPanel, ...(isCompactLayout ? s.formPanelCompact : {}) }}>
+          <section style={{ ...s.sectionNavigatorCard, ...(isCompactLayout ? s.sectionNavigatorCardCompact : {}) }}>
             <div style={s.sectionNavigatorHead}>Quick Jump</div>
             <div style={s.sectionNavigatorGrid}>
               {sectionNavItems.map((item) => (
@@ -860,10 +913,12 @@ function EditPage() {
               onClick={() => { addCustomSection() }}
             >+ Add Custom Section</button>
           </div>
-        </main>
+          </main>
+        )}
 
         {/* Live preview panel */}
-        <aside style={s.previewPanel}>
+        {(!isCompactLayout || activePane === 'preview') && (
+          <aside style={{ ...s.previewPanel, ...(isCompactLayout ? s.previewPanelCompact : {}) }}>
           <div style={s.previewLabel}>Live Preview · {template.name}</div>
           <BlobProvider document={previewDoc}>
             {({ url, loading, error }) => {
@@ -885,7 +940,8 @@ function EditPage() {
               )
             }}
           </BlobProvider>
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   )
@@ -907,10 +963,29 @@ const s: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
   },
+  topBarCompact: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    padding: '0.7rem 0.9rem',
+  },
   topBarLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '1.5rem',
+  },
+  topBarLeftCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '0.6rem',
+  },
+  topBarNav: {
+    display: 'flex',
+    gap: '0.25rem',
+  },
+  topBarNavCompact: {
+    width: '100%',
+    overflowX: 'auto',
+    paddingBottom: '0.1rem',
   },
   topBarTitle: {
     margin: 0,
@@ -921,6 +996,38 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
+  },
+  topBarActionsCompact: {
+    flexWrap: 'wrap',
+    gap: '0.45rem',
+  },
+  viewSwitch: {
+    display: 'inline-flex',
+    border: '1px solid var(--line)',
+    borderRadius: '0.35rem',
+    overflow: 'hidden',
+  },
+  viewSwitchBtn: {
+    fontFamily: 'inherit',
+    fontSize: '0.82rem',
+    fontWeight: 600,
+    color: 'var(--muted)',
+    background: 'transparent',
+    border: 0,
+    borderRight: '1px solid var(--line)',
+    padding: '0.32rem 0.6rem',
+    cursor: 'pointer',
+  },
+  viewSwitchBtnActive: {
+    fontFamily: 'inherit',
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    color: 'var(--ink)',
+    background: '#fffdf7',
+    border: 0,
+    borderRight: '1px solid var(--line)',
+    padding: '0.32rem 0.6rem',
+    cursor: 'pointer',
   },
   saveStatus: {
     fontSize: '0.85rem',
@@ -1010,6 +1117,10 @@ const s: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     alignItems: 'flex-start',
   },
+  splitCompact: {
+    display: 'block',
+    overflow: 'visible',
+  },
   formPanel: {
     width: 560,
     flexShrink: 0,
@@ -1021,6 +1132,13 @@ const s: Record<string, React.CSSProperties> = {
     gap: '1.25rem',
     borderRight: '1px solid var(--line)',
   },
+  formPanelCompact: {
+    width: '100%',
+    height: 'auto',
+    overflowY: 'visible',
+    borderRight: 0,
+    padding: '1rem 0.75rem 1.25rem',
+  },
   sectionNavigatorCard: {
     position: 'sticky',
     top: 0,
@@ -1030,6 +1148,9 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: '0.5rem',
     padding: '0.75rem',
     boxShadow: '0 8px 18px rgba(192,107,49,0.10)',
+  },
+  sectionNavigatorCardCompact: {
+    position: 'static',
   },
   sectionNavigatorHead: {
     fontSize: '0.72rem',
@@ -1201,6 +1322,11 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
+  },
+  previewPanelCompact: {
+    height: '70vh',
+    minHeight: 420,
+    padding: '0.85rem',
   },
   previewLabel: {
     fontSize: '0.72rem',

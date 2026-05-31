@@ -17,6 +17,7 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
       style={{
         fontFamily: 'inherit',
         fontSize: '0.9rem',
+        whiteSpace: 'nowrap',
         textDecoration: 'none',
         color: active ? 'var(--ink)' : 'var(--muted)',
         padding: '0.35rem 0.75rem',
@@ -374,9 +375,9 @@ function TemplatesPage() {
           boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Choose a Template</h1>
-          <nav style={{ display: 'flex', gap: '0.25rem' }}>
+          <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: 2 }}>
             <NavLink to="/templates" label="Templates" active />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" />

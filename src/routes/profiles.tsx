@@ -25,6 +25,7 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
       style={{
         fontFamily: 'inherit',
         fontSize: '0.9rem',
+        whiteSpace: 'nowrap',
         textDecoration: 'none',
         color: active ? 'var(--ink)' : 'var(--muted)',
         padding: '0.35rem 0.75rem',
@@ -321,12 +322,12 @@ function ProfilesPage() {
     <div style={s.page}>
       {/* Header */}
       <header style={s.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', minWidth: 0 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
             <h1 style={s.title}>CV Profiles</h1>
             <p style={s.subtitle}>Keep role-specific versions clean and ready.</p>
           </div>
-          <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+          <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: 2 }}>
             <NavLink to="/templates" label="Templates" />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" />

@@ -18,6 +18,7 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
       style={{
         fontFamily: 'inherit',
         fontSize: '0.9rem',
+        whiteSpace: 'nowrap',
         textDecoration: 'none',
         color: active ? 'var(--ink)' : 'var(--muted)',
         padding: '0.35rem 0.75rem',
@@ -99,6 +100,7 @@ function PrintPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: '1rem',
           padding: '0.75rem 1.5rem',
           background: '#fffdf7',
@@ -106,9 +108,9 @@ function PrintPage() {
           boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>CV Preview</h1>
-          <nav style={{ display: 'flex', gap: '0.25rem' }}>
+          <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: 2 }}>
             <NavLink to="/templates" label="Templates" />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" active />
