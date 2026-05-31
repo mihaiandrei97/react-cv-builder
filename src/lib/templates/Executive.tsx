@@ -177,8 +177,12 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
   const accent = cv.colors.accent ?? ACCENT
   const paper = cv.colors.paper ?? PAPER
 
-  const ordered = ['experience', 'education', 'certifications'].sort(
-    (a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b)
+  const customIds = cv.customSections.map((s) => s.id)
+  const ordered = [...['experience', 'education', 'certifications'], ...customIds].sort(
+    (a, b) => {
+      const ai = cv.sectionOrder.indexOf(a); const bi = cv.sectionOrder.indexOf(b)
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+    }
   )
 
   return (
@@ -251,6 +255,18 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
                   </View>
                 ))}
               </View>
+            </View>
+          )
+          const custom = cv.customSections.find((s) => s.id === key)
+          if (custom) return (
+            <View key={key} style={styles.section} break={cv.pageBreaks.includes(key)}>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{custom.title}</Text>
+              {custom.bullets.filter(Boolean).map((b, i) => (
+                <View key={i} style={styles.bulletItem}>
+                  <Text style={styles.bulletDot}>{'–'}</Text>
+                  <Text style={styles.bulletText}>{b}</Text>
+                </View>
+              ))}
             </View>
           )
           return null

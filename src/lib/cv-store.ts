@@ -1,5 +1,5 @@
 import { createStore } from '@tanstack/react-store'
-import { type FullCvData, type CvData, type CvProfile, DEFAULT_FULL_CV, projectCv } from './types'
+import { type FullCvData, type CvData, type CvProfile, type CustomSection, DEFAULT_FULL_CV, projectCv } from './types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +61,7 @@ function sanitizeProfiles(state: ProfilesState): ProfilesState {
       sectionOrder: p.sectionOrder ?? [...DEFAULT_SECTION_ORDER],
       colors: p.colors ?? {},
       sectionLabels: p.sectionLabels ?? {},
+      data: { ...p.data, customSections: p.data.customSections ?? [] },
     })),
   }
 }
@@ -136,7 +137,19 @@ export function addProfile(name: string) {
 export function duplicateProfile(id: string) {
   const source = cvStore.state.profiles.find((p) => p.id === id)
   if (!source) return
-  const copy = makeProfile(`${source.name} (copy)`, source.templateId, source.data)
+  const copy: CvProfile = {
+    ...source,
+    id: crypto.randomUUID(),
+    name: `${source.name} (copy)`,
+    data: deepClone(source.data),
+    hiddenSections: [...(source.hiddenSections ?? [])],
+    pageBreaks: [...(source.pageBreaks ?? [])],
+    sectionOrder: [...(source.sectionOrder ?? DEFAULT_SECTION_ORDER)],
+    colors: { ...(source.colors ?? {}) },
+    sectionLabels: { ...(source.sectionLabels ?? {}) },
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  }
   cvStore.setState((state) => ({
     profiles: [...state.profiles, copy],
     activeProfileId: copy.id,
@@ -209,6 +222,41 @@ export function setSectionLabels(sectionLabels: Record<string, string>) {
     profiles: state.profiles.map((p) =>
       p.id === state.activeProfileId ? { ...p, sectionLabels, updatedAt: Date.now() } : p
     ),
+  }))
+  persist()
+}
+
+export function addCustomSection() {
+  const id = crypto.randomUUID()
+  const section: CustomSection = { id, title: 'Custom Section', bullets: [''] }
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) => {
+      if (p.id !== state.activeProfileId) return p
+      return {
+        ...p,
+        data: { ...p.data, customSections: [...(p.data.customSections ?? []), section] },
+        sectionOrder: [...(p.sectionOrder ?? DEFAULT_SECTION_ORDER), id],
+        updatedAt: Date.now(),
+      }
+    }),
+  }))
+  persist()
+}
+
+export function removeCustomSection(id: string) {
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) => {
+      if (p.id !== state.activeProfileId) return p
+      return {
+        ...p,
+        data: { ...p.data, customSections: (p.data.customSections ?? []).filter((s) => s.id !== id) },
+        sectionOrder: (p.sectionOrder ?? DEFAULT_SECTION_ORDER).filter((k) => k !== id),
+        hiddenSections: (p.hiddenSections ?? []).filter((k) => k !== id),
+        updatedAt: Date.now(),
+      }
+    }),
   }))
   persist()
 }

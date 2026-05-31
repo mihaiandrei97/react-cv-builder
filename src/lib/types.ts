@@ -42,6 +42,12 @@ export type Language = {
   proficiency: string;
 };
 
+export type CustomSection = {
+  id: string;
+  title: string;
+  bullets: string[];
+};
+
 // ── Per-template CV shapes (discriminated union) ─────────────────────────────
 
 export type ClassicCvData = {
@@ -51,6 +57,7 @@ export type ClassicCvData = {
   experiences: Experience[];
   projects: Project[];
   education: Education[];
+  customSections: CustomSection[];
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
@@ -64,6 +71,7 @@ export type ModernCvData = {
   experiences: Experience[];
   projects: Project[];
   education: Education[];
+  customSections: CustomSection[];
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
@@ -76,6 +84,7 @@ export type ExecutiveCvData = {
   experiences: Experience[];
   education: Education[];
   certifications: Certification[];
+  customSections: CustomSection[];
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
@@ -89,6 +98,7 @@ export type CompactCvData = {
   languages: Language[];
   experiences: Experience[];
   education: Education[];
+  customSections: CustomSection[];
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
@@ -107,6 +117,7 @@ export type FullCvData = {
   education: Education[];
   certifications: Certification[];
   languages: Language[];
+  customSections: CustomSection[];
 };
 
 export type CvProfile = {
@@ -125,15 +136,16 @@ export type CvProfile = {
 
 export function projectCv(full: FullCvData, templateId: string, hiddenSections: string[] = [], pageBreaks: string[] = [], sectionOrder: string[] = [], colors: Record<string, string> = {}, sectionLabels: Record<string, string> = {}): CvData {
   const hide = new Set(hiddenSections)
+  const customSections = (full.customSections ?? []).filter((s) => !hide.has(s.id))
   switch (templateId) {
     case 'modern':
-      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
     case 'executive':
-      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
     case 'compact':
-      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
     default:
-      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors, sectionLabels };
+      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, customSections, pageBreaks, sectionOrder, colors, sectionLabels };
   }
 }
 
@@ -244,4 +256,5 @@ export const DEFAULT_FULL_CV: FullCvData = {
     { id: crypto.randomUUID(), language: 'Romanian', proficiency: 'Native' },
     { id: crypto.randomUUID(), language: 'French', proficiency: 'Intermediate' },
   ],
+  customSections: [],
 };

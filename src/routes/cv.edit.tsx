@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels } from '../lib/cv-store'
+import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -385,8 +385,12 @@ function EditPage() {
     executive: ['experience', 'education', 'certifications'],
     compact: ['skills', 'languages', 'experience', 'education'],
   }
-  const templateSections = TEMPLATE_SECTIONS[templateId] ?? TEMPLATE_SECTIONS.classic
-  const orderedSections = [...templateSections].sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
+  const customIds = (fullData.customSections ?? []).map((s) => s.id)
+  const templateSections = [...(TEMPLATE_SECTIONS[templateId] ?? TEMPLATE_SECTIONS.classic), ...customIds]
+  const orderedSections = [...templateSections].sort((a, b) => {
+    const ai = sectionOrder.indexOf(a); const bi = sectionOrder.indexOf(b)
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+  })
 
   const Doc = template.component
   const previewDoc = useMemo(() => <Doc cv={debouncedCv} />, [debouncedCv, Doc])
@@ -674,8 +678,97 @@ function EditPage() {
               </CollapsibleSection>
             )
 
+            const custom = (fullData.customSections ?? []).find((s) => s.id === key)
+            if (custom) return (
+              <CollapsibleSection
+                key={key}
+                title={custom.title || 'Custom Section'}
+                sectionKey={key}
+                hiddenSections={hiddenSections}
+                pageBreaks={pageBreaks}
+                isFirst={isFirst}
+                isLast={isLast}
+                addButton={
+                  <button type="button" style={s.removeBtnText} onClick={() => { removeCustomSection(key); save() }}>Delete section</button>
+                }
+              >
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <Field label="Section Title" fullWidth>
+                    <Input
+                      value={custom.title}
+                      placeholder="e.g. Volunteer Work"
+                      onChange={(v) => {
+                        setFullData((prev) => ({
+                          ...prev,
+                          customSections: prev.customSections.map((s) => s.id === key ? { ...s, title: v } : s),
+                        }))
+                      }}
+                      onBlur={save}
+                    />
+                  </Field>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={s.fieldLabel}>Bullets</span>
+                  {custom.bullets.map((b, bi) => (
+                    <div key={bi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <input
+                        type="text"
+                        value={b}
+                        placeholder="Bullet point..."
+                        onChange={(e) => {
+                          setFullData((prev) => ({
+                            ...prev,
+                            customSections: prev.customSections.map((s) =>
+                              s.id === key ? { ...s, bullets: s.bullets.map((x, xi) => xi === bi ? e.target.value : x) } : s
+                            ),
+                          }))
+                        }}
+                        onBlur={save}
+                        style={{ ...s.input, flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        style={s.removeBtn}
+                        onClick={() => {
+                          setFullData((prev) => ({
+                            ...prev,
+                            customSections: prev.customSections.map((s) =>
+                              s.id === key ? { ...s, bullets: s.bullets.filter((_, xi) => xi !== bi) } : s
+                            ),
+                          }))
+                          save()
+                        }}
+                        aria-label="Remove bullet"
+                      >×</button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    style={s.btnGhost}
+                    onClick={() => {
+                      setFullData((prev) => ({
+                        ...prev,
+                        customSections: prev.customSections.map((s) =>
+                          s.id === key ? { ...s, bullets: [...s.bullets, ''] } : s
+                        ),
+                      }))
+                    }}
+                  >+ Add bullet</button>
+                </div>
+              </CollapsibleSection>
+            )
+
             return null
           })}
+
+          {/* Add custom section */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
+            <button
+              type="button"
+              style={s.btnAdd}
+              onClick={() => { addCustomSection(); save() }}
+            >+ Add Custom Section</button>
+          </div>
         </main>
 
         {/* Live preview panel */}

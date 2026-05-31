@@ -313,6 +313,19 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
                 ))}
               </View>
             )}
+
+            {/* Custom sections */}
+            {cv.customSections.map((custom) => (
+              <View key={custom.id} style={styles.mainSection}>
+                <Text style={styles.mainSectionTitle}>{custom.title}</Text>
+                {custom.bullets.filter(Boolean).map((b, i) => (
+                  <View key={i} style={styles.bulletItem}>
+                    <Text style={styles.bulletDot}>·</Text>
+                    <Text style={styles.bulletText}>{b}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
         </View>
       </Page>

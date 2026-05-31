@@ -202,6 +202,12 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
   const sidebarAccent = cv.colors.sidebarAccent ?? SIDEBAR_ACCENT
   const accent = cv.colors.accent ?? MAIN_ACCENT
 
+  const customIds = cv.customSections.map((s) => s.id)
+  const orderedMain = [...['experience', 'projects', 'education'], ...customIds].sort((a, b) => {
+    const ai = cv.sectionOrder.indexOf(a); const bi = cv.sectionOrder.indexOf(b)
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+  })
+
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
       <Page size="A4" style={styles.page}>
@@ -252,9 +258,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             <Text style={styles.paragraph}>{cv.profile.summary}</Text>
           </View>
 
-          {['experience', 'projects', 'education']
-            .sort((a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b))
-            .map((key) => {
+          {orderedMain.map((key) => {
               if (key === 'experience' && cv.experiences.length > 0) return (
                 <View key="experience" break={cv.pageBreaks.includes('experience')}>
                   <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
@@ -309,9 +313,20 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                   ))}
                 </View>
               )
+              const custom = cv.customSections.find((s) => s.id === key)
+              if (custom) return (
+                <View key={key} break={cv.pageBreaks.includes(key)}>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{custom.title}</Text>
+                  {custom.bullets.filter(Boolean).map((b, i) => (
+                    <View key={i} style={styles.bulletItem}>
+                      <Text style={styles.bulletDot}>{'\u2022'}</Text>
+                      <Text style={styles.bulletText}>{b}</Text>
+                    </View>
+                  ))}
+                </View>
+              )
               return null
-            })
-          }
+          })}
         </View>
       </Page>
     </Document>
