@@ -44,6 +44,16 @@ function formatDate(ts: number) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(ts))
 }
 
+function formatRelativeDate(ts: number) {
+  const diffMs = Date.now() - ts
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays <= 0) return 'today'
+  if (diffDays === 1) return 'yesterday'
+  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+  return formatDate(ts)
+}
+
 // ── Profile card ──────────────────────────────────────────────────────────────
 
 function ProfileCard({
@@ -81,31 +91,44 @@ function ProfileCard({
     <div
       style={{
         background: '#fffdf7',
-        border: `1px solid ${isActive ? '#f0c89a' : 'var(--line)'}`,
-        borderRadius: '0.5rem',
-        padding: '1.25rem',
+        border: `1px solid ${isActive ? '#edbf91' : 'var(--line)'}`,
+        borderRadius: '0.7rem',
+        padding: '1.15rem 1.15rem 1.2rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.75rem',
-        boxShadow: isActive ? '0 8px 20px rgba(192,107,49,0.16)' : '0 2px 8px rgba(34,34,34,0.05)',
+        gap: '0.9rem',
+        boxShadow: isActive ? '0 16px 28px rgba(192,107,49,0.17)' : '0 5px 14px rgba(34,34,34,0.06)',
         transition: 'border-color 0.15s, box-shadow 0.15s',
         position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      <div
+        style={{
+          position: 'absolute',
+          inset: '0 auto auto 0',
+          width: '100%',
+          height: 4,
+          background: isActive
+            ? 'linear-gradient(90deg, #c06b31 0%, #d9894d 55%, #e7b98f 100%)'
+            : 'linear-gradient(90deg, #d4d0c4 0%, #e8e3d8 100%)',
+        }}
+      />
+
       {/* Active ribbon */}
       {isActive && (
         <div
           style={{
             position: 'absolute',
-            top: 12,
-            right: 12,
+            top: 14,
+            right: 14,
             background: 'var(--accent)',
             color: '#fff',
-            fontSize: '0.6rem',
+            fontSize: '0.58rem',
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            padding: '0.2rem 0.55rem',
+            padding: '0.2rem 0.5rem',
             borderRadius: '999px',
           }}
         >
@@ -156,6 +179,7 @@ function ProfileCard({
               textAlign: 'left',
               display: 'block',
               width: '100%',
+              letterSpacing: '-0.01em',
             }}
           >
             {profile.name}
@@ -168,7 +192,7 @@ function ProfileCard({
         <span
           style={{
             fontSize: '0.72rem',
-            fontWeight: 600,
+            fontWeight: 700,
             color: 'var(--accent)',
             background: '#fdf0e6',
             border: '1px solid #f0c89a',
@@ -179,33 +203,49 @@ function ProfileCard({
           {tpl.name}
         </span>
         <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-          Edited {formatDate(profile.updatedAt)}
+          Updated {formatRelativeDate(profile.updatedAt)}
         </span>
       </div>
 
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.75rem',
+          fontSize: '0.75rem',
+          color: 'var(--muted)',
+          borderTop: '1px dashed #ddd7ca',
+          borderBottom: '1px dashed #ddd7ca',
+          padding: '0.5rem 0',
+        }}
+      >
+        <span>Created {formatDate(profile.createdAt)}</span>
+      </div>
+
       {/* Actions */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: 'auto' }}>
+      <div style={s.cardActionStack}>
         {!isActive && (
-          <button type="button" style={s.btnPrimary} onClick={onActivate}>
-            Edit this CV
+          <button type="button" style={{ ...s.btnPrimary, ...s.btnFull }} onClick={onActivate}>
+            Switch to this profile
           </button>
         )}
         {isActive && (
-          <Link to="/cv/edit" style={s.btnPrimaryLink}>
-            Open editor →
+          <Link to="/cv/edit" style={{ ...s.btnPrimaryLink, ...s.btnFull }}>
+            Open editor -&gt;
           </Link>
         )}
-        <button type="button" style={s.btnSecondary} onClick={onDuplicate}>
-          Duplicate
-        </button>
-        <button type="button" style={s.btnSecondary} onClick={onExport}>
-          Export
-        </button>
-        {canDelete && (
-          <button type="button" style={s.btnDanger} onClick={onDelete}>
-            Delete
+        <div style={s.cardActionRow}>
+          <button type="button" style={{ ...s.btnSecondary, ...s.btnGrow }} onClick={onDuplicate}>
+            Duplicate
           </button>
-        )}
+          <button type="button" style={{ ...s.btnSecondary, ...s.btnGrow }} onClick={onExport}>
+            Export
+          </button>
+          {canDelete && (
+            <button type="button" style={s.btnDanger} onClick={onDelete}>
+              Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -278,19 +318,22 @@ function ProfilesPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div style={s.page}>
       {/* Header */}
       <header style={s.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <h1 style={s.title}>CV Profiles</h1>
-          <nav style={{ display: 'flex', gap: '0.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            <h1 style={s.title}>CV Profiles</h1>
+            <p style={s.subtitle}>Keep role-specific versions clean and ready.</p>
+          </div>
+          <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
             <NavLink to="/templates" label="Templates" />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" />
             <NavLink to="/profiles" label="Profiles" active />
           </nav>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={s.headerActions}>
           <input
             ref={importInputRef}
             type="file"
@@ -298,6 +341,9 @@ function ProfilesPage() {
             style={{ display: 'none' }}
             onChange={handleImport}
           />
+          <Link to="/" style={s.backLink}>
+            Home
+          </Link>
           <button
             type="button"
             style={s.btnSecondary}
@@ -317,14 +363,20 @@ function ProfilesPage() {
               + New Profile
             </button>
           )}
-          <Link to="/" style={s.backLink}>
-            Home
-          </Link>
         </div>
       </header>
 
       {/* Main */}
       <main style={s.main}>
+        <section style={s.heroStrip}>
+          <div style={s.heroStat}>
+            <span style={s.heroStatLabel}>Profiles</span>
+            <strong style={s.heroStatValue}>{profiles.length}</strong>
+          </div>
+          <div style={s.heroDivider} />
+          <div style={s.heroHint}>Tip: create one profile per role target to keep summaries and skills focused.</div>
+        </section>
+
         {importError && (
           <div style={{ background: '#fdf2f0', border: '1px solid #f0b8b0', borderRadius: '0.4rem', padding: '0.75rem 1rem', fontSize: '0.85rem', color: '#9c2f1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{importError}</span>
@@ -391,6 +443,13 @@ function ProfilesPage() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: '100dvh',
+    display: 'flex',
+    flexDirection: 'column',
+    background:
+      'radial-gradient(circle at 14% 0%, #efe6d4 0%, transparent 34%), radial-gradient(circle at 88% 18%, #e8e0ce 0%, transparent 32%), #f6f2e8',
+  },
   header: {
     position: 'sticky',
     top: 0,
@@ -400,14 +459,21 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '1rem',
     padding: '0.75rem 1.5rem',
-    background: '#fffdf7',
+    background: 'rgba(255, 253, 247, 0.92)',
+    backdropFilter: 'blur(6px)',
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
   },
   title: {
     margin: 0,
-    fontSize: '1.1rem',
+    fontSize: '1.15rem',
     fontWeight: 700,
+    letterSpacing: '-0.01em',
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '0.78rem',
+    color: 'var(--muted)',
   },
   backLink: {
     fontFamily: 'inherit',
@@ -418,9 +484,16 @@ const s: Record<string, React.CSSProperties> = {
     color: 'var(--muted)',
     textDecoration: 'none',
   },
+  headerActions: {
+    display: 'flex',
+    gap: '0.5rem',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
   main: {
     flex: 1,
-    maxWidth: 900,
+    maxWidth: 980,
     width: '100%',
     margin: '0 auto',
     padding: '2rem 1.5rem',
@@ -428,9 +501,45 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: '1.5rem',
   },
+  heroStrip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    background: 'linear-gradient(180deg, #fff8ed 0%, #fdf0df 100%)',
+    border: '1px solid #f0cfaa',
+    borderRadius: '0.75rem',
+    padding: '0.9rem 1rem',
+    boxShadow: '0 8px 22px rgba(192,107,49,0.12)',
+  },
+  heroStat: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '0.5rem',
+  },
+  heroStatLabel: {
+    fontSize: '0.74rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'var(--accent)',
+  },
+  heroStatValue: {
+    fontSize: '1.35rem',
+    color: 'var(--ink)',
+    lineHeight: 1,
+  },
+  heroDivider: {
+    width: 1,
+    height: 28,
+    background: '#e5c8a5',
+  },
+  heroHint: {
+    fontSize: '0.82rem',
+    color: 'var(--muted)',
+  },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
     gap: '1rem',
   },
   newCard: {
@@ -464,6 +573,7 @@ const s: Record<string, React.CSSProperties> = {
     padding: '0.5rem 1rem',
     cursor: 'pointer',
     whiteSpace: 'nowrap' as const,
+    textAlign: 'center',
   },
   btnPrimaryLink: {
     fontFamily: 'inherit',
@@ -478,6 +588,7 @@ const s: Record<string, React.CSSProperties> = {
     textDecoration: 'none',
     whiteSpace: 'nowrap' as const,
     display: 'inline-block',
+    textAlign: 'center',
   },
   btnSecondary: {
     fontFamily: 'inherit',
@@ -500,5 +611,22 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: '0.25rem',
     padding: '0.45rem 0.9rem',
     cursor: 'pointer',
+  },
+  btnFull: {
+    width: '100%',
+  },
+  btnGrow: {
+    flex: 1,
+  },
+  cardActionStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    marginTop: 'auto',
+  },
+  cardActionRow: {
+    display: 'flex',
+    gap: '0.45rem',
+    alignItems: 'center',
   },
 }
