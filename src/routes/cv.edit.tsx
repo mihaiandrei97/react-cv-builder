@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors } from '../lib/cv-store'
+import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -208,6 +208,7 @@ function EditPage() {
   const pageBreaks = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).pageBreaks ?? [])
   const sectionOrder = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionOrder ?? [...DEFAULT_SECTION_ORDER])
   const colors = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).colors ?? {})
+  const sectionLabels = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionLabels ?? {})
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
@@ -454,6 +455,61 @@ function EditPage() {
                   </div>
                 )
               })}
+            </div>
+          </section>
+
+          {/* Section Labels */}
+          <section style={s.card}>
+            <h2 style={s.cardTitle}>Section Labels</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
+              {({
+                classic: [
+                  { key: 'profile', default: 'Profile' },
+                  { key: 'skills', default: 'Core Skills' },
+                  { key: 'experience', default: 'Experience' },
+                  { key: 'projects', default: 'Selected Projects' },
+                  { key: 'education', default: 'Education' },
+                ] as { key: string; default: string }[],
+                modern: [
+                  { key: 'profile', default: 'Profile' },
+                  { key: 'contact', default: 'Contact' },
+                  { key: 'skills', default: 'Skills' },
+                  { key: 'experience', default: 'Experience' },
+                  { key: 'projects', default: 'Selected Projects' },
+                  { key: 'education', default: 'Education' },
+                ] as { key: string; default: string }[],
+                executive: [
+                  { key: 'profile', default: 'Executive Summary' },
+                  { key: 'experience', default: 'Professional Experience' },
+                  { key: 'education', default: 'Education' },
+                  { key: 'certifications', default: 'Certifications' },
+                ] as { key: string; default: string }[],
+                compact: [
+                  { key: 'about', default: 'About' },
+                  { key: 'skills', default: 'Skills' },
+                  { key: 'languages', default: 'Languages' },
+                  { key: 'experience', default: 'Experience' },
+                  { key: 'education', default: 'Education' },
+                ] as { key: string; default: string }[],
+              }[templateId] ?? []).map((slot) => (
+                <div key={slot.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={s.fieldLabel}>{slot.default}</label>
+                  <input
+                    type="text"
+                    value={sectionLabels[slot.key] ?? ''}
+                    placeholder={slot.default}
+                    onChange={(e) => setSectionLabels({ ...sectionLabels, [slot.key]: e.target.value })}
+                    onBlur={(e) => {
+                      if (!e.target.value.trim()) {
+                        const next = { ...sectionLabels }
+                        delete next[slot.key]
+                        setSectionLabels(next)
+                      }
+                    }}
+                    style={s.input}
+                  />
+                </div>
+              ))}
             </div>
           </section>
 

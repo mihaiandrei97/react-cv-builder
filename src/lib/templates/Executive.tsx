@@ -199,14 +199,14 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: accent }]}>Executive Summary</Text>
+          <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.profile ?? 'Executive Summary'}</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>Professional Experience</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.experience ?? 'Professional Experience'}</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.expItem}>
                   <View style={styles.expHeader}>
@@ -228,7 +228,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>Education</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.education ?? 'Education'}</Text>
               <View style={styles.eduGrid}>
                 {cv.education.map((edu) => (
                   <View key={edu.id} style={styles.eduItem}>
@@ -242,7 +242,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'certifications' && cv.certifications.length > 0) return (
             <View key="certifications" style={styles.section} break={cv.pageBreaks.includes('certifications')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>Certifications</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.certifications ?? 'Certifications'}</Text>
               <View style={styles.certRow}>
                 {cv.certifications.map((cert) => (
                   <View key={cert.id} style={styles.certItem}>

@@ -19,6 +19,7 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData): C
     pageBreaks: [],
     sectionOrder: [...DEFAULT_SECTION_ORDER],
     colors: {},
+    sectionLabels: {},
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -59,6 +60,7 @@ function sanitizeProfiles(state: ProfilesState): ProfilesState {
       pageBreaks: p.pageBreaks ?? [],
       sectionOrder: p.sectionOrder ?? [...DEFAULT_SECTION_ORDER],
       colors: p.colors ?? {},
+      sectionLabels: p.sectionLabels ?? {},
     })),
   }
 }
@@ -75,7 +77,7 @@ export const cvStore = createStore<ProfilesState>(loadState())
 export const cvDerived = createStore<CvData>(() => {
   const { profiles, activeProfileId } = cvStore.state
   const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [], active.sectionOrder ?? DEFAULT_SECTION_ORDER, active.colors ?? {})
+  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [], active.sectionOrder ?? DEFAULT_SECTION_ORDER, active.colors ?? {}, active.sectionLabels ?? {})
 })
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -196,6 +198,16 @@ export function setColors(colors: Record<string, string>) {
     ...state,
     profiles: state.profiles.map((p) =>
       p.id === state.activeProfileId ? { ...p, colors, updatedAt: Date.now() } : p
+    ),
+  }))
+  persist()
+}
+
+export function setSectionLabels(sectionLabels: Record<string, string>) {
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) =>
+      p.id === state.activeProfileId ? { ...p, sectionLabels, updatedAt: Date.now() } : p
     ),
   }))
   persist()

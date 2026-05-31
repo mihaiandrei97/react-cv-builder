@@ -216,7 +216,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
           </View>
 
           <View>
-            <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>Contact</Text>
+            <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{cv.sectionLabels.contact ?? 'Contact'}</Text>
             <View style={styles.contactItem}>
               <Text style={styles.contactLabel}>Location</Text>
               <Text style={styles.contactValue}>{cv.profile.location}</Text>
@@ -233,7 +233,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
 
           {cv.skills.length > 0 && (
             <View>
-              <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>Skills</Text>
+              <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{cv.sectionLabels.skills ?? 'Skills'}</Text>
               <View style={styles.skillsWrap}>
                 {cv.skills.map((skill, i) => (
                   <Text key={i} style={styles.skillChip}>
@@ -248,7 +248,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
         {/* Main content — all sections together, auto-flows to page 2 if needed */}
         <View style={styles.main}>
           <View>
-            <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Profile</Text>
+            <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.profile ?? 'Profile'}</Text>
             <Text style={styles.paragraph}>{cv.profile.summary}</Text>
           </View>
 
@@ -257,7 +257,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             .map((key) => {
               if (key === 'experience' && cv.experiences.length > 0) return (
                 <View key="experience" break={cv.pageBreaks.includes('experience')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Experience</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
                   {cv.experiences.map((exp) => (
                     <View key={exp.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -281,7 +281,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'projects' && cv.projects.length > 0) return (
                 <View key="projects" break={cv.pageBreaks.includes('projects')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Selected Projects</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.projects ?? 'Selected Projects'}</Text>
                   {cv.projects.map((project) => (
                     <View key={project.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -295,7 +295,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'education' && cv.education.length > 0) return (
                 <View key="education" break={cv.pageBreaks.includes('education')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Education</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.education ?? 'Education'}</Text>
                   {cv.education.map((edu) => (
                     <View key={edu.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>

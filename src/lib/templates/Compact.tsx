@@ -244,14 +244,14 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
           <View style={styles.leftCol}>
             {/* Summary */}
             <View style={styles.sideSection}>
-              <Text style={[styles.sideSectionTitle, { color: accent }]}>About</Text>
+              <Text style={[styles.sideSectionTitle, { color: accent }]}>{cv.sectionLabels.about ?? 'About'}</Text>
               <Text style={styles.summary}>{cv.profile.summary}</Text>
             </View>
 
             {/* Skills */}
             {cv.skills.length > 0 && (
               <View style={styles.sideSection}>
-                <Text style={[styles.sideSectionTitle, { color: accent }]}>Skills</Text>
+                <Text style={[styles.sideSectionTitle, { color: accent }]}>{cv.sectionLabels.skills ?? 'Skills'}</Text>
                 {cv.skills.map((skill, i) => (
                   <View key={i} style={styles.skillRow}>
                     <Text style={styles.skillLabel}>{skill}</Text>
@@ -263,7 +263,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             {/* Languages */}
             {cv.languages.length > 0 && (
               <View style={styles.sideSection}>
-                <Text style={[styles.sideSectionTitle, { color: accent }]}>Languages</Text>
+                <Text style={[styles.sideSectionTitle, { color: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
                 {cv.languages.map((lang) => (
                   <View key={lang.id} style={styles.langItem}>
                     <Text style={styles.langName}>{lang.language}</Text>
@@ -279,7 +279,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             {/* Experience */}
             {cv.experiences.length > 0 && (
               <View style={styles.mainSection}>
-                <Text style={styles.mainSectionTitle}>Experience</Text>
+                <Text style={styles.mainSectionTitle}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
                 {cv.experiences.map((exp) => (
                   <View key={exp.id} style={styles.expItem}>
                     <View style={styles.expHeader}>
@@ -301,7 +301,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             {/* Education */}
             {cv.education.length > 0 && (
               <View style={styles.mainSection}>
-                <Text style={styles.mainSectionTitle}>Education</Text>
+                <Text style={styles.mainSectionTitle}>{cv.sectionLabels.education ?? 'Education'}</Text>
                 {cv.education.map((edu) => (
                   <View key={edu.id} style={styles.eduItem}>
                     <View style={styles.eduHeader}>

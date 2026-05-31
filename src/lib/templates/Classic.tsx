@@ -183,14 +183,14 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Profile</Text>
+          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.profile ?? 'Profile'}</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'skills' && cv.skills.length > 0) return (
             <View key="skills" style={styles.section} break={cv.pageBreaks.includes('skills')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Core Skills</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.skills ?? 'Core Skills'}</Text>
               <View style={styles.skillGrid}>
                 {cv.skills.map((skill, i) => (
                   <Text key={i} style={styles.skillItem}>{skill}</Text>
@@ -200,7 +200,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Experience</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>
@@ -221,7 +221,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'projects' && cv.projects.length > 0) return (
             <View key="projects" style={styles.section} break={cv.pageBreaks.includes('projects')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Selected Projects</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.projects ?? 'Selected Projects'}</Text>
               {cv.projects.map((project) => (
                 <View key={project.id} style={styles.projectItem} wrap={false}>
                   <Text style={styles.projectName}>{project.name}</Text>
@@ -233,7 +233,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Education</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.education ?? 'Education'}</Text>
               {cv.education.map((edu) => (
                 <View key={edu.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>

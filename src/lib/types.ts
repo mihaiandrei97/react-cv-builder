@@ -54,6 +54,7 @@ export type ClassicCvData = {
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
 };
 
 export type ModernCvData = {
@@ -66,6 +67,7 @@ export type ModernCvData = {
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
 };
 
 export type ExecutiveCvData = {
@@ -77,6 +79,7 @@ export type ExecutiveCvData = {
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
 };
 
 export type CompactCvData = {
@@ -89,6 +92,7 @@ export type CompactCvData = {
   pageBreaks: string[];
   sectionOrder: string[];
   colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
 };
 
 export type CvData = ClassicCvData | ModernCvData | ExecutiveCvData | CompactCvData;
@@ -114,21 +118,22 @@ export type CvProfile = {
   pageBreaks: string[]
   sectionOrder: string[]
   colors: Record<string, string>
+  sectionLabels: Record<string, string>
   createdAt: number
   updatedAt: number
 }
 
-export function projectCv(full: FullCvData, templateId: string, hiddenSections: string[] = [], pageBreaks: string[] = [], sectionOrder: string[] = [], colors: Record<string, string> = {}): CvData {
+export function projectCv(full: FullCvData, templateId: string, hiddenSections: string[] = [], pageBreaks: string[] = [], sectionOrder: string[] = [], colors: Record<string, string> = {}, sectionLabels: Record<string, string> = {}): CvData {
   const hide = new Set(hiddenSections)
   switch (templateId) {
     case 'modern':
-      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors };
+      return { kind: 'modern', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors, sectionLabels };
     case 'executive':
-      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, pageBreaks, sectionOrder, colors };
+      return { kind: 'executive', profile: full.profile, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, certifications: hide.has('certifications') ? [] : full.certifications, pageBreaks, sectionOrder, colors, sectionLabels };
     case 'compact':
-      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors };
+      return { kind: 'compact', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, languages: hide.has('languages') ? [] : full.languages, experiences: hide.has('experience') ? [] : full.experiences, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors, sectionLabels };
     default:
-      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors };
+      return { kind: 'classic', profile: full.profile, skills: hide.has('skills') ? [] : full.skills, experiences: hide.has('experience') ? [] : full.experiences, projects: hide.has('projects') ? [] : full.projects, education: hide.has('education') ? [] : full.education, pageBreaks, sectionOrder, colors, sectionLabels };
   }
 }
 
