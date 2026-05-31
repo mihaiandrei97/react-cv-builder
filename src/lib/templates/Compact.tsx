@@ -9,10 +9,6 @@ const MUTED = '#606060'
 const LINE = '#e0ddd4'
 const ACCENT = '#1a5c8a'
 
-export const COLOR_SLOTS = [
-  { key: 'accent', label: 'Accent', default: ACCENT },
-]
-
 const COL_LEFT = '34%'
 const COL_RIGHT = '66%'
 

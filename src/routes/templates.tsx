@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import { TEMPLATES } from '../lib/templates'
+import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { useSelector } from '@tanstack/react-store'
 import { cvStore, saveTemplatePref, switchProfile, addProfile } from '../lib/cv-store'
 import { projectCv, type CvData, type CvProfile } from '../lib/types'
@@ -45,7 +45,18 @@ function TemplateCard({
   cv: CvData
   onSelect: () => void
 }) {
-  const Doc = tpl.component
+  const [Doc, setDoc] = useState<TemplateComponent | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    loadTemplateComponent(tpl.id).then((component) => {
+      if (!cancelled) setDoc(() => component)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tpl.id])
+
   return (
     <div
       style={{
@@ -85,38 +96,53 @@ function TemplateCard({
           Active
         </div>
       )}
-      {/* Preview */}
-      <BlobProvider document={<Doc cv={cv} />}>
-        {({ url, loading }) => (
-          <div
-            style={{
-              width: '100%',
-              aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
-              overflow: 'hidden',
-              position: 'relative',
-              background: '#e8e4da',
-            }}
-          >
-            {loading || !url ? (
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  color: 'var(--muted)',
-                }}
-              >
-                Rendering…
-              </div>
-            ) : (
-              <IframePreview url={url} />
-            )}
-          </div>
-        )}
-      </BlobProvider>
+        <div
+          style={{
+            width: '100%',
+            aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
+            overflow: 'hidden',
+            position: 'relative',
+            background: '#e8e4da',
+          }}
+        >
+          {!Doc ? (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.8rem',
+                color: 'var(--muted)',
+              }}
+            >
+              Loading template…
+            </div>
+          ) : (
+            <BlobProvider document={<Doc cv={cv} />}>
+              {({ url, loading }) =>
+                loading || !url ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.8rem',
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    Rendering…
+                  </div>
+                ) : (
+                  <IframePreview url={url} />
+                )
+              }
+            </BlobProvider>
+          )}
+      </div>
 
       {/* Footer */}
       <div

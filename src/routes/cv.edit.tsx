@@ -4,7 +4,7 @@ import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
 import { cvStore, cvDerived, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
-import { getTemplate } from '../lib/templates'
+import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -245,6 +245,7 @@ function EditPage() {
   const [newSkill, setNewSkill] = useState('')
   const [newLang, setNewLang] = useState('')
   const [activePane, setActivePane] = useState<'form' | 'preview'>('form')
+  const [Doc, setDoc] = useState<TemplateComponent | null>(null)
   const [isCompactLayout, setIsCompactLayout] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
   )
@@ -274,6 +275,18 @@ function EditPage() {
       setActivePane('form')
     }
   }, [isCompactLayout])
+
+  useEffect(() => {
+    let cancelled = false
+    setDoc(null)
+    loadTemplateComponent(templateId).then((component) => {
+      if (!cancelled) setDoc(() => component)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [templateId])
 
   function scrollToSection(anchorId: string) {
     document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -469,8 +482,7 @@ function EditPage() {
     }).filter((item): item is { key: string; title: string; anchorId: string } => item !== null),
   ]
 
-  const Doc = template.component
-  const previewDoc = useMemo(() => <Doc cv={debouncedCv} />, [debouncedCv, Doc])
+  const previewDoc = useMemo(() => (Doc ? <Doc cv={debouncedCv} /> : null), [debouncedCv, Doc])
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -920,26 +932,30 @@ function EditPage() {
         {(!isCompactLayout || activePane === 'preview') && (
           <aside style={{ ...s.previewPanel, ...(isCompactLayout ? s.previewPanelCompact : {}) }}>
           <div style={s.previewLabel}>Live Preview · {template.name}</div>
-          <BlobProvider document={previewDoc}>
-            {({ url, loading, error }) => {
-              if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Rendering preview…</div>
-              if (error) return <div style={{ padding: '2rem', textAlign: 'center', color: '#9c2f1f', fontSize: '0.85rem' }}>Error rendering preview</div>
-              if (!url) return null
-              return (
-                <iframe
-                  src={`${url}#toolbar=0&navpanes=0`}
-                  style={{
-                    width: '100%',
-                    flex: 1,
-                    border: 'none',
-                    borderRadius: '0.25rem',
-                    boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
-                  }}
-                  title="CV Preview"
-                />
-              )
-            }}
-          </BlobProvider>
+          {!previewDoc ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Loading template…</div>
+          ) : (
+            <BlobProvider document={previewDoc}>
+              {({ url, loading, error }) => {
+                if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Rendering preview…</div>
+                if (error) return <div style={{ padding: '2rem', textAlign: 'center', color: '#9c2f1f', fontSize: '0.85rem' }}>Error rendering preview</div>
+                if (!url) return null
+                return (
+                  <iframe
+                    src={`${url}#toolbar=0&navpanes=0`}
+                    style={{
+                      width: '100%',
+                      flex: 1,
+                      border: 'none',
+                      borderRadius: '0.25rem',
+                      boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
+                    }}
+                    title="CV Preview"
+                  />
+                )
+              }}
+            </BlobProvider>
+          )}
           </aside>
         )}
       </div>

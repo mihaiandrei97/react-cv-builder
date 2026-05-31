@@ -16,12 +16,6 @@ const MAIN_BODY = '#334155'
 const MAIN_MUTED = '#64748b'
 const MAIN_ACCENT = '#0ea5e9'
 
-export const COLOR_SLOTS = [
-  { key: 'sidebarBg', label: 'Sidebar', default: SIDEBAR_BG },
-  { key: 'sidebarAccent', label: 'Sidebar Accent', default: SIDEBAR_ACCENT },
-  { key: 'accent', label: 'Accent', default: MAIN_ACCENT },
-]
-
 const SIDEBAR_WIDTH = '36%'
 const MAIN_WIDTH = '64%'
 

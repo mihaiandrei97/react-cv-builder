@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useRef, useMemo, memo, useCallback } from 'react'
+import { useRef, useMemo, memo, useCallback, useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
 import { useSelector } from '@tanstack/react-store'
 import { cvStore, cvDerived } from '../lib/cv-store'
-import { getTemplate } from '../lib/templates'
+import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 
 export const Route = createFileRoute('/cv/print')({
   component: PrintPage,
@@ -71,14 +71,30 @@ function PrintPage() {
   const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
   const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
   const blobUrlRef = useRef<string | null>(null)
+  const [Doc, setDoc] = useState<TemplateComponent | null>(null)
 
   const template = getTemplate(templateId)
-  const Doc = template.component
-  const docElement = useMemo(() => <Doc cv={cv} />, [Doc, cv])
+  const docElement = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
+
+  useEffect(() => {
+    let cancelled = false
+    setDoc(null)
+    loadTemplateComponent(templateId).then((component) => {
+      if (!cancelled) setDoc(() => component)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [templateId])
 
   const handleUrl = useCallback((url: string | null) => {
     blobUrlRef.current = url
   }, [])
+
+  useEffect(() => {
+    if (!docElement) handleUrl(null)
+  }, [docElement, handleUrl])
 
   function downloadPdf() {
     if (!blobUrlRef.current) return
@@ -164,7 +180,11 @@ function PrintPage() {
           background: 'radial-gradient(circle at 20% 20%, #ece9de 0%, #ece9de 20%, transparent 20%), linear-gradient(160deg, #f6f3e8 0%, #efeadd 55%, #e6e0d3 100%)',
         }}
       >
-        <PdfViewer docElement={docElement} onUrl={handleUrl} />
+        {docElement ? (
+          <PdfViewer docElement={docElement} onUrl={handleUrl} />
+        ) : (
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Loading template…</p>
+        )}
       </main>
     </div>
   )

@@ -8,6 +8,14 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  build: {
+    chunkSizeWarningLimit: 1600,
+    rolldownOptions: {
+      output: {
+        codeSplitting: true,
+      },
+    },
+  },
   plugins: [
     devtools(),
     tailwindcss(),

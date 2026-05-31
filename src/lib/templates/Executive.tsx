@@ -9,11 +9,6 @@ const MUTED = '#5a5a52'
 const LINE = '#ccc9bc'
 const ACCENT = '#8b3a1e'
 
-export const COLOR_SLOTS = [
-  { key: 'accent', label: 'Accent', default: ACCENT },
-  { key: 'paper', label: 'Background', default: PAPER },
-]
-
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'Source Serif 4',

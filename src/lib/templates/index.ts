@@ -1,17 +1,14 @@
 import React from 'react'
 import type { CvData } from '../types'
-import { ClassicDocument, COLOR_SLOTS as CLASSIC_SLOTS } from './Classic'
-import { ModernDocument, COLOR_SLOTS as MODERN_SLOTS } from './Modern'
-import { ExecutiveDocument, COLOR_SLOTS as EXECUTIVE_SLOTS } from './Executive'
-import { CompactDocument, COLOR_SLOTS as COMPACT_SLOTS } from './Compact'
 
 export type ColorSlot = { key: string; label: string; default: string }
+export type TemplateComponent = (props: { cv: CvData }) => React.ReactNode
+export type TemplateId = 'classic' | 'modern' | 'executive' | 'compact'
 
 export type TemplateDefinition = {
-  id: string
+  id: TemplateId
   name: string
   description: string
-  component: (props: { cv: CvData }) => React.ReactNode
   colorSlots: ColorSlot[]
 }
 
@@ -20,32 +17,59 @@ export const TEMPLATES: TemplateDefinition[] = [
     id: 'classic',
     name: 'Classic',
     description: 'Warm serif typography with a traditional two-column header and parchment tones.',
-    component: ClassicDocument as TemplateDefinition['component'],
-    colorSlots: CLASSIC_SLOTS,
+    colorSlots: [
+      { key: 'accent', label: 'Accent', default: '#c06b31' },
+      { key: 'paper', label: 'Background', default: '#fcfcf8' },
+    ],
   },
   {
     id: 'modern',
     name: 'Modern',
     description: 'Dark sidebar layout with sky-blue accents and clean sans-serif type.',
-    component: ModernDocument as TemplateDefinition['component'],
-    colorSlots: MODERN_SLOTS,
+    colorSlots: [
+      { key: 'sidebarBg', label: 'Sidebar', default: '#1e2b3c' },
+      { key: 'sidebarAccent', label: 'Sidebar Accent', default: '#7dd3fc' },
+      { key: 'accent', label: 'Accent', default: '#0ea5e9' },
+    ],
   },
   {
     id: 'executive',
     name: 'Executive',
     description: 'Authoritative full-width serif layout with certifications — built for senior roles.',
-    component: ExecutiveDocument as TemplateDefinition['component'],
-    colorSlots: EXECUTIVE_SLOTS,
+    colorSlots: [
+      { key: 'accent', label: 'Accent', default: '#8b3a1e' },
+      { key: 'paper', label: 'Background', default: '#fafaf7' },
+    ],
   },
   {
     id: 'compact',
     name: 'Compact',
     description: 'Two-column layout with a blue header bar, skills sidebar, and language section.',
-    component: CompactDocument as TemplateDefinition['component'],
-    colorSlots: COMPACT_SLOTS,
+    colorSlots: [{ key: 'accent', label: 'Accent', default: '#1a5c8a' }],
   },
 ]
 
+const componentCache: Partial<Record<TemplateId, Promise<TemplateComponent>>> = {}
+
 export function getTemplate(id: string): TemplateDefinition {
-  return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0]
+  return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0]!
+}
+
+export function loadTemplateComponent(id: string): Promise<TemplateComponent> {
+  const templateId = getTemplate(id).id
+  if (!componentCache[templateId]) {
+    componentCache[templateId] = (() => {
+      switch (templateId) {
+        case 'classic':
+          return import('./Classic').then((m) => m.ClassicDocument as TemplateComponent)
+        case 'modern':
+          return import('./Modern').then((m) => m.ModernDocument as TemplateComponent)
+        case 'executive':
+          return import('./Executive').then((m) => m.ExecutiveDocument as TemplateComponent)
+        case 'compact':
+          return import('./Compact').then((m) => m.CompactDocument as TemplateComponent)
+      }
+    })()
+  }
+  return componentCache[templateId]!
 }
