@@ -8,6 +8,11 @@ const MUTED = '#5a5a52'
 const LINE = '#ccc9bc'
 const ACCENT = '#8b3a1e'
 
+export const COLOR_SLOTS = [
+  { key: 'accent', label: 'Accent', default: ACCENT },
+  { key: 'paper', label: 'Background', default: PAPER },
+]
+
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'Source Serif 4',
@@ -169,15 +174,18 @@ const styles = StyleSheet.create({
 })
 
 export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
+  const accent = cv.colors.accent ?? ACCENT
+  const paper = cv.colors.paper ?? PAPER
+
   const ordered = ['experience', 'education', 'certifications'].sort(
     (a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b)
   )
 
   return (
-    <Document key={cv.sectionOrder.join(',')}>
-      <Page size="A4" style={styles.page}>
+    <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
+      <Page size="A4" style={[styles.page, { backgroundColor: paper }]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: accent }]}>
           <Text style={styles.name}>{cv.profile.name}</Text>
           <Text style={styles.title}>{cv.profile.title}</Text>
           <View style={styles.contactRow}>
@@ -191,21 +199,21 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Executive Summary</Text>
+          <Text style={[styles.sectionTitle, { color: accent }]}>Executive Summary</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={styles.sectionTitle}>Professional Experience</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>Professional Experience</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.expItem}>
                   <View style={styles.expHeader}>
                     <Text style={styles.expRole}>{exp.role}</Text>
                     <Text style={styles.expPeriod}>{exp.period}</Text>
                   </View>
-                  <Text style={styles.expCompany}>{exp.company}</Text>
+                <Text style={[styles.expCompany, { color: accent }]}>{exp.company}</Text>
                   <View style={styles.bulletList}>
                     {exp.highlights.map((h, i) => (
                       <View key={i} style={styles.bulletItem}>
@@ -220,7 +228,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={styles.sectionTitle}>Education</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>Education</Text>
               <View style={styles.eduGrid}>
                 {cv.education.map((edu) => (
                   <View key={edu.id} style={styles.eduItem}>
@@ -234,7 +242,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'certifications' && cv.certifications.length > 0) return (
             <View key="certifications" style={styles.section} break={cv.pageBreaks.includes('certifications')}>
-              <Text style={styles.sectionTitle}>Certifications</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>Certifications</Text>
               <View style={styles.certRow}>
                 {cv.certifications.map((cert) => (
                   <View key={cert.id} style={styles.certItem}>

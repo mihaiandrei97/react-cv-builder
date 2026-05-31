@@ -18,6 +18,7 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData): C
     hiddenSections: [],
     pageBreaks: [],
     sectionOrder: [...DEFAULT_SECTION_ORDER],
+    colors: {},
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -57,6 +58,7 @@ function sanitizeProfiles(state: ProfilesState): ProfilesState {
       hiddenSections: p.hiddenSections ?? [],
       pageBreaks: p.pageBreaks ?? [],
       sectionOrder: p.sectionOrder ?? [...DEFAULT_SECTION_ORDER],
+      colors: p.colors ?? {},
     })),
   }
 }
@@ -73,7 +75,7 @@ export const cvStore = createStore<ProfilesState>(loadState())
 export const cvDerived = createStore<CvData>(() => {
   const { profiles, activeProfileId } = cvStore.state
   const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [], active.sectionOrder ?? DEFAULT_SECTION_ORDER)
+  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [], active.sectionOrder ?? DEFAULT_SECTION_ORDER, active.colors ?? {})
 })
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -185,6 +187,16 @@ export function togglePageBreak(section: string) {
         : [...breaks, section]
       return { ...p, pageBreaks, updatedAt: Date.now() }
     }),
+  }))
+  persist()
+}
+
+export function setColors(colors: Record<string, string>) {
+  cvStore.setState((state) => ({
+    ...state,
+    profiles: state.profiles.map((p) =>
+      p.id === state.activeProfileId ? { ...p, colors, updatedAt: Date.now() } : p
+    ),
   }))
   persist()
 }

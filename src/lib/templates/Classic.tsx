@@ -8,6 +8,11 @@ const MUTED = '#5d5d55'
 const LINE = '#d4d0c4'
 const ACCENT = '#c06b31'
 
+export const COLOR_SLOTS = [
+  { key: 'accent', label: 'Accent', default: ACCENT },
+  { key: 'paper', label: 'Background', default: PAPER },
+]
+
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'Source Serif 4',
@@ -153,18 +158,20 @@ const styles = StyleSheet.create({
 })
 
 export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
+  const accent = cv.colors.accent ?? ACCENT
+  const paper = cv.colors.paper ?? PAPER
+
   const ordered = ['skills', 'experience', 'projects', 'education'].sort(
     (a, b) => cv.sectionOrder.indexOf(a) - cv.sectionOrder.indexOf(b)
   )
 
   return (
-    <Document key={cv.sectionOrder.join(',')}>
-      <Page size="A4" style={styles.page}>
+    <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
+      <Page size="A4" style={[styles.page, { backgroundColor: paper }]}>
         {/* Header */}
-        <View style={styles.hero}>
+        <View style={[styles.hero, { borderBottomColor: accent }]}>
           <View>
-            <Text style={styles.eyebrow}>Curriculum Vitae</Text>
-            <Text style={styles.heroName}>{cv.profile.name}</Text>
+            <Text style={[styles.heroName, { color: accent }]}>{cv.profile.name}</Text>
             <Text style={styles.heroRole}>{cv.profile.title}</Text>
           </View>
           <View style={styles.contactList}>
@@ -176,14 +183,14 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile</Text>
+          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Profile</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'skills' && cv.skills.length > 0) return (
             <View key="skills" style={styles.section} break={cv.pageBreaks.includes('skills')}>
-              <Text style={styles.sectionTitle}>Core Skills</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Core Skills</Text>
               <View style={styles.skillGrid}>
                 {cv.skills.map((skill, i) => (
                   <Text key={i} style={styles.skillItem}>{skill}</Text>
@@ -193,7 +200,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={styles.sectionTitle}>Experience</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Experience</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>
@@ -214,7 +221,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'projects' && cv.projects.length > 0) return (
             <View key="projects" style={styles.section} break={cv.pageBreaks.includes('projects')}>
-              <Text style={styles.sectionTitle}>Selected Projects</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Selected Projects</Text>
               {cv.projects.map((project) => (
                 <View key={project.id} style={styles.projectItem} wrap={false}>
                   <Text style={styles.projectName}>{project.name}</Text>
@@ -226,7 +233,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={styles.sectionTitle}>Education</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>Education</Text>
               {cv.education.map((edu) => (
                 <View key={edu.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>

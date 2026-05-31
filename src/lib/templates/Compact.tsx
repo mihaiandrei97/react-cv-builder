@@ -9,6 +9,10 @@ const LINE = '#e0ddd4'
 const ACCENT = '#1a5c8a'
 const ACCENT_LIGHT = '#e8f2f9'
 
+export const COLOR_SLOTS = [
+  { key: 'accent', label: 'Accent', default: ACCENT },
+]
+
 const COL_LEFT = '34%'
 const COL_RIGHT = '66%'
 
@@ -215,11 +219,14 @@ const styles = StyleSheet.create({
 })
 
 export function CompactDocument({ cv }: { cv: CompactCvData }) {
+  const accent = cv.colors.accent ?? ACCENT
+  const accentLight = accent === ACCENT ? ACCENT_LIGHT : accent + '22'
+
   return (
-    <Document>
+    <Document key={JSON.stringify(cv.colors)}>
       <Page size="A4" style={styles.page}>
         {/* Top bar */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { backgroundColor: accent }]}>
           <View>
             <Text style={styles.name}>{cv.profile.name}</Text>
             <Text style={styles.jobTitle}>{cv.profile.title}</Text>
@@ -237,14 +244,14 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
           <View style={styles.leftCol}>
             {/* Summary */}
             <View style={styles.sideSection}>
-              <Text style={styles.sideSectionTitle}>About</Text>
+              <Text style={[styles.sideSectionTitle, { color: accent }]}>About</Text>
               <Text style={styles.summary}>{cv.profile.summary}</Text>
             </View>
 
             {/* Skills */}
             {cv.skills.length > 0 && (
               <View style={styles.sideSection}>
-                <Text style={styles.sideSectionTitle}>Skills</Text>
+                <Text style={[styles.sideSectionTitle, { color: accent }]}>Skills</Text>
                 {cv.skills.map((skill, i) => (
                   <View key={i} style={styles.skillRow}>
                     <Text style={styles.skillLabel}>{skill}</Text>
@@ -256,11 +263,11 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             {/* Languages */}
             {cv.languages.length > 0 && (
               <View style={styles.sideSection}>
-                <Text style={styles.sideSectionTitle}>Languages</Text>
+                <Text style={[styles.sideSectionTitle, { color: accent }]}>Languages</Text>
                 {cv.languages.map((lang) => (
                   <View key={lang.id} style={styles.langItem}>
                     <Text style={styles.langName}>{lang.language}</Text>
-                    <Text style={styles.langBadge}>{lang.proficiency}</Text>
+                    <Text style={[styles.langBadge, { color: accent, backgroundColor: accentLight }]}>{lang.proficiency}</Text>
                   </View>
                 ))}
               </View>
@@ -279,7 +286,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
                       <Text style={styles.expRole}>{exp.role}</Text>
                       <Text style={styles.expPeriod}>{exp.period}</Text>
                     </View>
-                    <Text style={styles.expCompany}>{exp.company}</Text>
+                    <Text style={[styles.expCompany, { color: accent }]}>{exp.company}</Text>
                     {exp.highlights.map((h, i) => (
                       <View key={i} style={styles.bulletItem}>
                         <Text style={styles.bulletDot}>·</Text>

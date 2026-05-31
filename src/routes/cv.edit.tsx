@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER } from '../lib/cv-store'
+import { cvStore, cvDerived, setFullData, saveCv, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors } from '../lib/cv-store'
 import { getTemplate } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -207,6 +207,7 @@ function EditPage() {
   const hiddenSections = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).hiddenSections ?? [])
   const pageBreaks = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).pageBreaks ?? [])
   const sectionOrder = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionOrder ?? [...DEFAULT_SECTION_ORDER])
+  const colors = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).colors ?? {})
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('')
@@ -425,6 +426,35 @@ function EditPage() {
             <Field label="Summary" fullWidth>
               <Textarea value={fullData.profile.summary} onChange={(v) => updateProfile('summary', v)} rows={3} />
             </Field>
+          </section>
+
+          {/* Colors */}
+          <section style={s.card}>
+            <h2 style={s.cardTitle}>Colors</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', alignItems: 'flex-end' }}>
+              {template.colorSlots.map((slot) => {
+                const current = colors[slot.key] ?? slot.default
+                return (
+                  <div key={slot.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
+                    <label style={{ ...s.fieldLabel, whiteSpace: 'nowrap' }}>{slot.label}</label>
+                    <input
+                      type="color"
+                      value={current}
+                      onChange={(e) => setColors({ ...colors, [slot.key]: e.target.value })}
+                      style={{ width: 40, height: 40, padding: 2, border: '1px solid var(--line)', borderRadius: '0.25rem', cursor: 'pointer', background: 'none' }}
+                      title={slot.label}
+                    />
+                    <button
+                      type="button"
+                      style={{ ...s.btnGhost, fontSize: '0.7rem', padding: '0.1rem 0.4rem', visibility: current !== slot.default ? 'visible' : 'hidden' }}
+                      onClick={() => { const next = { ...colors }; delete next[slot.key]; setColors(next) }}
+                    >
+                      Reset
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           </section>
 
           {orderedSections.map((key, idx) => {
