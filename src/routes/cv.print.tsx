@@ -112,6 +112,7 @@ function PrintPage() {
             <NavLink to="/templates" label="Templates" />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" active />
+            <NavLink to="/profiles" label="Profiles" />
           </nav>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

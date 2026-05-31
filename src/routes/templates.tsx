@@ -10,6 +10,26 @@ export const Route = createFileRoute('/templates')({
   component: TemplatesPage,
 })
 
+function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
+  return (
+    <Link
+      to={to}
+      style={{
+        fontFamily: 'inherit',
+        fontSize: '0.9rem',
+        textDecoration: 'none',
+        color: active ? 'var(--ink)' : 'var(--muted)',
+        padding: '0.35rem 0.75rem',
+        borderRadius: '0.25rem',
+        border: active ? '1px solid var(--line)' : '1px solid transparent',
+        background: active ? 'var(--paper)' : 'transparent',
+      }}
+    >
+      {label}
+    </Link>
+  )
+}
+
 const A4_WIDTH = 794
 const A4_HEIGHT = 1123 // A4 at 96dpi ≈ 1123px
 
@@ -185,20 +205,32 @@ function ProfilePill({
         fontFamily: 'inherit',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.25rem',
+        gap: '0.3rem',
         alignItems: 'flex-start',
-        padding: '0.65rem 1rem',
+        padding: '0.65rem 0.9rem',
         borderRadius: '0.4rem',
-        border: `2px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
-        background: isActive ? '#fdf0e6' : '#fffdf7',
+        border: `1px solid ${isActive ? '#f0c89a' : 'var(--line)'}`,
+        background: isActive ? 'linear-gradient(180deg, #fff7ef 0%, #fdf0e6 100%)' : '#fffdf7',
         cursor: 'pointer',
         whiteSpace: 'nowrap',
         flexShrink: 0,
-        transition: 'border-color 0.12s, background 0.12s',
+        transition: 'border-color 0.12s, background 0.12s, box-shadow 0.12s',
         minWidth: 130,
         textAlign: 'left',
+        boxShadow: isActive ? '0 6px 14px rgba(192,107,49,0.14)' : 'none',
       }}
     >
+      <span
+        style={{
+          fontSize: '0.62rem',
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: isActive ? 'var(--accent)' : 'var(--muted)',
+        }}
+      >
+        {isActive ? 'Active profile' : 'Profile'}
+      </span>
       <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ink)' }}>
         {profile.name}
       </span>
@@ -227,13 +259,13 @@ function ProfileStrip() {
       style={{
         borderBottom: '1px solid var(--line)',
         background: '#fffdf7',
-        padding: '0.9rem 2rem',
+        padding: '0.75rem 1.5rem',
         display: 'flex',
         alignItems: 'center',
         gap: '0.75rem',
       }}
     >
-      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
+      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
         Profile
       </span>
       <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', alignItems: 'center', paddingBottom: 2, flex: 1 }}>
@@ -296,13 +328,17 @@ function ProfileStrip() {
         to="/profiles"
         style={{
           fontFamily: 'inherit',
-          fontSize: '0.78rem',
+          fontSize: '0.8rem',
+          fontWeight: 600,
           color: 'var(--muted)',
           textDecoration: 'none',
           flexShrink: 0,
+          border: '1px solid var(--line)',
+          borderRadius: '0.3rem',
+          padding: '0.3rem 0.55rem',
         }}
       >
-        Manage →
+        Profiles →
       </Link>
     </div>
   )
@@ -329,29 +365,38 @@ function TemplatesPage() {
           top: 0,
           zIndex: 10,
           display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           gap: '1rem',
-          padding: '0.85rem 2rem',
+          padding: '0.75rem 1.5rem',
           background: '#fffdf7',
           borderBottom: '1px solid var(--line)',
           boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Choose a Template</h1>
+          <nav style={{ display: 'flex', gap: '0.25rem' }}>
+            <NavLink to="/templates" label="Templates" active />
+            <NavLink to="/cv/edit" label="Edit" />
+            <NavLink to="/cv/print" label="Preview" />
+            <NavLink to="/profiles" label="Profiles" />
+          </nav>
+        </div>
         <Link
           to="/"
           style={{
             fontFamily: 'inherit',
-            fontSize: '0.9rem',
+            fontSize: '0.82rem',
             color: 'var(--muted)',
             textDecoration: 'none',
+            border: '1px solid var(--line)',
+            borderRadius: '0.25rem',
+            padding: '0.35rem 0.6rem',
           }}
         >
-          ← Back
+          Home
         </Link>
-        <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, flex: 1, textAlign: 'center' }}>
-          Choose a Template
-        </h1>
-        <span style={{ width: '2rem' }} />
       </header>
 
       {/* Profile strip */}

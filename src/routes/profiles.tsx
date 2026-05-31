@@ -18,6 +18,26 @@ export const Route = createFileRoute('/profiles')({
   component: ProfilesPage,
 })
 
+function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
+  return (
+    <Link
+      to={to}
+      style={{
+        fontFamily: 'inherit',
+        fontSize: '0.9rem',
+        textDecoration: 'none',
+        color: active ? 'var(--ink)' : 'var(--muted)',
+        padding: '0.35rem 0.75rem',
+        borderRadius: '0.25rem',
+        border: active ? '1px solid var(--line)' : '1px solid transparent',
+        background: active ? 'var(--paper)' : 'transparent',
+      }}
+    >
+      {label}
+    </Link>
+  )
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(ts: number) {
@@ -61,13 +81,13 @@ function ProfileCard({
     <div
       style={{
         background: '#fffdf7',
-        border: `2px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
+        border: `1px solid ${isActive ? '#f0c89a' : 'var(--line)'}`,
         borderRadius: '0.5rem',
         padding: '1.25rem',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem',
-        boxShadow: isActive ? '0 4px 16px rgba(34,34,34,0.10)' : '0 2px 8px rgba(34,34,34,0.05)',
+        boxShadow: isActive ? '0 8px 20px rgba(192,107,49,0.16)' : '0 2px 8px rgba(34,34,34,0.05)',
         transition: 'border-color 0.15s, box-shadow 0.15s',
         position: 'relative',
       }}
@@ -132,7 +152,7 @@ function ProfileCard({
               background: 'none',
               border: 'none',
               padding: 0,
-              cursor: 'text',
+              cursor: 'pointer',
               textAlign: 'left',
               display: 'block',
               width: '100%',
@@ -262,10 +282,13 @@ function ProfilesPage() {
       {/* Header */}
       <header style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <Link to="/" style={s.backLink}>
-            ← Home
-          </Link>
           <h1 style={s.title}>CV Profiles</h1>
+          <nav style={{ display: 'flex', gap: '0.25rem' }}>
+            <NavLink to="/templates" label="Templates" />
+            <NavLink to="/cv/edit" label="Edit" />
+            <NavLink to="/cv/print" label="Preview" />
+            <NavLink to="/profiles" label="Profiles" active />
+          </nav>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <input
@@ -294,6 +317,9 @@ function ProfilesPage() {
               + New Profile
             </button>
           )}
+          <Link to="/" style={s.backLink}>
+            Home
+          </Link>
         </div>
       </header>
 
@@ -373,7 +399,7 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: '1rem',
-    padding: '0.85rem 2rem',
+    padding: '0.75rem 1.5rem',
     background: '#fffdf7',
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
@@ -385,7 +411,10 @@ const s: Record<string, React.CSSProperties> = {
   },
   backLink: {
     fontFamily: 'inherit',
-    fontSize: '0.9rem',
+    fontSize: '0.82rem',
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.35rem 0.6rem',
     color: 'var(--muted)',
     textDecoration: 'none',
   },

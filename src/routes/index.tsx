@@ -85,21 +85,6 @@ function Home() {
           >
             Get started →
           </Link>
-          <Link
-            to="/cv/edit"
-            style={{
-              fontWeight: 600,
-              textDecoration: 'none',
-              color: 'var(--muted)',
-              border: '1px solid var(--line)',
-              background: 'var(--paper)',
-              padding: '0.7rem 1.5rem',
-              borderRadius: '0.3rem',
-              fontSize: '0.95rem',
-            }}
-          >
-            Open editor
-          </Link>
         </div>
       </div>
 
