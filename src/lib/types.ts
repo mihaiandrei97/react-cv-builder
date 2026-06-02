@@ -177,6 +177,7 @@ export const DEFAULT_FULL_CV: FullCvData = {
     'CI/CD',
     'Web Performance',
     'Design Systems',
+    'E2E Testing',
   ],
   experiences: [
     {
