@@ -1,8 +1,8 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { ModernCvData } from '../types'
+import { getDefaultSectionLabel } from '../types'
+import '../fonts'
 import { getLanguageLevel } from './language-level'
-
-// Modern uses Helvetica (react-pdf built-in sans-serif)
 const SIDEBAR_BG = '#1e2b3c'
 const SIDEBAR_ACCENT = '#7dd3fc'
 const SIDEBAR_MUTED = '#64748b'
@@ -21,6 +21,7 @@ const MAIN_WIDTH = '64%'
 
 const styles = StyleSheet.create({
   page: {
+    fontFamily: 'Classic Serif TTF',
     fontSize: 10,
     backgroundColor: MAIN_BG,
   },
@@ -260,6 +261,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
   const sidebarBg = cv.colors.sidebarBg ?? SIDEBAR_BG
   const sidebarAccent = cv.colors.sidebarAccent ?? SIDEBAR_ACCENT
   const accent = cv.colors.accent ?? MAIN_ACCENT
+  const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('modern', key, cv.locale)
 
   const customIds = cv.customSections.map((s) => s.id)
   const orderedMain = [...['experience', 'projects', 'education', 'languages'], ...customIds].sort((a, b) => {
@@ -284,7 +286,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
           </View>
 
           <View>
-            <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{cv.sectionLabels.contact ?? 'Contact'}</Text>
+            <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{label('contact')}</Text>
             <View style={styles.contactItem}>
               <Text style={styles.contactLabel}>Location</Text>
               <Text style={styles.contactValue}>{cv.profile.location}</Text>
@@ -301,7 +303,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
 
           {cv.skills.length > 0 && (
             <View>
-              <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{cv.sectionLabels.skills ?? 'Skills'}</Text>
+              <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{label('skills')}</Text>
               <View style={styles.skillsWrap}>
                 {cv.skills.map((skill, i) => (
                   <Text key={i} style={styles.skillChip}>
@@ -316,14 +318,14 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
         {/* Main content — all sections together, auto-flows to page 2 if needed */}
         <View style={styles.main}>
           <View>
-            <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.profile ?? 'Profile'}</Text>
+            <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('profile')}</Text>
             <Text style={styles.paragraph}>{cv.profile.summary}</Text>
           </View>
 
           {orderedMain.map((key) => {
               if (key === 'experience' && cv.experiences.length > 0) return (
                 <View key="experience" break={cv.pageBreaks.includes('experience')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('experience')}</Text>
                   {cv.experiences.map((exp) => (
                     <View key={exp.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -347,7 +349,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'projects' && cv.projects.length > 0) return (
                 <View key="projects" break={cv.pageBreaks.includes('projects')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.projects ?? 'Selected Projects'}</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('projects')}</Text>
                   {cv.projects.map((project) => (
                     <View key={project.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -361,7 +363,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'education' && cv.education.length > 0) return (
                 <View key="education" break={cv.pageBreaks.includes('education')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.education ?? 'Education'}</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('education')}</Text>
                   {cv.education.map((edu) => (
                     <View key={edu.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -377,7 +379,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'languages' && cv.languages.length > 0) return (
                 <View key="languages" break={cv.pageBreaks.includes('languages')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('languages')}</Text>
                   <View style={styles.langTable}>
                     <View style={styles.langMotherRow}>
                       <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>

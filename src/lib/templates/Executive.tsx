@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { ExecutiveCvData } from '../types'
+import { getDefaultSectionLabel } from '../types'
 import '../fonts'
 import { getLanguageLevel } from './language-level'
 
@@ -11,7 +12,7 @@ const ACCENT = '#8b3a1e'
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Source Serif 4',
+    fontFamily: 'Classic Serif TTF',
     fontSize: 10,
     color: INK,
     backgroundColor: PAPER,
@@ -236,6 +237,7 @@ const styles = StyleSheet.create({
 export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
   const accent = cv.colors.accent ?? ACCENT
   const paper = cv.colors.paper ?? PAPER
+  const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('executive', key, cv.locale)
 
   const customIds = cv.customSections.map((s) => s.id)
   const ordered = [...['experience', 'education', 'certifications', 'languages'], ...customIds].sort(
@@ -266,14 +268,14 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.profile ?? 'Executive Summary'}</Text>
+          <Text style={[styles.sectionTitle, { color: accent }]}>{label('profile')}</Text>
           <Text style={styles.paragraph}>{cv.profile.summary}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.experience ?? 'Professional Experience'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{label('experience')}</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.expItem}>
                   <View style={styles.expHeader}>
@@ -295,7 +297,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.education ?? 'Education'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{label('education')}</Text>
               <View style={styles.eduGrid}>
                 {cv.education.map((edu) => (
                   <View key={edu.id} style={styles.eduItem}>
@@ -309,7 +311,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'certifications' && cv.certifications.length > 0) return (
             <View key="certifications" style={styles.section} break={cv.pageBreaks.includes('certifications')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.certifications ?? 'Certifications'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{label('certifications')}</Text>
               <View style={styles.certRow}>
                 {cv.certifications.map((cert) => (
                   <View key={cert.id} style={styles.certItem}>
@@ -322,7 +324,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
           )
           if (key === 'languages' && cv.languages.length > 0) return (
             <View key="languages" style={styles.section} break={cv.pageBreaks.includes('languages')}>
-              <Text style={[styles.sectionTitle, { color: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent }]}>{label('languages')}</Text>
               <View style={styles.langTable}>
                 <View style={styles.langMotherRow}>
                   <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
