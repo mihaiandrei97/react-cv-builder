@@ -374,8 +374,10 @@ function ProfileStrip() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function TemplatesPage() {
-  const fullData = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).data)
-  const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
+  const activeProfile = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]))
+  const fullData = activeProfile.localized[activeProfile.locale].data
+  const sectionLabels = activeProfile.localized[activeProfile.locale].sectionLabels
+  const templateId = activeProfile.templateId
   const navigate = useNavigate()
 
   function selectTemplate(id: string) {
@@ -448,7 +450,7 @@ function TemplatesPage() {
             key={tpl.id}
             tpl={tpl}
             isActive={templateId === tpl.id}
-            cv={projectCv(fullData, tpl.id)}
+            cv={projectCv(fullData, tpl.id, [], [], [], {}, activeProfile.locale, sectionLabels)}
             onSelect={() => selectTemplate(tpl.id)}
           />
         ))}

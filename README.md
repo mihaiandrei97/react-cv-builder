@@ -51,6 +51,7 @@ App runs at: `http://localhost:3000`
 - `pnpm build` - build production bundle
 - `pnpm preview` - preview production build locally
 - `pnpm test` - run tests with Vitest
+- `pnpm fonts:subset` - regenerate PDF font subsets used by templates
 
 ## Main Routes
 

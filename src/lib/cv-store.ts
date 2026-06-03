@@ -1,5 +1,5 @@
 import { createStore } from '@tanstack/react-store'
-import { type FullCvData, type CvData, type CvProfile, type CustomSection, DEFAULT_FULL_CV, projectCv } from './types'
+import { type FullCvData, type CvData, type CvProfile, type CustomSection, type CvLocale, makeDefaultFullCv, projectCv } from './types'
 import { type ProfilesState, loadProfilesState, saveProfilesState, createDebouncedStateSaver } from './persistence'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -11,19 +11,33 @@ function deepClone<T>(obj: T): T {
 export const DEFAULT_SECTION_ORDER = ['skills', 'experience', 'projects', 'education', 'certifications', 'languages']
 
 function makeProfile(name: string, templateId = 'classic', data?: FullCvData): CvProfile {
+  const english = data ? deepClone(data) : makeDefaultFullCv('en')
   return {
     id: crypto.randomUUID(),
     name,
     templateId,
-    data: data ? deepClone(data) : deepClone(DEFAULT_FULL_CV),
+    locale: 'en',
+    localized: {
+      en: {
+        data: english,
+        sectionLabels: {},
+      },
+      ro: {
+        data: makeDefaultFullCv('ro'),
+        sectionLabels: {},
+      },
+    },
     hiddenSections: [],
     pageBreaks: [],
     sectionOrder: [...DEFAULT_SECTION_ORDER],
     colors: {},
-    sectionLabels: {},
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
+}
+
+function getLocalizedBucket(profile: CvProfile) {
+  return profile.localized[profile.locale]
 }
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -69,6 +83,7 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
 
 export type CvAction =
   | { type: 'fullData.update'; updater: (prev: FullCvData) => FullCvData }
+  | { type: 'locale.set'; locale: CvLocale }
   | { type: 'template.set'; templateId: string }
   | { type: 'cv.reset' }
   | { type: 'profile.switch'; id: string }
@@ -89,9 +104,27 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
   switch (action.type) {
     case 'fullData.update': {
       return withActiveProfile(state, (profile) => {
-        const nextData = action.updater(profile.data)
-        if (nextData === profile.data) return profile
-        return { ...profile, data: nextData, updatedAt: Date.now() }
+        const bucket = getLocalizedBucket(profile)
+        const nextData = action.updater(bucket.data)
+        if (nextData === bucket.data) return profile
+        return {
+          ...profile,
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              data: nextData,
+            },
+          },
+          updatedAt: Date.now(),
+        }
+      })
+    }
+
+    case 'locale.set': {
+      return withActiveProfile(state, (profile) => {
+        if (profile.locale === action.locale) return profile
+        return { ...profile, locale: action.locale, updatedAt: Date.now() }
       })
     }
 
@@ -103,8 +136,21 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
     }
 
     case 'cv.reset': {
-      const fresh = deepClone(DEFAULT_FULL_CV)
-      return withActiveProfile(state, (profile) => ({ ...profile, data: fresh, updatedAt: Date.now() }))
+      return withActiveProfile(state, (profile) => {
+        const bucket = getLocalizedBucket(profile)
+        return {
+          ...profile,
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              data: makeDefaultFullCv(profile.locale),
+              sectionLabels: {},
+            },
+          },
+          updatedAt: Date.now(),
+        }
+      })
     }
 
     case 'profile.switch': {
@@ -129,12 +175,20 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
         ...source,
         id: crypto.randomUUID(),
         name: `${source.name} (copy)`,
-        data: deepClone(source.data),
+        localized: {
+          en: {
+            data: deepClone(source.localized.en.data),
+            sectionLabels: { ...(source.localized.en.sectionLabels ?? {}) },
+          },
+          ro: {
+            data: deepClone(source.localized.ro.data),
+            sectionLabels: { ...(source.localized.ro.sectionLabels ?? {}) },
+          },
+        },
         hiddenSections: [...(source.hiddenSections ?? [])],
         pageBreaks: [...(source.pageBreaks ?? [])],
         sectionOrder: [...(source.sectionOrder ?? DEFAULT_SECTION_ORDER)],
         colors: { ...(source.colors ?? {}) },
-        sectionLabels: { ...(source.sectionLabels ?? {}) },
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }
@@ -195,19 +249,41 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
 
     case 'sectionLabels.set': {
       return withActiveProfile(state, (profile) => {
-        if (shallowEqualRecord(profile.sectionLabels ?? {}, action.sectionLabels)) return profile
-        return { ...profile, sectionLabels: action.sectionLabels, updatedAt: Date.now() }
+        const bucket = getLocalizedBucket(profile)
+        if (shallowEqualRecord(bucket.sectionLabels ?? {}, action.sectionLabels)) return profile
+        return {
+          ...profile,
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              sectionLabels: action.sectionLabels,
+            },
+          },
+          updatedAt: Date.now(),
+        }
       })
     }
 
     case 'customSection.add': {
-      const section: CustomSection = { id: action.id, title: 'Custom Section', bullets: [''] }
       return withActiveProfile(state, (profile) => {
-        const customSections = profile.data.customSections ?? []
+        const bucket = getLocalizedBucket(profile)
+        const customSections = bucket.data.customSections ?? []
         if (customSections.some((s) => s.id === action.id)) return profile
+        const section: CustomSection = {
+          id: action.id,
+          title: profile.locale === 'ro' ? 'Sectiune personalizata' : 'Custom Section',
+          bullets: [''],
+        }
         return {
           ...profile,
-          data: { ...profile.data, customSections: [...customSections, section] },
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              data: { ...bucket.data, customSections: [...customSections, section] },
+            },
+          },
           sectionOrder: [...(profile.sectionOrder ?? DEFAULT_SECTION_ORDER), action.id],
           updatedAt: Date.now(),
         }
@@ -216,11 +292,18 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
 
     case 'customSection.remove': {
       return withActiveProfile(state, (profile) => {
-        const customSections = profile.data.customSections ?? []
+        const bucket = getLocalizedBucket(profile)
+        const customSections = bucket.data.customSections ?? []
         if (!customSections.some((s) => s.id === action.id)) return profile
         return {
           ...profile,
-          data: { ...profile.data, customSections: customSections.filter((s) => s.id !== action.id) },
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              data: { ...bucket.data, customSections: customSections.filter((s) => s.id !== action.id) },
+            },
+          },
           sectionOrder: (profile.sectionOrder ?? DEFAULT_SECTION_ORDER).filter((k) => k !== action.id),
           hiddenSections: (profile.hiddenSections ?? []).filter((k) => k !== action.id),
           updatedAt: Date.now(),
@@ -262,7 +345,17 @@ export function dispatch(action: CvAction, options?: { immediatePersist?: boolea
 export const cvDerived = createStore<CvData>(() => {
   const { profiles, activeProfileId } = cvStore.state
   const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  return projectCv(active.data, active.templateId, active.hiddenSections ?? [], active.pageBreaks ?? [], active.sectionOrder ?? DEFAULT_SECTION_ORDER, active.colors ?? {}, active.sectionLabels ?? {})
+  const bucket = active.localized[active.locale]
+  return projectCv(
+    bucket.data,
+    active.templateId,
+    active.hiddenSections ?? [],
+    active.pageBreaks ?? [],
+    active.sectionOrder ?? DEFAULT_SECTION_ORDER,
+    active.colors ?? {},
+    active.locale,
+    bucket.sectionLabels ?? {},
+  )
 })
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -277,6 +370,10 @@ export function saveCv() {
 
 export function saveTemplatePref(id: string) {
   dispatch({ type: 'template.set', templateId: id })
+}
+
+export function setLocale(locale: CvLocale) {
+  dispatch({ type: 'locale.set', locale }, { immediatePersist: true })
 }
 
 export function resetCv() {
@@ -357,7 +454,7 @@ export function importProfile(file: File): Promise<string> {
           typeof parsed !== 'object' ||
           typeof parsed.name !== 'string' ||
           typeof parsed.templateId !== 'string' ||
-          typeof parsed.data !== 'object'
+          typeof parsed.localized !== 'object'
         ) {
           reject(new Error('Invalid backup file format.'))
           return

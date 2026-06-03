@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { CompactCvData } from '../types'
+import { getDefaultSectionLabel } from '../types'
 import '../fonts'
 import { getLanguageLevel } from './language-level'
 
@@ -14,7 +15,7 @@ const COL_RIGHT = '66%'
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Source Serif 4',
+    fontFamily: 'Classic Serif TTF',
     fontSize: 10,
     color: INK,
     backgroundColor: PAPER,
@@ -284,6 +285,7 @@ const styles = StyleSheet.create({
 
 export function CompactDocument({ cv }: { cv: CompactCvData }) {
   const accent = cv.colors.accent ?? ACCENT
+  const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('compact', key, cv.locale)
   const motherTongue = cv.languages[0]
   const otherLanguages = cv.languages.slice(1)
   const motherTongueLabel = motherTongue?.language || 'Romanian'
@@ -316,14 +318,14 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
           <View style={styles.leftCol}>
             {/* Summary */}
             <View style={styles.sideSection}>
-              <Text style={[styles.sideSectionTitle, { color: accent }]}>{cv.sectionLabels.about ?? 'About'}</Text>
+              <Text style={[styles.sideSectionTitle, { color: accent }]}>{label('about')}</Text>
               <Text style={styles.summary}>{cv.profile.summary}</Text>
             </View>
 
             {/* Skills */}
             {cv.skills.length > 0 && (
               <View style={styles.sideSection}>
-                <Text style={[styles.sideSectionTitle, { color: accent }]}>{cv.sectionLabels.skills ?? 'Skills'}</Text>
+                <Text style={[styles.sideSectionTitle, { color: accent }]}>{label('skills')}</Text>
                 {cv.skills.map((skill, i) => (
                   <View key={i} style={styles.skillRow}>
                     <Text style={styles.skillLabel}>{skill}</Text>
@@ -339,7 +341,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             {orderedMain.map((key) => {
               if (key === 'experience' && cv.experiences.length > 0) return (
                 <View key="experience" style={styles.mainSection} break={cv.pageBreaks.includes('experience')}>
-                  <Text style={styles.mainSectionTitle}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
+                  <Text style={styles.mainSectionTitle}>{label('experience')}</Text>
                   {cv.experiences.map((exp) => (
                     <View key={exp.id} style={styles.expItem}>
                       <View style={styles.expHeader}>
@@ -360,7 +362,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
 
               if (key === 'education' && cv.education.length > 0) return (
                 <View key="education" style={styles.mainSection} break={cv.pageBreaks.includes('education')}>
-                  <Text style={styles.mainSectionTitle}>{cv.sectionLabels.education ?? 'Education'}</Text>
+                  <Text style={styles.mainSectionTitle}>{label('education')}</Text>
                   {cv.education.map((edu) => (
                     <View key={edu.id} style={styles.eduItem}>
                       <View style={styles.eduHeader}>
@@ -375,7 +377,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
 
               if (key === 'languages' && cv.languages.length > 0) return (
                 <View key="languages" style={styles.mainSection} break={cv.pageBreaks.includes('languages')}>
-                  <Text style={styles.mainSectionTitle}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+                  <Text style={styles.mainSectionTitle}>{label('languages')}</Text>
                   <View style={styles.langTable}>
                     <View style={styles.langMotherRow}>
                       <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>

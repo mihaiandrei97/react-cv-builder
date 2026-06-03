@@ -9,7 +9,8 @@
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "fonts:subset": "node scripts/subset-classic-fonts.mjs"
   },
   "dependencies": {
     "@fontsource/source-serif-4": "^5.2.9",
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "jsdom": "^28.1.0",
+    "subset-font": "^2.5.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.5"

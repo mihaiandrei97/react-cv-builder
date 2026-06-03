@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
 import type { ClassicCvData } from '../types'
+import { getDefaultSectionLabel } from '../types'
 import '../fonts'
 import { getLanguageLevel } from './language-level'
 
@@ -11,7 +12,7 @@ const ACCENT = '#c06b31'
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Source Serif 4',
+    fontFamily: 'Classic Serif TTF',
     fontSize: 10,
     color: INK,
     backgroundColor: PAPER,
@@ -217,9 +218,15 @@ const styles = StyleSheet.create({
   },
 })
 
+function normalizeForPdf(text: string): string {
+  return text.normalize('NFC')
+}
+
 export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   const accent = cv.colors.accent ?? ACCENT
   const paper = cv.colors.paper ?? PAPER
+  const t = (value: string) => normalizeForPdf(value)
+  const label = (key: string) => t(cv.sectionLabels[key] ?? getDefaultSectionLabel('classic', key, cv.locale))
 
   const customIds = cv.customSections.map((s) => s.id)
   const ordered = [...['skills', 'experience', 'projects', 'education', 'languages'], ...customIds].sort(
@@ -230,7 +237,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   )
   const motherTongue = cv.languages[0]
   const otherLanguages = cv.languages.slice(1)
-  const motherTongueLabel = motherTongue?.language || 'Romanian'
+  const motherTongueLabel = t(motherTongue?.language || 'Romanian')
 
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
@@ -238,47 +245,47 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
         {/* Header */}
         <View style={[styles.hero, { borderBottomColor: accent }]}>
           <View>
-            <Text style={[styles.heroName, { color: accent }]}>{cv.profile.name}</Text>
-            <Text style={styles.heroRole}>{cv.profile.title}</Text>
+            <Text style={[styles.heroName, { color: accent }]}>{t(cv.profile.name)}</Text>
+            <Text style={styles.heroRole}>{t(cv.profile.title)}</Text>
           </View>
           <View style={styles.contactList}>
-            <Text style={styles.contactItem}>{cv.profile.location}</Text>
-            <Text style={styles.contactItem}>{cv.profile.email}</Text>
-            <Text style={styles.contactItem}>{cv.profile.website}</Text>
+            <Text style={styles.contactItem}>{t(cv.profile.location)}</Text>
+            <Text style={styles.contactItem}>{t(cv.profile.email)}</Text>
+            <Text style={styles.contactItem}>{t(cv.profile.website)}</Text>
           </View>
         </View>
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.profile ?? 'Profile'}</Text>
-          <Text style={styles.paragraph}>{cv.profile.summary}</Text>
+          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('profile')}</Text>
+          <Text style={styles.paragraph}>{t(cv.profile.summary)}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'skills' && cv.skills.length > 0) return (
             <View key="skills" style={styles.section} break={cv.pageBreaks.includes('skills')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.skills ?? 'Core Skills'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('skills')}</Text>
               <View style={styles.skillGrid}>
                 {cv.skills.map((skill, i) => (
-                  <Text key={i} style={styles.skillItem}>{skill}</Text>
+                  <Text key={i} style={styles.skillItem}>{t(skill)}</Text>
                 ))}
               </View>
             </View>
           )
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.experience ?? 'Experience'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('experience')}</Text>
               {cv.experiences.map((exp) => (
                 <View key={exp.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>
-                    <Text style={styles.experienceTitle}>{exp.role} – {exp.company}</Text>
-                    <Text style={styles.experiencePeriod}>{exp.period}</Text>
+                    <Text style={styles.experienceTitle}>{t(exp.role)} – {t(exp.company)}</Text>
+                    <Text style={styles.experiencePeriod}>{t(exp.period)}</Text>
                   </View>
                   <View style={styles.bulletList}>
                     {exp.highlights.map((h, i) => (
                       <View key={i} style={styles.bulletItem}>
                         <Text style={styles.bulletDot}>•</Text>
-                        <Text style={styles.bulletText}>{h}</Text>
+                        <Text style={styles.bulletText}>{t(h)}</Text>
                       </View>
                     ))}
                   </View>
@@ -288,33 +295,33 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'projects' && cv.projects.length > 0) return (
             <View key="projects" style={styles.section} break={cv.pageBreaks.includes('projects')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.projects ?? 'Selected Projects'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('projects')}</Text>
               {cv.projects.map((project) => (
                 <View key={project.id} style={styles.projectItem} wrap={false}>
-                  <Text style={styles.projectName}>{project.name}</Text>
-                  <Text style={styles.projectDesc}>{project.description}</Text>
-                  <Text style={styles.projectStack}>{project.stack}</Text>
+                  <Text style={styles.projectName}>{t(project.name)}</Text>
+                  <Text style={styles.projectDesc}>{t(project.description)}</Text>
+                  <Text style={styles.projectStack}>{t(project.stack)}</Text>
                 </View>
               ))}
             </View>
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.education ?? 'Education'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('education')}</Text>
               {cv.education.map((edu) => (
                 <View key={edu.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>
-                    <Text style={styles.experienceTitle}>{edu.degree}</Text>
-                    <Text style={styles.experiencePeriod}>{edu.period}</Text>
+                    <Text style={styles.experienceTitle}>{t(edu.degree)}</Text>
+                    <Text style={styles.experiencePeriod}>{t(edu.period)}</Text>
                   </View>
-                  <Text style={{ fontSize: 9, color: MUTED, marginTop: 1 }}>{edu.institution}</Text>
+                  <Text style={{ fontSize: 9, color: MUTED, marginTop: 1 }}>{t(edu.institution)}</Text>
                 </View>
               ))}
             </View>
           )
           if (key === 'languages' && cv.languages.length > 0) return (
             <View key="languages" style={styles.section} break={cv.pageBreaks.includes('languages')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{cv.sectionLabels.languages ?? 'Languages'}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('languages')}</Text>
               <View style={styles.langTable}>
                 <View style={styles.langMotherRow}>
                   <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
@@ -336,7 +343,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
                 </View>
                 {otherLanguages.map((lang, i) => (
                   <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
-                    <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
+                    <Text style={[styles.langCell, styles.langColName]}>{t(lang.language)}</Text>
                     <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
                     <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
                     <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
@@ -352,11 +359,11 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           const custom = cv.customSections.find((s) => s.id === key)
           if (custom) return (
             <View key={key} style={styles.section} break={cv.pageBreaks.includes(key)}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{custom.title}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{t(custom.title)}</Text>
               {custom.bullets.filter(Boolean).map((b, i) => (
                 <View key={i} style={styles.bulletItem}>
                   <Text style={styles.bulletDot}>{'•'}</Text>
-                  <Text style={styles.bulletText}>{b}</Text>
+                  <Text style={styles.bulletText}>{t(b)}</Text>
                 </View>
               ))}
             </View>

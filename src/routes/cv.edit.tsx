@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
+import type { Experience, Project, Education, Certification, Language, Profile, CvLocale } from '../lib/types'
+import { getDefaultSectionLabelsForTemplate } from '../lib/types'
 import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
+import { cvStore, cvDerived, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, setLocale } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -25,18 +26,22 @@ export const Route = createFileRoute('/cv/edit')({
 function TopBar({
   profileName,
   templateName,
+  locale,
   saveStatus,
   isCompact,
   activePane,
   onPaneChange,
+  onLocaleChange,
   onReset,
 }: {
   profileName: string
   templateName: string
+  locale: CvLocale
   saveStatus: string
   isCompact: boolean
   activePane: 'form' | 'preview'
   onPaneChange: (pane: 'form' | 'preview') => void
+  onLocaleChange: (locale: CvLocale) => void
   onReset: () => void
 }) {
   return (
@@ -54,6 +59,22 @@ function TopBar({
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
         <span style={s.templateBadge}>{profileName}</span>
         <span style={s.templateBadge}>{templateName}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <button
+            type="button"
+            style={locale === 'en' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
+            onClick={() => onLocaleChange('en')}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            style={locale === 'ro' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
+            onClick={() => onLocaleChange('ro')}
+          >
+            RO
+          </button>
+        </div>
         {isCompact && (
           <div style={s.viewSwitch}>
             <button
@@ -229,15 +250,17 @@ function CollapsibleSection({
 
 function EditPage() {
   const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
-  const fullData = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).data)
-  const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
-  const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
-  const hiddenSections = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).hiddenSections ?? [])
-  const pageBreaks = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).pageBreaks ?? [])
-  const sectionOrder = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionOrder ?? [...DEFAULT_SECTION_ORDER])
-  const colors = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).colors ?? {})
-  const sectionLabels = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).sectionLabels ?? {})
-  const activeUpdatedAt = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).updatedAt)
+  const activeProfile = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]))
+  const locale = activeProfile.locale
+  const fullData = activeProfile.localized[locale].data
+  const sectionLabels = activeProfile.localized[locale].sectionLabels ?? {}
+  const templateId = activeProfile.templateId
+  const profileName = activeProfile.name
+  const hiddenSections = activeProfile.hiddenSections ?? []
+  const pageBreaks = activeProfile.pageBreaks ?? []
+  const sectionOrder = activeProfile.sectionOrder ?? [...DEFAULT_SECTION_ORDER]
+  const colors = activeProfile.colors ?? {}
+  const activeUpdatedAt = activeProfile.updatedAt
   const cv = useSelector(cvDerived, (s) => s)
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('All changes saved')
@@ -489,10 +512,12 @@ function EditPage() {
       <TopBar
         profileName={profileName}
         templateName={template.name}
+        locale={locale}
         saveStatus={saveStatus}
         isCompact={isCompactLayout}
         activePane={activePane}
         onPaneChange={setActivePane}
+        onLocaleChange={setLocale}
         onReset={handleReset}
       />
 
@@ -574,50 +599,18 @@ function EditPage() {
           <section id="section-labels" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>Section Labels</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
-              {({
-                classic: [
-                  { key: 'profile', default: 'Profile' },
-                  { key: 'skills', default: 'Core Skills' },
-                  { key: 'experience', default: 'Experience' },
-                  { key: 'projects', default: 'Selected Projects' },
-                  { key: 'education', default: 'Education' },
-                  { key: 'languages', default: 'Languages' },
-                ] as { key: string; default: string }[],
-                modern: [
-                  { key: 'profile', default: 'Profile' },
-                  { key: 'contact', default: 'Contact' },
-                  { key: 'skills', default: 'Skills' },
-                  { key: 'experience', default: 'Experience' },
-                  { key: 'projects', default: 'Selected Projects' },
-                  { key: 'education', default: 'Education' },
-                  { key: 'languages', default: 'Languages' },
-                ] as { key: string; default: string }[],
-                executive: [
-                  { key: 'profile', default: 'Executive Summary' },
-                  { key: 'experience', default: 'Professional Experience' },
-                  { key: 'education', default: 'Education' },
-                  { key: 'certifications', default: 'Certifications' },
-                  { key: 'languages', default: 'Languages' },
-                ] as { key: string; default: string }[],
-                compact: [
-                  { key: 'about', default: 'About' },
-                  { key: 'skills', default: 'Skills' },
-                  { key: 'languages', default: 'Languages' },
-                  { key: 'experience', default: 'Experience' },
-                  { key: 'education', default: 'Education' },
-                ] as { key: string; default: string }[],
-              }[templateId] ?? []).map((slot) => (
-                <div key={slot.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={s.fieldLabel}>{slot.default}</label>
+              {Object.entries(getDefaultSectionLabelsForTemplate(templateId, locale)).map(([key, label]) => (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={s.fieldLabel}>{label}</label>
                   <input
                     type="text"
-                    value={sectionLabels[slot.key] ?? ''}
-                    placeholder={slot.default}
-                    onChange={(e) => setSectionLabels({ ...sectionLabels, [slot.key]: e.target.value })}
+                    value={sectionLabels[key] ?? ''}
+                    placeholder={label}
+                    onChange={(e) => setSectionLabels({ ...sectionLabels, [key]: e.target.value })}
                     onBlur={(e) => {
                       if (!e.target.value.trim()) {
                         const next = { ...sectionLabels }
-                        delete next[slot.key]
+                        delete next[key]
                         setSectionLabels(next)
                       }
                     }}

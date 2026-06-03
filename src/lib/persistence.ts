@@ -1,4 +1,4 @@
-import { type CvProfile, type FullCvData, DEFAULT_FULL_CV } from './types'
+import { type CvProfile, type FullCvData, makeDefaultFullCv } from './types'
 
 export type ProfilesState = {
   schemaVersion: number
@@ -20,13 +20,27 @@ function deepClone<T>(obj: T): T {
 function sanitizeProfiles(state: ProfilesState, defaultSectionOrder: string[]): ProfilesState {
   const profiles = (state.profiles ?? []).map((p) => ({
     ...p,
+    locale: p.locale ?? 'en',
+    localized: {
+      en: {
+        data: p.localized?.en?.data ?? makeDefaultFullCv('en'),
+        sectionLabels: p.localized?.en?.sectionLabels ?? {},
+      },
+      ro: {
+        data: p.localized?.ro?.data ?? makeDefaultFullCv('ro'),
+        sectionLabels: p.localized?.ro?.sectionLabels ?? {},
+      },
+    },
     hiddenSections: p.hiddenSections ?? [],
     pageBreaks: p.pageBreaks ?? [],
     sectionOrder: p.sectionOrder ?? [...defaultSectionOrder],
     colors: p.colors ?? {},
-    sectionLabels: p.sectionLabels ?? {},
-    data: { ...p.data, customSections: p.data.customSections ?? [] },
   }))
+
+  for (const p of profiles) {
+    p.localized.en.data = { ...p.localized.en.data, customSections: p.localized.en.data.customSections ?? [] }
+    p.localized.ro.data = { ...p.localized.ro.data, customSections: p.localized.ro.data.customSections ?? [] }
+  }
 
   const activeProfileId = profiles.some((p) => p.id === state.activeProfileId)
     ? state.activeProfileId
@@ -40,7 +54,7 @@ function sanitizeProfiles(state: ProfilesState, defaultSectionOrder: string[]): 
 }
 
 function tryLoadLegacyState(makeProfile: MakeProfile): ProfilesState {
-  let data = deepClone(DEFAULT_FULL_CV)
+  let data = deepClone(makeDefaultFullCv('en'))
   let templateId = 'classic'
 
   try {
