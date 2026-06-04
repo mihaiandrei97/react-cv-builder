@@ -12,7 +12,7 @@ import {
   importProfile,
 } from '../lib/cv-store'
 import { TEMPLATES } from '../lib/templates'
-import type { CvProfile } from '../lib/types'
+import type { CvProfile, CvLocale } from '../lib/types'
 
 export const Route = createFileRoute('/profiles')({
   component: ProfilesPage,
@@ -203,6 +203,19 @@ function ProfileCard({
         >
           {tpl.name}
         </span>
+        <span
+          style={{
+            fontSize: '0.67rem',
+            fontWeight: 700,
+            color: 'var(--muted)',
+            background: 'transparent',
+            border: '1px solid var(--line)',
+            borderRadius: '999px',
+            padding: '0.15rem 0.55rem',
+          }}
+        >
+          {profile.locale.toUpperCase()}
+        </span>
         <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
           Updated {formatRelativeDate(profile.updatedAt)}
         </span>
@@ -261,6 +274,7 @@ function ProfilesPage() {
 
   const [creatingNew, setCreatingNew] = useState(false)
   const [newName, setNewName] = useState('')
+  const [newLocale, setNewLocale] = useState<CvLocale>('en')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [importError, setImportError] = useState<string | null>(null)
@@ -285,9 +299,10 @@ function ProfilesPage() {
       setCreatingNew(false)
       return
     }
-    addProfile(newName.trim())
+    addProfile(newName.trim(), newLocale)
     setCreatingNew(false)
     setNewName('')
+    setNewLocale('en')
     navigate({ to: '/cv/edit' })
   }
 
@@ -400,6 +415,44 @@ function ProfilesPage() {
               }}
               style={s.newInput}
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--muted)' }}>Locale</span>
+              <div style={{ display: 'flex', borderRadius: '0.35rem', overflow: 'hidden', border: '1px solid var(--line)' }}>
+                <button
+                  type="button"
+                  onClick={() => setNewLocale('en')}
+                  style={{
+                    fontFamily: 'inherit',
+                    fontSize: '0.82rem',
+                    fontWeight: newLocale === 'en' ? 700 : 600,
+                    color: newLocale === 'en' ? 'var(--ink)' : 'var(--muted)',
+                    background: newLocale === 'en' ? '#fffdf7' : 'transparent',
+                    border: 0,
+                    borderRight: '1px solid var(--line)',
+                    padding: '0.32rem 0.6rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewLocale('ro')}
+                  style={{
+                    fontFamily: 'inherit',
+                    fontSize: '0.82rem',
+                    fontWeight: newLocale === 'ro' ? 700 : 600,
+                    color: newLocale === 'ro' ? 'var(--ink)' : 'var(--muted)',
+                    background: newLocale === 'ro' ? '#fffdf7' : 'transparent',
+                    border: 0,
+                    padding: '0.32rem 0.6rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  RO
+                </button>
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button type="button" style={s.btnPrimary} onClick={handleCreate}>
                 Create

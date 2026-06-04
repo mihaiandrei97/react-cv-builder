@@ -139,17 +139,13 @@ export type FullCvData = {
   customSections: CustomSection[];
 };
 
-export type LocalizedProfileData = {
-  data: FullCvData;
-  sectionLabels: Record<string, string>;
-};
-
 export type CvProfile = {
   id: string;
   name: string;
   templateId: string;
   locale: CvLocale;
-  localized: Record<CvLocale, LocalizedProfileData>;
+  data: FullCvData;
+  sectionLabels: Record<string, string>;
   hiddenSections: string[];
   pageBreaks: string[];
   sectionOrder: string[];

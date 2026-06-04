@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { useProfiles, useActiveProfileId, useActiveProfile, saveTemplatePref, switchProfile, addProfile } from '../lib/cv-store'
-import { projectCv, type CvData, type CvProfile } from '../lib/types'
+import { projectCv, type CvData, type CvProfile, type CvLocale } from '../lib/types'
 
 export const Route = createFileRoute('/templates')({
   component: TemplatesPage,
@@ -272,12 +272,14 @@ function ProfileStrip() {
   const activeProfileId = useActiveProfileId()
   const [creatingNew, setCreatingNew] = useState(false)
   const [newName, setNewName] = useState('')
+  const [newLocale, setNewLocale] = useState<CvLocale>('en')
 
   function handleCreate() {
     const trimmed = newName.trim()
-    if (trimmed) addProfile(trimmed)
+    if (trimmed) addProfile(trimmed, newLocale)
     setCreatingNew(false)
     setNewName('')
+    setNewLocale('en')
   }
 
   return (
@@ -305,30 +307,82 @@ function ProfileStrip() {
         ))}
 
         {creatingNew ? (
-          <input
-            autoFocus
-            type="text"
-            placeholder="Profile name…"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreate()
-              if (e.key === 'Escape') { setCreatingNew(false); setNewName('') }
-            }}
-            onBlur={handleCreate}
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '0.85rem',
-              border: '2px solid var(--accent)',
-              borderRadius: '0.4rem',
-              padding: '0.6rem 0.9rem',
-              outline: 'none',
-              background: '#fff',
-              color: 'var(--ink)',
-              width: 160,
-              flexShrink: 0,
-            }}
-          />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+            <input
+              autoFocus
+              type="text"
+              placeholder="Profile name…"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreate()
+                if (e.key === 'Escape') { setCreatingNew(false); setNewName(''); setNewLocale('en') }
+              }}
+              style={{
+                fontFamily: 'inherit',
+                fontSize: '0.85rem',
+                border: '2px solid var(--accent)',
+                borderRadius: '0.4rem',
+                padding: '0.6rem 0.9rem',
+                outline: 'none',
+                background: '#fff',
+                color: 'var(--ink)',
+                width: 160,
+              }}
+            />
+            <div style={{ display: 'flex', borderRadius: '0.35rem', overflow: 'hidden', border: '1px solid var(--line)' }}>
+              <button
+                type="button"
+                onClick={() => setNewLocale('en')}
+                style={{
+                  fontFamily: 'inherit',
+                  fontSize: '0.75rem',
+                  fontWeight: newLocale === 'en' ? 700 : 600,
+                  color: newLocale === 'en' ? 'var(--ink)' : 'var(--muted)',
+                  background: newLocale === 'en' ? '#fffdf7' : 'transparent',
+                  border: 0,
+                  borderRight: '1px solid var(--line)',
+                  padding: '0.32rem 0.45rem',
+                  cursor: 'pointer',
+                }}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewLocale('ro')}
+                style={{
+                  fontFamily: 'inherit',
+                  fontSize: '0.75rem',
+                  fontWeight: newLocale === 'ro' ? 700 : 600,
+                  color: newLocale === 'ro' ? 'var(--ink)' : 'var(--muted)',
+                  background: newLocale === 'ro' ? '#fffdf7' : 'transparent',
+                  border: 0,
+                  padding: '0.32rem 0.45rem',
+                  cursor: 'pointer',
+                }}
+              >
+                RO
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleCreate}
+              style={{
+                fontFamily: 'inherit',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: '#fff',
+                background: 'var(--green)',
+                border: 'none',
+                borderRadius: '0.4rem',
+                padding: '0.6rem 0.7rem',
+                cursor: 'pointer',
+              }}
+            >
+              Create
+            </button>
+          </div>
         ) : (
           <button
             type="button"
@@ -374,8 +428,8 @@ function ProfileStrip() {
 
 function TemplatesPage() {
   const activeProfile = useActiveProfile()
-  const fullData = activeProfile.localized[activeProfile.locale].data
-  const sectionLabels = activeProfile.localized[activeProfile.locale].sectionLabels
+  const fullData = activeProfile.data
+  const sectionLabels = activeProfile.sectionLabels
   const templateId = activeProfile.templateId
   const navigate = useNavigate()
 

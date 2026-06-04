@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import type { Experience, Project, Education, Certification, Language, Profile, CvLocale } from '../lib/types'
+import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
-import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, setLocale } from '../lib/cv-store'
+import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -25,22 +25,18 @@ export const Route = createFileRoute('/cv/edit')({
 function TopBar({
   profileName,
   templateName,
-  locale,
   saveStatus,
   isCompact,
   activePane,
   onPaneChange,
-  onLocaleChange,
   onReset,
 }: {
   profileName: string
   templateName: string
-  locale: CvLocale
   saveStatus: string
   isCompact: boolean
   activePane: 'form' | 'preview'
   onPaneChange: (pane: 'form' | 'preview') => void
-  onLocaleChange: (locale: CvLocale) => void
   onReset: () => void
 }) {
   return (
@@ -58,22 +54,6 @@ function TopBar({
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
         <span style={s.templateBadge}>{profileName}</span>
         <span style={s.templateBadge}>{templateName}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <button
-            type="button"
-            style={locale === 'en' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
-            onClick={() => onLocaleChange('en')}
-          >
-            EN
-          </button>
-          <button
-            type="button"
-            style={locale === 'ro' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
-            onClick={() => onLocaleChange('ro')}
-          >
-            RO
-          </button>
-        </div>
         {isCompact && (
           <div style={s.viewSwitch}>
             <button
@@ -251,8 +231,8 @@ function EditPage() {
   const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
   const activeProfile = useActiveProfile()
   const locale = activeProfile.locale
-  const fullData = activeProfile.localized[locale].data
-  const sectionLabels = activeProfile.localized[locale].sectionLabels ?? {}
+  const fullData = activeProfile.data
+  const sectionLabels = activeProfile.sectionLabels ?? {}
   const templateId = activeProfile.templateId
   const profileName = activeProfile.name
   const hiddenSections = activeProfile.hiddenSections ?? []
@@ -511,12 +491,10 @@ function EditPage() {
       <TopBar
         profileName={profileName}
         templateName={template.name}
-        locale={locale}
         saveStatus={saveStatus}
         isCompact={isCompactLayout}
         activePane={activePane}
         onPaneChange={setActivePane}
-        onLocaleChange={setLocale}
         onReset={handleReset}
       />
 

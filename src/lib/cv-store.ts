@@ -10,23 +10,15 @@ function deepClone<T>(obj: T): T {
 
 export const DEFAULT_SECTION_ORDER = ['skills', 'experience', 'projects', 'education', 'certifications', 'languages']
 
-function makeProfile(name: string, templateId = 'classic', data?: FullCvData): CvProfile {
-  const english = data ? deepClone(data) : makeDefaultFullCv('en')
+function makeProfile(name: string, templateId = 'classic', data?: FullCvData, locale: CvLocale = 'en'): CvProfile {
+  const cvData = data ? deepClone(data) : makeDefaultFullCv(locale)
   return {
     id: crypto.randomUUID(),
     name,
     templateId,
-    locale: 'en',
-    localized: {
-      en: {
-        data: english,
-        sectionLabels: {},
-      },
-      ro: {
-        data: makeDefaultFullCv('ro'),
-        sectionLabels: {},
-      },
-    },
+    locale,
+    data: cvData,
+    sectionLabels: {},
     hiddenSections: [],
     pageBreaks: [],
     sectionOrder: [...DEFAULT_SECTION_ORDER],
@@ -34,10 +26,6 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData): C
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
-}
-
-function getLocalizedBucket(profile: CvProfile) {
-  return profile.localized[profile.locale]
 }
 
 // ── Persistence ───────────────────────────────────────────────────────────────
@@ -64,16 +52,15 @@ type CvContentState = {
 
 function getCvContentState(state: ProfilesState): CvContentState {
   const active = state.profiles.find(p => p.id === state.activeProfileId) ?? state.profiles[0]
-  const bucket = active.localized[active.locale]
   return {
-    data: bucket.data,
+    data: active.data,
     templateId: active.templateId,
     locale: active.locale,
     hiddenSections: active.hiddenSections ?? [],
     pageBreaks: active.pageBreaks ?? [],
     sectionOrder: active.sectionOrder ?? DEFAULT_SECTION_ORDER,
     colors: active.colors ?? {},
-    sectionLabels: bucket.sectionLabels ?? {},
+    sectionLabels: active.sectionLabels ?? {},
     name: active.name,
     updatedAt: active.updatedAt,
   }
@@ -129,7 +116,6 @@ export type ProfileAction =
 
 export type CvContentAction =
   | { type: 'fullData.update'; updater: (prev: FullCvData) => FullCvData }
-  | { type: 'locale.set'; locale: CvLocale }
   | { type: 'template.set'; templateId: string }
   | { type: 'cv.reset' }
   | { type: 'section.toggleVisibility'; section: string }
@@ -166,16 +152,8 @@ function reduceProfiles(state: ProfilesState, action: ProfileAction): ProfilesSt
         ...source,
         id: crypto.randomUUID(),
         name: `${source.name} (copy)`,
-        localized: {
-          en: {
-            data: deepClone(source.localized.en.data),
-            sectionLabels: { ...(source.localized.en.sectionLabels ?? {}) },
-          },
-          ro: {
-            data: deepClone(source.localized.ro.data),
-            sectionLabels: { ...(source.localized.ro.sectionLabels ?? {}) },
-          },
-        },
+        data: deepClone(source.data),
+        sectionLabels: { ...(source.sectionLabels ?? {}) },
         hiddenSections: [...(source.hiddenSections ?? [])],
         pageBreaks: [...(source.pageBreaks ?? [])],
         sectionOrder: [...(source.sectionOrder ?? DEFAULT_SECTION_ORDER)],
@@ -229,27 +207,13 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
   switch (action.type) {
     case 'fullData.update': {
       return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
-        const nextData = action.updater(bucket.data)
-        if (nextData === bucket.data) return profile
+        const nextData = action.updater(profile.data)
+        if (nextData === profile.data) return profile
         return {
           ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              data: nextData,
-            },
-          },
+          data: nextData,
           updatedAt: Date.now(),
         }
-      })
-    }
-
-    case 'locale.set': {
-      return withActiveProfile(state, (profile) => {
-        if (profile.locale === action.locale) return profile
-        return { ...profile, locale: action.locale, updatedAt: Date.now() }
       })
     }
 
@@ -262,17 +226,10 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
 
     case 'cv.reset': {
       return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
         return {
           ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              data: makeDefaultFullCv(profile.locale),
-              sectionLabels: {},
-            },
-          },
+          data: makeDefaultFullCv(profile.locale),
+          sectionLabels: {},
           updatedAt: Date.now(),
         }
       })
@@ -307,17 +264,10 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
 
     case 'sectionLabels.set': {
       return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
-        if (shallowEqualRecord(bucket.sectionLabels ?? {}, action.sectionLabels)) return profile
+        if (shallowEqualRecord(profile.sectionLabels ?? {}, action.sectionLabels)) return profile
         return {
           ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              sectionLabels: action.sectionLabels,
-            },
-          },
+          sectionLabels: action.sectionLabels,
           updatedAt: Date.now(),
         }
       })
@@ -325,8 +275,7 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
 
     case 'customSection.add': {
       return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
-        const customSections = bucket.data.customSections ?? []
+        const customSections = profile.data.customSections ?? []
         if (customSections.some((s) => s.id === action.id)) return profile
         const section: CustomSection = {
           id: action.id,
@@ -335,13 +284,7 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
         }
         return {
           ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              data: { ...bucket.data, customSections: [...customSections, section] },
-            },
-          },
+          data: { ...profile.data, customSections: [...customSections, section] },
           sectionOrder: [...(profile.sectionOrder ?? DEFAULT_SECTION_ORDER), action.id],
           updatedAt: Date.now(),
         }
@@ -350,18 +293,11 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
 
     case 'customSection.remove': {
       return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
-        const customSections = bucket.data.customSections ?? []
+        const customSections = profile.data.customSections ?? []
         if (!customSections.some((s) => s.id === action.id)) return profile
         return {
           ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              data: { ...bucket.data, customSections: customSections.filter((s) => s.id !== action.id) },
-            },
-          },
+          data: { ...profile.data, customSections: customSections.filter((s) => s.id !== action.id) },
           sectionOrder: (profile.sectionOrder ?? DEFAULT_SECTION_ORDER).filter((k) => k !== action.id),
           hiddenSections: (profile.hiddenSections ?? []).filter((k) => k !== action.id),
           updatedAt: Date.now(),
@@ -433,10 +369,6 @@ export function saveTemplatePref(id: string) {
   dispatch({ type: 'template.set', templateId: id })
 }
 
-export function setLocale(locale: CvLocale) {
-  dispatch({ type: 'locale.set', locale }, { immediatePersist: true })
-}
-
 export function resetCv() {
   dispatch({ type: 'cv.reset' }, { immediatePersist: true })
 }
@@ -445,8 +377,8 @@ export function switchProfile(id: string) {
   dispatch({ type: 'profile.switch', id })
 }
 
-export function addProfile(name: string) {
-  const profile = makeProfile(name.trim() || 'New CV')
+export function addProfile(name: string, locale: CvLocale = 'en') {
+  const profile = makeProfile(name.trim() || 'New CV', undefined, undefined, locale)
   dispatch({ type: 'profile.add', profile }, { immediatePersist: true })
   return profile.id
 }
@@ -510,20 +442,27 @@ export function importProfile(file: File): Promise<string> {
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(e.target?.result as string)
-        // Basic shape validation
         if (
           typeof parsed !== 'object' ||
           typeof parsed.name !== 'string' ||
           typeof parsed.templateId !== 'string' ||
-          typeof parsed.localized !== 'object'
+          typeof parsed.data !== 'object'
         ) {
           reject(new Error('Invalid backup file format.'))
           return
         }
         const profile: CvProfile = {
           ...parsed,
-          id: crypto.randomUUID(), // fresh ID to avoid collisions
+          id: crypto.randomUUID(),
           name: parsed.name,
+          data: parsed.data,
+          sectionLabels: parsed.sectionLabels ?? {},
+          hiddenSections: parsed.hiddenSections ?? [],
+          pageBreaks: parsed.pageBreaks ?? [],
+          sectionOrder: parsed.sectionOrder ?? DEFAULT_SECTION_ORDER,
+          colors: parsed.colors ?? {},
+          locale: parsed.locale ?? 'en',
+          templateId: parsed.templateId ?? 'classic',
           createdAt: Date.now(),
           updatedAt: Date.now(),
         }

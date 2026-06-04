@@ -21,16 +21,8 @@ function sanitizeProfiles(state: ProfilesState, defaultSectionOrder: string[]): 
   const profiles = (state.profiles ?? []).map((p) => ({
     ...p,
     locale: p.locale ?? 'en',
-    localized: {
-      en: {
-        data: p.localized?.en?.data ?? makeDefaultFullCv('en'),
-        sectionLabels: p.localized?.en?.sectionLabels ?? {},
-      },
-      ro: {
-        data: p.localized?.ro?.data ?? makeDefaultFullCv('ro'),
-        sectionLabels: p.localized?.ro?.sectionLabels ?? {},
-      },
-    },
+    data: p.data ?? makeDefaultFullCv(p.locale ?? 'en'),
+    sectionLabels: p.sectionLabels ?? {},
     hiddenSections: p.hiddenSections ?? [],
     pageBreaks: p.pageBreaks ?? [],
     sectionOrder: p.sectionOrder ?? [...defaultSectionOrder],
@@ -38,8 +30,7 @@ function sanitizeProfiles(state: ProfilesState, defaultSectionOrder: string[]): 
   }))
 
   for (const p of profiles) {
-    p.localized.en.data = { ...p.localized.en.data, customSections: p.localized.en.data.customSections ?? [] }
-    p.localized.ro.data = { ...p.localized.ro.data, customSections: p.localized.ro.data.customSections ?? [] }
+    p.data = { ...p.data, customSections: p.data.customSections ?? [] }
   }
 
   const activeProfileId = profiles.some((p) => p.id === state.activeProfileId)
