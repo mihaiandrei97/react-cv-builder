@@ -1,4 +1,4 @@
-import { createStore } from '@tanstack/react-store'
+import { createStore, useSelector } from '@tanstack/react-store'
 import { type FullCvData, type CvData, type CvProfile, type CustomSection, type CvLocale, makeDefaultFullCv, projectCv } from './types'
 import { type ProfilesState, loadProfilesState, saveProfilesState, createDebouncedStateSaver } from './persistence'
 
@@ -49,9 +49,47 @@ function loadState(): ProfilesState {
   })
 }
 
+type CvContentState = {
+  data: FullCvData
+  templateId: string
+  locale: CvLocale
+  hiddenSections: string[]
+  pageBreaks: string[]
+  sectionOrder: string[]
+  colors: Record<string, string>
+  sectionLabels: Record<string, string>
+  name: string
+  updatedAt: number
+}
+
+function getCvContentState(state: ProfilesState): CvContentState {
+  const active = state.profiles.find(p => p.id === state.activeProfileId) ?? state.profiles[0]
+  const bucket = active.localized[active.locale]
+  return {
+    data: bucket.data,
+    templateId: active.templateId,
+    locale: active.locale,
+    hiddenSections: active.hiddenSections ?? [],
+    pageBreaks: active.pageBreaks ?? [],
+    sectionOrder: active.sectionOrder ?? DEFAULT_SECTION_ORDER,
+    colors: active.colors ?? {},
+    sectionLabels: bucket.sectionLabels ?? {},
+    name: active.name,
+    updatedAt: active.updatedAt,
+  }
+}
+
 // ── Stores ────────────────────────────────────────────────────────────────────
 
 export const cvStore = createStore<ProfilesState>(loadState())
+
+export const profileStore = createStore(() => {
+  const { profiles, activeProfileId } = cvStore.state
+  return { profiles, activeProfileId }
+})
+
+export const cvContentStore = createStore(() => getCvContentState(cvStore.state))
+
 const schedulePersist = createDebouncedStateSaver<ProfilesState>(saveProfilesState, 400)
 
 function commitState(updater: (state: ProfilesState) => ProfilesState, immediatePersist = false) {
@@ -81,16 +119,19 @@ function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>
   return aKeys.every((key) => a[key] === b[key])
 }
 
-export type CvAction =
-  | { type: 'fullData.update'; updater: (prev: FullCvData) => FullCvData }
-  | { type: 'locale.set'; locale: CvLocale }
-  | { type: 'template.set'; templateId: string }
-  | { type: 'cv.reset' }
+export type ProfileAction =
   | { type: 'profile.switch'; id: string }
   | { type: 'profile.add'; profile: CvProfile }
   | { type: 'profile.duplicate'; id: string }
   | { type: 'profile.rename'; id: string; name: string }
   | { type: 'profile.delete'; id: string }
+  | { type: 'profile.import'; profile: CvProfile }
+
+export type CvContentAction =
+  | { type: 'fullData.update'; updater: (prev: FullCvData) => FullCvData }
+  | { type: 'locale.set'; locale: CvLocale }
+  | { type: 'template.set'; templateId: string }
+  | { type: 'cv.reset' }
   | { type: 'section.toggleVisibility'; section: string }
   | { type: 'section.togglePageBreak'; section: string }
   | { type: 'colors.set'; colors: Record<string, string> }
@@ -98,61 +139,11 @@ export type CvAction =
   | { type: 'customSection.add'; id: string }
   | { type: 'customSection.remove'; id: string }
   | { type: 'section.move'; section: string; direction: 'up' | 'down' }
-  | { type: 'profile.import'; profile: CvProfile }
 
-function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
+export type CvAction = ProfileAction | CvContentAction
+
+function reduceProfiles(state: ProfilesState, action: ProfileAction): ProfilesState {
   switch (action.type) {
-    case 'fullData.update': {
-      return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
-        const nextData = action.updater(bucket.data)
-        if (nextData === bucket.data) return profile
-        return {
-          ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              data: nextData,
-            },
-          },
-          updatedAt: Date.now(),
-        }
-      })
-    }
-
-    case 'locale.set': {
-      return withActiveProfile(state, (profile) => {
-        if (profile.locale === action.locale) return profile
-        return { ...profile, locale: action.locale, updatedAt: Date.now() }
-      })
-    }
-
-    case 'template.set': {
-      return withActiveProfile(state, (profile) => {
-        if (profile.templateId === action.templateId) return profile
-        return { ...profile, templateId: action.templateId, updatedAt: Date.now() }
-      })
-    }
-
-    case 'cv.reset': {
-      return withActiveProfile(state, (profile) => {
-        const bucket = getLocalizedBucket(profile)
-        return {
-          ...profile,
-          localized: {
-            ...profile.localized,
-            [profile.locale]: {
-              ...bucket,
-              data: makeDefaultFullCv(profile.locale),
-              sectionLabels: {},
-            },
-          },
-          updatedAt: Date.now(),
-        }
-      })
-    }
-
     case 'profile.switch': {
       if (state.activeProfileId === action.id) return state
       if (!state.profiles.some((p) => p.id === action.id)) return state
@@ -218,6 +209,73 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
       const remaining = state.profiles.filter((p) => p.id !== action.id)
       const activeProfileId = state.activeProfileId === action.id ? remaining[0].id : state.activeProfileId
       return { ...state, profiles: remaining, activeProfileId }
+    }
+
+    case 'profile.import': {
+      if (state.profiles.some((p) => p.id === action.profile.id)) return state
+      return {
+        ...state,
+        profiles: [...state.profiles, action.profile],
+        activeProfileId: action.profile.id,
+      }
+    }
+
+    default:
+      return state
+  }
+}
+
+function reduceCvContent(state: ProfilesState, action: CvContentAction): ProfilesState {
+  switch (action.type) {
+    case 'fullData.update': {
+      return withActiveProfile(state, (profile) => {
+        const bucket = getLocalizedBucket(profile)
+        const nextData = action.updater(bucket.data)
+        if (nextData === bucket.data) return profile
+        return {
+          ...profile,
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              data: nextData,
+            },
+          },
+          updatedAt: Date.now(),
+        }
+      })
+    }
+
+    case 'locale.set': {
+      return withActiveProfile(state, (profile) => {
+        if (profile.locale === action.locale) return profile
+        return { ...profile, locale: action.locale, updatedAt: Date.now() }
+      })
+    }
+
+    case 'template.set': {
+      return withActiveProfile(state, (profile) => {
+        if (profile.templateId === action.templateId) return profile
+        return { ...profile, templateId: action.templateId, updatedAt: Date.now() }
+      })
+    }
+
+    case 'cv.reset': {
+      return withActiveProfile(state, (profile) => {
+        const bucket = getLocalizedBucket(profile)
+        return {
+          ...profile,
+          localized: {
+            ...profile.localized,
+            [profile.locale]: {
+              ...bucket,
+              data: makeDefaultFullCv(profile.locale),
+              sectionLabels: {},
+            },
+          },
+          updatedAt: Date.now(),
+        }
+      })
     }
 
     case 'section.toggleVisibility': {
@@ -323,17 +381,22 @@ function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
       })
     }
 
-    case 'profile.import': {
-      if (state.profiles.some((p) => p.id === action.profile.id)) return state
-      return {
-        ...state,
-        profiles: [...state.profiles, action.profile],
-        activeProfileId: action.profile.id,
-      }
-    }
-
     default:
       return state
+  }
+}
+
+function reduceState(state: ProfilesState, action: CvAction): ProfilesState {
+  switch (action.type) {
+    case 'profile.switch':
+    case 'profile.add':
+    case 'profile.duplicate':
+    case 'profile.rename':
+    case 'profile.delete':
+    case 'profile.import':
+      return reduceProfiles(state, action)
+    default:
+      return reduceCvContent(state, action)
   }
 }
 
@@ -341,20 +404,18 @@ export function dispatch(action: CvAction, options?: { immediatePersist?: boolea
   commitState((state) => reduceState(state, action), options?.immediatePersist ?? false)
 }
 
-/** Derived store: automatically recomputes whenever cvStore changes. */
+/** Derived store: automatically recomputes only when CV content changes. */
 export const cvDerived = createStore<CvData>(() => {
-  const { profiles, activeProfileId } = cvStore.state
-  const active = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
-  const bucket = active.localized[active.locale]
+  const c = cvContentStore.state
   return projectCv(
-    bucket.data,
-    active.templateId,
-    active.hiddenSections ?? [],
-    active.pageBreaks ?? [],
-    active.sectionOrder ?? DEFAULT_SECTION_ORDER,
-    active.colors ?? {},
-    active.locale,
-    bucket.sectionLabels ?? {},
+    c.data,
+    c.templateId,
+    c.hiddenSections,
+    c.pageBreaks,
+    c.sectionOrder,
+    c.colors,
+    c.locale,
+    c.sectionLabels,
   )
 })
 
@@ -475,4 +536,22 @@ export function importProfile(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read file.'))
     reader.readAsText(file)
   })
+}
+
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
+export function useActiveProfile() {
+  return useSelector(profileStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]))
+}
+
+export function useProfiles() {
+  return useSelector(profileStore, (s) => s.profiles)
+}
+
+export function useActiveProfileId() {
+  return useSelector(profileStore, (s) => s.activeProfileId)
+}
+
+export function useCvData() {
+  return useSelector(cvDerived, (s) => s)
 }

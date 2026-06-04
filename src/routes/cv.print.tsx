@@ -3,8 +3,7 @@ import { useRef, useMemo, memo, useCallback, useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
-import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived } from '../lib/cv-store'
+import { useActiveProfile, useCvData } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 
 export const Route = createFileRoute('/cv/print')({
@@ -67,9 +66,10 @@ const PdfViewer = memo(function PdfViewer({
 })
 
 function PrintPage() {
-  const cv = useSelector(cvDerived, (s) => s)
-  const templateId = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).templateId)
-  const profileName = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]).name)
+  const cv = useCvData()
+  const activeProfile = useActiveProfile()
+  const templateId = activeProfile.templateId
+  const profileName = activeProfile.name
   const blobUrlRef = useRef<string | null>(null)
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
 

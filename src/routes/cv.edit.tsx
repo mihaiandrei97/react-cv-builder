@@ -3,8 +3,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile, CvLocale } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
-import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, setLocale } from '../lib/cv-store'
+import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, setLocale } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -250,7 +249,7 @@ function CollapsibleSection({
 
 function EditPage() {
   const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
-  const activeProfile = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]))
+  const activeProfile = useActiveProfile()
   const locale = activeProfile.locale
   const fullData = activeProfile.localized[locale].data
   const sectionLabels = activeProfile.localized[locale].sectionLabels ?? {}
@@ -261,7 +260,7 @@ function EditPage() {
   const sectionOrder = activeProfile.sectionOrder ?? [...DEFAULT_SECTION_ORDER]
   const colors = activeProfile.colors ?? {}
   const activeUpdatedAt = activeProfile.updatedAt
-  const cv = useSelector(cvDerived, (s) => s)
+  const cv = useCvData()
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('All changes saved')
   const lastUpdatedAtRef = useRef(activeUpdatedAt)

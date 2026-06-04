@@ -2,8 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
-import { useSelector } from '@tanstack/react-store'
-import { cvStore, saveTemplatePref, switchProfile, addProfile } from '../lib/cv-store'
+import { useProfiles, useActiveProfileId, useActiveProfile, saveTemplatePref, switchProfile, addProfile } from '../lib/cv-store'
 import { projectCv, type CvData, type CvProfile } from '../lib/types'
 
 export const Route = createFileRoute('/templates')({
@@ -269,8 +268,8 @@ function ProfilePill({
 }
 
 function ProfileStrip() {
-  const profiles = useSelector(cvStore, (s) => s.profiles)
-  const activeProfileId = useSelector(cvStore, (s) => s.activeProfileId)
+  const profiles = useProfiles()
+  const activeProfileId = useActiveProfileId()
   const [creatingNew, setCreatingNew] = useState(false)
   const [newName, setNewName] = useState('')
 
@@ -374,7 +373,7 @@ function ProfileStrip() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function TemplatesPage() {
-  const activeProfile = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]))
+  const activeProfile = useActiveProfile()
   const fullData = activeProfile.localized[activeProfile.locale].data
   const sectionLabels = activeProfile.localized[activeProfile.locale].sectionLabels
   const templateId = activeProfile.templateId

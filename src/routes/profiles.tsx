@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useRef } from 'react'
-import { useSelector } from '@tanstack/react-store'
 import {
-  cvStore,
+  useProfiles,
+  useActiveProfileId,
   addProfile,
   duplicateProfile,
   deleteProfile,
@@ -255,8 +255,8 @@ function ProfileCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function ProfilesPage() {
-  const profiles = useSelector(cvStore, (s) => s.profiles)
-  const activeProfileId = useSelector(cvStore, (s) => s.activeProfileId)
+  const profiles = useProfiles()
+  const activeProfileId = useActiveProfileId()
   const navigate = useNavigate()
 
   const [creatingNew, setCreatingNew] = useState(false)
