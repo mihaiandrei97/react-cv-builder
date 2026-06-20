@@ -26,14 +26,17 @@ const TemplateCard = memo(function TemplateCard({
   cv,
   onSelect,
   isStale,
+  index,
 }: {
   tpl: (typeof TEMPLATES)[0]
   isActive: boolean
   cv: CvData
   onSelect: () => void
   isStale: boolean
+  index: number
 }) {
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -45,7 +48,17 @@ const TemplateCard = memo(function TemplateCard({
     }
   }, [tpl.id])
 
+  // Stagger BlobProvider mount so 4 PDFs never render simultaneously.
+  // On first visit, dynamic imports naturally stagger; on subsequent visits
+  // the component cache resolves all at once — this delay ensures the page
+  // shell paints first and PDFs render one-by-one.
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), 150 * index)
+    return () => clearTimeout(timer)
+  }, [index])
+
   const documentEl = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
+  const canRender = ready && Doc
 
   return (
     <div
@@ -95,19 +108,32 @@ const TemplateCard = memo(function TemplateCard({
             background: '#e8e4da',
           }}
         >
-          {!Doc ? (
+          {!canRender ? (
             <div
               style={{
                 position: 'absolute',
                 inset: 0,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
+                gap: '0.6rem',
                 fontSize: '0.8rem',
                 color: 'var(--muted)',
               }}
             >
-              Loading template…
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 22,
+                  height: 22,
+                  border: '2px solid var(--line)',
+                  borderTop: '2px solid var(--accent)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }}
+              />
+              {Doc ? 'Rendering…' : 'Loading template…'}
             </div>
           ) : (
             <BlobProvider document={documentEl!}>
@@ -132,7 +158,7 @@ const TemplateCard = memo(function TemplateCard({
               }
               </BlobProvider>
           )}
-          {isStale && Doc && (
+          {isStale && canRender && (
             <div
               style={{
                 position: 'absolute',
@@ -311,7 +337,7 @@ function TemplatesPage() {
           </div>
         </section>
         <div style={s.grid}>
-          {templateEntries.map((entry) => (
+          {templateEntries.map((entry, i) => (
             <TemplateCard
               key={entry.tpl.id}
               tpl={entry.tpl}
@@ -319,6 +345,7 @@ function TemplatesPage() {
               cv={entry.cv}
               onSelect={entry.onSelect}
               isStale={isStale}
+              index={i}
             />
           ))}
         </div>
