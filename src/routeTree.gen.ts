@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TemplatesRouteImport } from './routes/templates'
-import { Route as ProfilesRouteImport } from './routes/profiles'
 import { Route as CvsRouteImport } from './routes/cvs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CvPrintRouteImport } from './routes/cv.print'
@@ -19,11 +18,6 @@ import { Route as CvEditRouteImport } from './routes/cv.edit'
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfilesRoute = ProfilesRouteImport.update({
-  id: '/profiles',
-  path: '/profiles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CvsRoute = CvsRouteImport.update({
@@ -50,7 +44,6 @@ const CvEditRoute = CvEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cvs': typeof CvsRoute
-  '/profiles': typeof ProfilesRoute
   '/templates': typeof TemplatesRoute
   '/cv/edit': typeof CvEditRoute
   '/cv/print': typeof CvPrintRoute
@@ -58,7 +51,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cvs': typeof CvsRoute
-  '/profiles': typeof ProfilesRoute
   '/templates': typeof TemplatesRoute
   '/cv/edit': typeof CvEditRoute
   '/cv/print': typeof CvPrintRoute
@@ -67,36 +59,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cvs': typeof CvsRoute
-  '/profiles': typeof ProfilesRoute
   '/templates': typeof TemplatesRoute
   '/cv/edit': typeof CvEditRoute
   '/cv/print': typeof CvPrintRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/cvs'
-    | '/profiles'
-    | '/templates'
-    | '/cv/edit'
-    | '/cv/print'
+  fullPaths: '/' | '/cvs' | '/templates' | '/cv/edit' | '/cv/print'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cvs' | '/profiles' | '/templates' | '/cv/edit' | '/cv/print'
-  id:
-    | '__root__'
-    | '/'
-    | '/cvs'
-    | '/profiles'
-    | '/templates'
-    | '/cv/edit'
-    | '/cv/print'
+  to: '/' | '/cvs' | '/templates' | '/cv/edit' | '/cv/print'
+  id: '__root__' | '/' | '/cvs' | '/templates' | '/cv/edit' | '/cv/print'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CvsRoute: typeof CvsRoute
-  ProfilesRoute: typeof ProfilesRoute
   TemplatesRoute: typeof TemplatesRoute
   CvEditRoute: typeof CvEditRoute
   CvPrintRoute: typeof CvPrintRoute
@@ -109,13 +86,6 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profiles': {
-      id: '/profiles'
-      path: '/profiles'
-      fullPath: '/profiles'
-      preLoaderRoute: typeof ProfilesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cvs': {
@@ -152,7 +122,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CvsRoute: CvsRoute,
-  ProfilesRoute: ProfilesRoute,
   TemplatesRoute: TemplatesRoute,
   CvEditRoute: CvEditRoute,
   CvPrintRoute: CvPrintRoute,

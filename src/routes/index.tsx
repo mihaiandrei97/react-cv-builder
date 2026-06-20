@@ -71,7 +71,7 @@ function Home() {
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link
-            to="/templates"
+            to="/cvs"
             style={{
               fontWeight: 700,
               textDecoration: 'none',

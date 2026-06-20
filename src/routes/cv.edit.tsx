@@ -42,7 +42,10 @@ function TopBar({
   return (
     <header style={{ ...s.topBar, ...(isCompact ? s.topBarCompact : {}) }}>
       <div style={{ ...s.topBarLeft, ...(isCompact ? s.topBarLeftCompact : {}) }}>
-        <h1 style={s.topBarTitle}>CV Editor</h1>
+        <div style={s.titleStack}>
+          <h1 style={s.topBarTitle}>CV Editor</h1>
+          <p style={s.subtitle}>Edit your details on the left — the preview updates live.</p>
+        </div>
         <nav style={{ ...s.topBarNav, ...(isCompact ? s.topBarNavCompact : {}) }}>
           <NavLink to="/cvs" label="CVs" />
           <NavLink to="/templates" label="Templates" />
@@ -86,20 +89,7 @@ function TopBar({
 
 function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
   return (
-    <Link
-      to={to}
-      style={{
-        fontFamily: 'inherit',
-        fontSize: '0.9rem',
-        whiteSpace: 'nowrap',
-        textDecoration: 'none',
-        color: active ? 'var(--ink)' : 'var(--muted)',
-        padding: '0.35rem 0.75rem',
-        borderRadius: '0.25rem',
-        border: active ? '1px solid var(--line)' : '1px solid transparent',
-        background: active ? 'var(--paper)' : 'transparent',
-      }}
-    >
+    <Link to={to} style={active ? s.navLinkActive : s.navLink}>
       {label}
     </Link>
   )
@@ -945,9 +935,42 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '1rem',
     padding: '0.75rem 1.5rem',
-    background: '#fffdf7',
+    background: 'rgba(255, 253, 247, 0.92)',
+    backdropFilter: 'blur(6px)',
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
+  },
+  titleStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.1rem',
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '0.78rem',
+    color: 'var(--muted)',
+  },
+  navLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.9rem',
+    whiteSpace: 'nowrap',
+    textDecoration: 'none',
+    color: 'var(--muted)',
+    padding: '0.35rem 0.75rem',
+    borderRadius: '0.25rem',
+    border: '1px solid transparent',
+    background: 'transparent',
+  },
+  navLinkActive: {
+    fontFamily: 'inherit',
+    fontSize: '0.9rem',
+    whiteSpace: 'nowrap',
+    textDecoration: 'none',
+    color: 'var(--ink)',
+    padding: '0.35rem 0.75rem',
+    borderRadius: '0.25rem',
+    border: '1px solid var(--line)',
+    background: 'var(--paper)',
   },
   topBarCompact: {
     alignItems: 'stretch',

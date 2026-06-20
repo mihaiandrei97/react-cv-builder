@@ -11,20 +11,7 @@ export const Route = createFileRoute('/templates')({
 
 function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
   return (
-    <Link
-      to={to}
-      style={{
-        fontFamily: 'inherit',
-        fontSize: '0.9rem',
-        whiteSpace: 'nowrap',
-        textDecoration: 'none',
-        color: active ? 'var(--ink)' : 'var(--muted)',
-        padding: '0.35rem 0.75rem',
-        borderRadius: '0.25rem',
-        border: active ? '1px solid var(--line)' : '1px solid transparent',
-        background: active ? 'var(--paper)' : 'transparent',
-      }}
-    >
+    <Link to={to} style={active ? s.navLinkActive : s.navLink}>
       {label}
     </Link>
   )
@@ -291,73 +278,192 @@ function TemplatesPage() {
   })), [fullData, locale, sectionLabels, activeTemplateId, navigate])
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div style={s.page}>
       {/* Top bar */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '1rem',
-          padding: '0.75rem 1.5rem',
-          background: '#fffdf7',
-          borderBottom: '1px solid var(--line)',
-          boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Choose a Template</h1>
-          <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: 2 }}>
+      <header style={s.header}>
+        <div style={s.headerLeft}>
+          <div style={s.titleStack}>
+            <h1 style={s.title}>Choose a Template</h1>
+            <p style={s.subtitle}>Switch layouts anytime — your content carries over.</p>
+          </div>
+          <nav style={s.nav}>
             <NavLink to="/cvs" label="CVs" />
             <NavLink to="/templates" label="Templates" active />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" />
           </nav>
         </div>
-        <Link
-          to="/"
-          style={{
-            fontFamily: 'inherit',
-            fontSize: '0.82rem',
-            color: 'var(--muted)',
-            textDecoration: 'none',
-            border: '1px solid var(--line)',
-            borderRadius: '0.25rem',
-            padding: '0.35rem 0.6rem',
-          }}
-        >
+        <Link to="/" style={s.backLink}>
           Home
         </Link>
       </header>
 
       {/* Grid */}
-      <main
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-          gap: '2rem',
-          padding: '2.5rem 2rem 4rem',
-          maxWidth: 1200,
-          margin: '0 auto',
-          width: '100%',
-          background: 'linear-gradient(160deg, #f6f3e8 0%, #efeadd 55%, #e6e0d3 100%)',
-          flex: 1,
-        }}
-      >
-        {templateEntries.map((entry) => (
-          <TemplateCard
-            key={entry.tpl.id}
-            tpl={entry.tpl}
-            isActive={entry.isActive}
-            cv={entry.cv}
-            onSelect={entry.onSelect}
-            isStale={isStale}
-          />
-        ))}
+      <main style={s.main}>
+        <section style={s.heroStrip}>
+          <div style={s.heroStat}>
+            <span style={s.heroStatLabel}>Templates</span>
+            <strong style={s.heroStatValue}>{TEMPLATES.length}</strong>
+          </div>
+          <div style={s.heroDivider} />
+          <div style={s.heroHint}>
+            Previews render live from your active CV. Pick one to make it the current layout.
+          </div>
+        </section>
+        <div style={s.grid}>
+          {templateEntries.map((entry) => (
+            <TemplateCard
+              key={entry.tpl.id}
+              tpl={entry.tpl}
+              isActive={entry.isActive}
+              cv={entry.cv}
+              onSelect={entry.onSelect}
+              isStale={isStale}
+            />
+          ))}
+        </div>
       </main>
     </div>
   )
+}
+
+// ── Page styles ───────────────────────────────────────────────────────────────
+
+const s: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: '100dvh',
+    display: 'flex',
+    flexDirection: 'column',
+    background:
+      'radial-gradient(circle at 18% 0%, #efe6d4 0%, transparent 36%), radial-gradient(circle at 86% 22%, #ebe2cf 0%, transparent 34%), #f6f2e8',
+  },
+  header: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '1rem',
+    padding: '0.75rem 1.5rem',
+    background: 'rgba(255, 253, 247, 0.92)',
+    backdropFilter: 'blur(6px)',
+    borderBottom: '1px solid var(--line)',
+    boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.85rem',
+    flexWrap: 'wrap',
+    minWidth: 0,
+  },
+  titleStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.1rem',
+  },
+  title: {
+    margin: 0,
+    fontSize: '1.15rem',
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: '0.78rem',
+    color: 'var(--muted)',
+  },
+  nav: {
+    display: 'flex',
+    gap: '0.25rem',
+    overflowX: 'auto',
+    maxWidth: '100%',
+    paddingBottom: 2,
+  },
+  navLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.9rem',
+    whiteSpace: 'nowrap',
+    textDecoration: 'none',
+    color: 'var(--muted)',
+    padding: '0.35rem 0.75rem',
+    borderRadius: '0.25rem',
+    border: '1px solid transparent',
+    background: 'transparent',
+  },
+  navLinkActive: {
+    fontFamily: 'inherit',
+    fontSize: '0.9rem',
+    whiteSpace: 'nowrap',
+    textDecoration: 'none',
+    color: 'var(--ink)',
+    padding: '0.35rem 0.75rem',
+    borderRadius: '0.25rem',
+    border: '1px solid var(--line)',
+    background: 'var(--paper)',
+  },
+  backLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.82rem',
+    color: 'var(--muted)',
+    textDecoration: 'none',
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.35rem 0.6rem',
+  },
+  main: {
+    flex: 1,
+    maxWidth: 1200,
+    width: '100%',
+    margin: '0 auto',
+    padding: '2rem 2rem 4rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.5rem',
+  },
+  heroStrip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    background: 'linear-gradient(180deg, #fff8ed 0%, #fdf0df 100%)',
+    border: '1px solid #f0cfaa',
+    borderRadius: '0.75rem',
+    padding: '0.9rem 1rem',
+    boxShadow: '0 8px 22px rgba(192,107,49,0.12)',
+    flexWrap: 'wrap',
+  },
+  heroStat: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '0.5rem',
+  },
+  heroStatLabel: {
+    fontSize: '0.74rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'var(--accent)',
+  },
+  heroStatValue: {
+    fontSize: '1.35rem',
+    color: 'var(--ink)',
+    lineHeight: 1,
+  },
+  heroDivider: {
+    width: 1,
+    height: 28,
+    background: '#e5c8a5',
+  },
+  heroHint: {
+    fontSize: '0.82rem',
+    color: 'var(--muted)',
+    flex: 1,
+    minWidth: 200,
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+    gap: '2rem',
+  },
 }
