@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
@@ -24,7 +24,6 @@ export const Route = createFileRoute('/cv/edit')({
 // ── Nav ──────────────────────────────────────────────────────────────────────
 
 function TopBar({
-  profileName,
   templateName,
   saveStatus,
   isCompact,
@@ -33,7 +32,6 @@ function TopBar({
   onReset,
   onDownload,
 }: {
-  profileName: string
   templateName: string
   saveStatus: string
   isCompact: boolean
@@ -49,8 +47,10 @@ function TopBar({
       </div>
       <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
-        <span style={s.templateBadge}>{profileName}</span>
-        <span style={s.templateBadge}>{templateName}</span>
+        <Link to="/templates" style={s.templateBadgeLink} title="Change template">
+          {templateName}
+          <span style={s.templateBadgeHint}>change</span>
+        </Link>
         {isCompact && (
           <div style={s.viewSwitch}>
             <button
@@ -76,7 +76,7 @@ function TopBar({
         <button type="button" style={s.btnDownload} onClick={onDownload}>
           Download PDF
         </button>
-        <button type="button" style={s.btnSecondary} onClick={onReset}>
+        <button type="button" style={s.btnGhostReset} onClick={onReset}>
           Reset
         </button>
       </div>
@@ -478,7 +478,6 @@ function EditPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar
-        profileName={profileName}
         templateName={template.name}
         saveStatus={saveStatus}
         isCompact={isCompactLayout}
@@ -1011,6 +1010,29 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: '0.25rem',
     padding: '0.2rem 0.55rem',
   },
+  templateBadgeLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: 'var(--accent)',
+    background: '#fdf0e6',
+    border: '1px solid #f0c89a',
+    borderRadius: '0.25rem',
+    padding: '0.2rem 0.55rem',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+  },
+  templateBadgeHint: {
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: '#b8722f',
+    opacity: 0.7,
+  },
   btnPrimary: {
     fontFamily: 'inherit',
     fontWeight: 700,
@@ -1035,15 +1057,19 @@ const s: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     boxShadow: '0 2px 8px rgba(45,93,76,0.18)',
   },
-  btnSecondary: {
+  btnGhostReset: {
     fontFamily: 'inherit',
-    fontSize: '0.9rem',
+    fontSize: '0.82rem',
+    fontWeight: 600,
     color: 'var(--muted)',
     background: 'transparent',
-    border: '1px solid var(--line)',
+    border: 'none',
     borderRadius: '0.25rem',
-    padding: '0.4rem 0.85rem',
+    padding: '0.4rem 0.5rem',
     cursor: 'pointer',
+    textDecoration: 'underline',
+    textDecorationColor: 'transparent',
+    textUnderlineOffset: '0.15em',
   },
   btnAdd: {
     fontFamily: 'inherit',

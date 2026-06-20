@@ -111,7 +111,7 @@ function CvCard({
 
       <div style={s.cardFooter}>
         <button type="button" style={s.btnPrimary} onClick={onOpen}>
-          {isActive ? 'Open editor →' : 'Switch & open →'}
+          {isActive ? 'Open →' : 'Switch & open →'}
         </button>
         <div style={s.cardActionRow}>
           <button type="button" style={s.btnGhostSm} onClick={onDuplicate} title="Duplicate">
