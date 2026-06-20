@@ -44,10 +44,10 @@ function TopBar({
       <div style={{ ...s.topBarLeft, ...(isCompact ? s.topBarLeftCompact : {}) }}>
         <h1 style={s.topBarTitle}>CV Editor</h1>
         <nav style={{ ...s.topBarNav, ...(isCompact ? s.topBarNavCompact : {}) }}>
+          <NavLink to="/cvs" label="CVs" />
           <NavLink to="/templates" label="Templates" />
           <NavLink to="/cv/edit" label="Edit" active />
           <NavLink to="/cv/print" label="Preview" />
-          <NavLink to="/profiles" label="Profiles" />
         </nav>
       </div>
       <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>

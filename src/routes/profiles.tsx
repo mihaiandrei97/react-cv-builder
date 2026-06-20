@@ -343,6 +343,7 @@ function ProfilesPage() {
             <p style={s.subtitle}>Keep role-specific versions clean and ready.</p>
           </div>
           <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: 2 }}>
+            <NavLink to="/cvs" label="CVs" />
             <NavLink to="/templates" label="Templates" />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" />

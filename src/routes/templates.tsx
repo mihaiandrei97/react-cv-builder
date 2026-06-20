@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { memo, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
-import { useProfiles, useActiveProfileId, useActiveProfile, saveTemplatePref, switchProfile, addProfile } from '../lib/cv-store'
-import { projectCv, type CvData, type CvProfile, type CvLocale } from '../lib/types'
+import { useActiveProfile, saveTemplatePref } from '../lib/cv-store'
+import { projectCv, type CvData } from '../lib/types'
 
 export const Route = createFileRoute('/templates')({
   component: TemplatesPage,
@@ -33,16 +33,18 @@ function NavLink({ to, label, active }: { to: string; label: string; active?: bo
 const A4_WIDTH = 794
 const A4_HEIGHT = 1123 // A4 at 96dpi ≈ 1123px
 
-function TemplateCard({
+const TemplateCard = memo(function TemplateCard({
   tpl,
   isActive,
   cv,
   onSelect,
+  isStale,
 }: {
   tpl: (typeof TEMPLATES)[0]
   isActive: boolean
   cv: CvData
   onSelect: () => void
+  isStale: boolean
 }) {
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
 
@@ -55,6 +57,8 @@ function TemplateCard({
       cancelled = true
     }
   }, [tpl.id])
+
+  const documentEl = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
 
   return (
     <div
@@ -119,7 +123,7 @@ function TemplateCard({
               Loading template…
             </div>
           ) : (
-            <BlobProvider document={<Doc cv={cv} />}>
+            <BlobProvider document={documentEl!}>
               {({ url, loading }) =>
                 loading || !url ? (
                   <div
@@ -139,7 +143,48 @@ function TemplateCard({
                   <IframePreview url={url} />
                 )
               }
-            </BlobProvider>
+              </BlobProvider>
+          )}
+          {isStale && Doc && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(232, 228, 218, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 3,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: '#fffdf7',
+                  borderRadius: '0.35rem',
+                  padding: '0.5rem 0.9rem',
+                  boxShadow: '0 2px 10px rgba(34,34,34,0.12)',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: 'var(--ink)',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 12,
+                    height: 12,
+                    border: '2px solid var(--line)',
+                    borderTop: '2px solid var(--accent)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite',
+                  }}
+                />
+                Regenerating…
+              </div>
+            </div>
           )}
       </div>
 
@@ -191,7 +236,7 @@ function TemplateCard({
       </div>
     </div>
   )
-}
+})
 
 function IframePreview({ url }: { url: string }) {
   return (
@@ -211,232 +256,39 @@ function IframePreview({ url }: { url: string }) {
   )
 }
 
-// ── Profile strip ─────────────────────────────────────────────────────────────
-
-function ProfilePill({
-  profile,
-  isActive,
-  onClick,
-}: {
-  profile: CvProfile
-  isActive: boolean
-  onClick: () => void
-}) {
-  const tpl = TEMPLATES.find((t) => t.id === profile.templateId) ?? TEMPLATES[0]
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        fontFamily: 'inherit',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.3rem',
-        alignItems: 'flex-start',
-        padding: '0.65rem 0.9rem',
-        borderRadius: '0.4rem',
-        border: `1px solid ${isActive ? '#f0c89a' : 'var(--line)'}`,
-        background: isActive ? 'linear-gradient(180deg, #fff7ef 0%, #fdf0e6 100%)' : '#fffdf7',
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-        transition: 'border-color 0.12s, background 0.12s, box-shadow 0.12s',
-        minWidth: 130,
-        textAlign: 'left',
-        boxShadow: isActive ? '0 6px 14px rgba(192,107,49,0.14)' : 'none',
-      }}
-    >
-      <span
-        style={{
-          fontSize: '0.62rem',
-          fontWeight: 700,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: isActive ? 'var(--accent)' : 'var(--muted)',
-        }}
-      >
-        {isActive ? 'Active profile' : 'Profile'}
-      </span>
-      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--ink)' }}>
-        {profile.name}
-      </span>
-      <span style={{ fontSize: '0.7rem', color: isActive ? 'var(--accent)' : 'var(--muted)' }}>
-        {tpl.name}
-      </span>
-    </button>
-  )
-}
-
-function ProfileStrip() {
-  const profiles = useProfiles()
-  const activeProfileId = useActiveProfileId()
-  const [creatingNew, setCreatingNew] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newLocale, setNewLocale] = useState<CvLocale>('en')
-
-  function handleCreate() {
-    const trimmed = newName.trim()
-    if (trimmed) addProfile(trimmed, newLocale)
-    setCreatingNew(false)
-    setNewName('')
-    setNewLocale('en')
-  }
-
-  return (
-    <div
-      style={{
-        borderBottom: '1px solid var(--line)',
-        background: '#fffdf7',
-        padding: '0.75rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-      }}
-    >
-      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
-        Profile
-      </span>
-      <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', alignItems: 'center', paddingBottom: 2, flex: 1 }}>
-        {profiles.map((p) => (
-          <ProfilePill
-            key={p.id}
-            profile={p}
-            isActive={p.id === activeProfileId}
-            onClick={() => switchProfile(p.id)}
-          />
-        ))}
-
-        {creatingNew ? (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-            <input
-              autoFocus
-              type="text"
-              placeholder="Profile name…"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate()
-                if (e.key === 'Escape') { setCreatingNew(false); setNewName(''); setNewLocale('en') }
-              }}
-              style={{
-                fontFamily: 'inherit',
-                fontSize: '0.85rem',
-                border: '2px solid var(--accent)',
-                borderRadius: '0.4rem',
-                padding: '0.6rem 0.9rem',
-                outline: 'none',
-                background: '#fff',
-                color: 'var(--ink)',
-                width: 160,
-              }}
-            />
-            <div style={{ display: 'flex', borderRadius: '0.35rem', overflow: 'hidden', border: '1px solid var(--line)' }}>
-              <button
-                type="button"
-                onClick={() => setNewLocale('en')}
-                style={{
-                  fontFamily: 'inherit',
-                  fontSize: '0.75rem',
-                  fontWeight: newLocale === 'en' ? 700 : 600,
-                  color: newLocale === 'en' ? 'var(--ink)' : 'var(--muted)',
-                  background: newLocale === 'en' ? '#fffdf7' : 'transparent',
-                  border: 0,
-                  borderRight: '1px solid var(--line)',
-                  padding: '0.32rem 0.45rem',
-                  cursor: 'pointer',
-                }}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewLocale('ro')}
-                style={{
-                  fontFamily: 'inherit',
-                  fontSize: '0.75rem',
-                  fontWeight: newLocale === 'ro' ? 700 : 600,
-                  color: newLocale === 'ro' ? 'var(--ink)' : 'var(--muted)',
-                  background: newLocale === 'ro' ? '#fffdf7' : 'transparent',
-                  border: 0,
-                  padding: '0.32rem 0.45rem',
-                  cursor: 'pointer',
-                }}
-              >
-                RO
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={handleCreate}
-              style={{
-                fontFamily: 'inherit',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                color: '#fff',
-                background: 'var(--green)',
-                border: 'none',
-                borderRadius: '0.4rem',
-                padding: '0.6rem 0.7rem',
-                cursor: 'pointer',
-              }}
-            >
-              Create
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setCreatingNew(true)}
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: 'var(--muted)',
-              background: 'transparent',
-              border: '2px dashed var(--line)',
-              borderRadius: '0.4rem',
-              padding: '0.6rem 0.9rem',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            + New
-          </button>
-        )}
-      </div>
-      <Link
-        to="/profiles"
-        style={{
-          fontFamily: 'inherit',
-          fontSize: '0.8rem',
-          fontWeight: 600,
-          color: 'var(--muted)',
-          textDecoration: 'none',
-          flexShrink: 0,
-          border: '1px solid var(--line)',
-          borderRadius: '0.3rem',
-          padding: '0.3rem 0.55rem',
-        }}
-      >
-        Profiles →
-      </Link>
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function TemplatesPage() {
   const activeProfile = useActiveProfile()
-  const fullData = activeProfile.data
-  const sectionLabels = activeProfile.sectionLabels
-  const templateId = activeProfile.templateId
+  const deferredProfile = useDeferredValue(activeProfile)
+  const isStale = activeProfile !== deferredProfile
+  const fullData = deferredProfile.data
+
+  useEffect(() => {
+    const id = 'spin-keyframes'
+    if (document.getElementById(id)) return
+    const style = document.createElement('style')
+    style.id = id
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg) } }'
+    document.head.appendChild(style)
+    return () => {
+      style.remove()
+    }
+  }, [])
+  const sectionLabels = deferredProfile.sectionLabels
+  const locale = deferredProfile.locale
+  const activeTemplateId = activeProfile.templateId
   const navigate = useNavigate()
 
-  function selectTemplate(id: string) {
-    saveTemplatePref(id)
-    navigate({ to: '/cv/edit' })
-  }
+  const templateEntries = useMemo(() => TEMPLATES.map((tpl) => ({
+    tpl,
+    cv: projectCv(fullData, tpl.id, [], [], [], {}, locale, sectionLabels),
+    isActive: activeTemplateId === tpl.id,
+    onSelect: () => {
+      saveTemplatePref(tpl.id)
+      navigate({ to: '/cv/edit' })
+    },
+  })), [fullData, locale, sectionLabels, activeTemplateId, navigate])
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -459,10 +311,10 @@ function TemplatesPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Choose a Template</h1>
           <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: 2 }}>
+            <NavLink to="/cvs" label="CVs" />
             <NavLink to="/templates" label="Templates" active />
             <NavLink to="/cv/edit" label="Edit" />
             <NavLink to="/cv/print" label="Preview" />
-            <NavLink to="/profiles" label="Profiles" />
           </nav>
         </div>
         <Link
@@ -481,9 +333,6 @@ function TemplatesPage() {
         </Link>
       </header>
 
-      {/* Profile strip */}
-      <ProfileStrip />
-
       {/* Grid */}
       <main
         style={{
@@ -498,13 +347,14 @@ function TemplatesPage() {
           flex: 1,
         }}
       >
-        {TEMPLATES.map((tpl) => (
+        {templateEntries.map((entry) => (
           <TemplateCard
-            key={tpl.id}
-            tpl={tpl}
-            isActive={templateId === tpl.id}
-            cv={projectCv(fullData, tpl.id, [], [], [], {}, activeProfile.locale, sectionLabels)}
-            onSelect={() => selectTemplate(tpl.id)}
+            key={entry.tpl.id}
+            tpl={entry.tpl}
+            isActive={entry.isActive}
+            cv={entry.cv}
+            onSelect={entry.onSelect}
+            isStale={isStale}
           />
         ))}
       </main>

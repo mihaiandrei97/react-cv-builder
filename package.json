@@ -27,6 +27,7 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
+    "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-plugin": "latest",
@@ -36,6 +37,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^28.1.0",
     "subset-font": "^2.5.0",
     "typescript": "^6.0.2",
