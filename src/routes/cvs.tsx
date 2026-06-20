@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import {
   useProfiles,
@@ -17,14 +17,6 @@ import type { CvLocale, CvProfile } from '../lib/types'
 export const Route = createFileRoute('/cvs')({
   component: CvsPage,
 })
-
-function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
-  return (
-    <Link to={to} style={active ? s.navLinkActive : s.navLink}>
-      {label}
-    </Link>
-  )
-}
 
 function formatRelativeDate(ts: number) {
   const diffMs = Date.now() - ts
@@ -171,7 +163,7 @@ function CvsPage() {
 
   function handleOpen(id: string) {
     switchProfile(id)
-    navigate({ to: '/templates' })
+    navigate({ to: '/cv/edit' })
   }
 
   function handleCreate() {
@@ -213,7 +205,6 @@ function CvsPage() {
     setImportError(null)
     try {
       await importProfile(file)
-      navigate({ to: '/templates' })
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Import failed.')
     }
@@ -221,49 +212,17 @@ function CvsPage() {
 
   return (
     <div style={s.page}>
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={handleImport}
+      />
       <header style={s.header}>
-        <div style={s.headerLeft}>
-          <div style={s.titleStack}>
-            <h1 style={s.title}>Your CVs</h1>
-            <p style={s.subtitle}>Pick up where you left off, or start something new.</p>
-          </div>
-          <nav style={s.nav}>
-            <NavLink to="/cvs" label="CVs" active />
-            <NavLink to="/templates" label="Templates" />
-            <NavLink to="/cv/edit" label="Edit" />
-            <NavLink to="/cv/print" label="Preview" />
-          </nav>
-        </div>
-        <div style={s.headerActions}>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".json,application/json"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-          />
-          <Link to="/" style={s.backLink}>
-            Home
-          </Link>
-          <button
-            type="button"
-            style={s.btnSecondary}
-            onClick={() => importInputRef.current?.click()}
-          >
-            Import backup
-          </button>
-          {!creatingNew && (
-            <button
-              type="button"
-              style={s.btnPrimary}
-              onClick={() => {
-                setCreatingNew(true)
-                setNewName('')
-              }}
-            >
-              + New CV
-            </button>
-          )}
+        <div style={s.titleStack}>
+          <h1 style={s.title}>Your CVs</h1>
+          <p style={s.subtitle}>Pick up where you left off, or start something new.</p>
         </div>
       </header>
 
@@ -379,6 +338,12 @@ function CvsPage() {
             </button>
           )}
         </div>
+
+        <footer style={s.footer}>
+          <button type="button" style={s.importLink} onClick={() => importInputRef.current?.click()}>
+            Import backup
+          </button>
+        </footer>
       </main>
     </div>
   )
@@ -406,13 +371,6 @@ const s: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
   },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.85rem',
-    flexWrap: 'wrap',
-    minWidth: 0,
-  },
   titleStack: {
     display: 'flex',
     flexDirection: 'column',
@@ -428,51 +386,6 @@ const s: Record<string, React.CSSProperties> = {
     margin: 0,
     fontSize: '0.78rem',
     color: 'var(--muted)',
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.25rem',
-    overflowX: 'auto',
-    maxWidth: '100%',
-    paddingBottom: 2,
-  },
-  navLink: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--muted)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid transparent',
-    background: 'transparent',
-  },
-  navLinkActive: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--ink)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid var(--line)',
-    background: 'var(--paper)',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '0.5rem',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-  },
-  backLink: {
-    fontFamily: 'inherit',
-    fontSize: '0.82rem',
-    color: 'var(--muted)',
-    textDecoration: 'none',
-    border: '1px solid var(--line)',
-    borderRadius: '0.25rem',
-    padding: '0.35rem 0.6rem',
   },
   btnPrimary: {
     fontFamily: 'inherit',
@@ -861,5 +774,21 @@ const s: Record<string, React.CSSProperties> = {
   newTileHint: {
     fontSize: '0.75rem',
     color: 'var(--muted)',
+  },
+  footer: {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '0.5rem 0 0',
+  },
+  importLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: 'var(--muted)',
+    background: 'none',
+    border: 'none',
+    borderBottom: '1px solid transparent',
+    padding: '0.25rem 0.5rem',
+    cursor: 'pointer',
   },
 }

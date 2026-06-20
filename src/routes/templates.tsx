@@ -1,21 +1,14 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { memo, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { useActiveProfile, saveTemplatePref } from '../lib/cv-store'
 import { projectCv, type CvData } from '../lib/types'
+import { WorkflowNav } from '../components/WorkflowNav'
 
 export const Route = createFileRoute('/templates')({
   component: TemplatesPage,
 })
-
-function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
-  return (
-    <Link to={to} style={active ? s.navLinkActive : s.navLink}>
-      {label}
-    </Link>
-  )
-}
 
 const A4_WIDTH = 794
 const A4_HEIGHT = 1123 // A4 at 96dpi ≈ 1123px
@@ -307,21 +300,7 @@ function TemplatesPage() {
     <div style={s.page}>
       {/* Top bar */}
       <header style={s.header}>
-        <div style={s.headerLeft}>
-          <div style={s.titleStack}>
-            <h1 style={s.title}>Choose a Template</h1>
-            <p style={s.subtitle}>Switch layouts anytime — your content carries over.</p>
-          </div>
-          <nav style={s.nav}>
-            <NavLink to="/cvs" label="CVs" />
-            <NavLink to="/templates" label="Templates" active />
-            <NavLink to="/cv/edit" label="Edit" />
-            <NavLink to="/cv/print" label="Preview" />
-          </nav>
-        </div>
-        <Link to="/" style={s.backLink}>
-          Home
-        </Link>
+        <WorkflowNav active="templates" />
       </header>
 
       {/* Grid */}
@@ -377,67 +356,6 @@ const s: Record<string, React.CSSProperties> = {
     backdropFilter: 'blur(6px)',
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.85rem',
-    flexWrap: 'wrap',
-    minWidth: 0,
-  },
-  titleStack: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.1rem',
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.15rem',
-    fontWeight: 700,
-    letterSpacing: '-0.01em',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: '0.78rem',
-    color: 'var(--muted)',
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.25rem',
-    overflowX: 'auto',
-    maxWidth: '100%',
-    paddingBottom: 2,
-  },
-  navLink: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--muted)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid transparent',
-    background: 'transparent',
-  },
-  navLinkActive: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--ink)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid var(--line)',
-    background: 'var(--paper)',
-  },
-  backLink: {
-    fontFamily: 'inherit',
-    fontSize: '0.82rem',
-    color: 'var(--muted)',
-    textDecoration: 'none',
-    border: '1px solid var(--line)',
-    borderRadius: '0.25rem',
-    padding: '0.35rem 0.6rem',
   },
   main: {
     flex: 1,

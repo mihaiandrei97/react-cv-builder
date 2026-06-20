@@ -1,22 +1,15 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useMemo, memo, useCallback, useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
 import { useActiveProfile, useCvData } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
+import { WorkflowNav } from '../components/WorkflowNav'
 
 export const Route = createFileRoute('/cv/print')({
   component: PrintPage,
 })
-
-function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
-  return (
-    <Link to={to} style={active ? s.navLinkActive : s.navLink}>
-      {label}
-    </Link>
-  )
-}
 
 const PdfViewer = memo(function PdfViewer({
   docElement,
@@ -96,18 +89,7 @@ function PrintPage() {
     <div style={s.page}>
       {/* Top bar */}
       <header style={s.header}>
-        <div style={s.headerLeft}>
-          <div style={s.titleStack}>
-            <h1 style={s.title}>CV Preview</h1>
-            <p style={s.subtitle}>Review the final PDF and download when it looks right.</p>
-          </div>
-          <nav style={s.nav}>
-            <NavLink to="/cvs" label="CVs" />
-            <NavLink to="/templates" label="Templates" />
-            <NavLink to="/cv/edit" label="Edit" />
-            <NavLink to="/cv/print" label="Preview" active />
-          </nav>
-        </div>
+        <WorkflowNav active="preview" />
         <div style={s.headerActions}>
           <span style={s.templateBadge}>{template.name}</span>
           <button type="button" onClick={downloadPdf} style={s.btnPrimary}>
@@ -151,58 +133,6 @@ const s: Record<string, React.CSSProperties> = {
     backdropFilter: 'blur(6px)',
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.85rem',
-    flexWrap: 'wrap',
-    minWidth: 0,
-  },
-  titleStack: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.1rem',
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.15rem',
-    fontWeight: 700,
-    letterSpacing: '-0.01em',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: '0.78rem',
-    color: 'var(--muted)',
-  },
-  nav: {
-    display: 'flex',
-    gap: '0.25rem',
-    overflowX: 'auto',
-    maxWidth: '100%',
-    paddingBottom: 2,
-  },
-  navLink: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--muted)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid transparent',
-    background: 'transparent',
-  },
-  navLinkActive: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--ink)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid var(--line)',
-    background: 'var(--paper)',
   },
   headerActions: {
     display: 'flex',

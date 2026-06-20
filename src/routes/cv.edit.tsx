@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
 import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
+import { WorkflowNav } from '../components/WorkflowNav'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -30,6 +31,7 @@ function TopBar({
   activePane,
   onPaneChange,
   onReset,
+  onDownload,
 }: {
   profileName: string
   templateName: string
@@ -38,20 +40,12 @@ function TopBar({
   activePane: 'form' | 'preview'
   onPaneChange: (pane: 'form' | 'preview') => void
   onReset: () => void
+  onDownload: () => void
 }) {
   return (
     <header style={{ ...s.topBar, ...(isCompact ? s.topBarCompact : {}) }}>
       <div style={{ ...s.topBarLeft, ...(isCompact ? s.topBarLeftCompact : {}) }}>
-        <div style={s.titleStack}>
-          <h1 style={s.topBarTitle}>CV Editor</h1>
-          <p style={s.subtitle}>Edit your details on the left — the preview updates live.</p>
-        </div>
-        <nav style={{ ...s.topBarNav, ...(isCompact ? s.topBarNavCompact : {}) }}>
-          <NavLink to="/cvs" label="CVs" />
-          <NavLink to="/templates" label="Templates" />
-          <NavLink to="/cv/edit" label="Edit" active />
-          <NavLink to="/cv/print" label="Preview" />
-        </nav>
+        <WorkflowNav active="edit" />
       </div>
       <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
@@ -79,19 +73,14 @@ function TopBar({
             </button>
           </div>
         )}
+        <button type="button" style={s.btnDownload} onClick={onDownload}>
+          Download PDF
+        </button>
         <button type="button" style={s.btnSecondary} onClick={onReset}>
           Reset
         </button>
       </div>
     </header>
-  )
-}
-
-function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
-  return (
-    <Link to={to} style={active ? s.navLinkActive : s.navLink}>
-      {label}
-    </Link>
   )
 }
 
@@ -241,6 +230,7 @@ function EditPage() {
   const [isCompactLayout, setIsCompactLayout] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
   )
+  const blobUrlRef = useRef<string | null>(null)
 
   const template = getTemplate(templateId)
 
@@ -288,6 +278,15 @@ function EditPage() {
     if (confirm('Reset all CV data to defaults? This cannot be undone.')) {
       resetCv()
     }
+  }
+
+  function downloadPdf() {
+    if (!blobUrlRef.current) return
+    const a = document.createElement('a')
+    a.href = blobUrlRef.current
+    const safeName = profileName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    a.download = `${safeName || 'cv'}.pdf`
+    a.click()
   }
 
   // Profile mutations
@@ -486,6 +485,7 @@ function EditPage() {
         activePane={activePane}
         onPaneChange={setActivePane}
         onReset={handleReset}
+        onDownload={downloadPdf}
       />
 
       <div style={{ ...s.split, ...(isCompactLayout ? s.splitCompact : {}) }}>
@@ -897,6 +897,7 @@ function EditPage() {
           ) : (
             <BlobProvider document={previewDoc}>
               {({ url, loading, error }) => {
+                if (url) blobUrlRef.current = url
                 if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Rendering preview…</div>
                 if (error) return <div style={{ padding: '2rem', textAlign: 'center', color: '#9c2f1f', fontSize: '0.85rem' }}>Error rendering preview</div>
                 if (!url) return null
@@ -940,38 +941,6 @@ const s: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
   },
-  titleStack: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.1rem',
-  },
-  subtitle: {
-    margin: 0,
-    fontSize: '0.78rem',
-    color: 'var(--muted)',
-  },
-  navLink: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--muted)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid transparent',
-    background: 'transparent',
-  },
-  navLinkActive: {
-    fontFamily: 'inherit',
-    fontSize: '0.9rem',
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    color: 'var(--ink)',
-    padding: '0.35rem 0.75rem',
-    borderRadius: '0.25rem',
-    border: '1px solid var(--line)',
-    background: 'var(--paper)',
-  },
   topBarCompact: {
     alignItems: 'stretch',
     flexDirection: 'column',
@@ -986,20 +955,6 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: '0.6rem',
-  },
-  topBarNav: {
-    display: 'flex',
-    gap: '0.25rem',
-  },
-  topBarNavCompact: {
-    width: '100%',
-    overflowX: 'auto',
-    paddingBottom: '0.1rem',
-  },
-  topBarTitle: {
-    margin: 0,
-    fontSize: '1.1rem',
-    fontWeight: 700,
   },
   topBarActions: {
     display: 'flex',
@@ -1066,6 +1021,19 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: '0.25rem',
     padding: '0.45rem 1rem',
     cursor: 'pointer',
+  },
+  btnDownload: {
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    fontSize: '0.85rem',
+    color: '#fff',
+    background: 'var(--green)',
+    border: 0,
+    borderRadius: '0.25rem',
+    padding: '0.4rem 0.9rem',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    boxShadow: '0 2px 8px rgba(45,93,76,0.18)',
   },
   btnSecondary: {
     fontFamily: 'inherit',
