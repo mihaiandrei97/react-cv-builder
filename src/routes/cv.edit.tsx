@@ -648,26 +648,67 @@ function EditPage() {
           {/* Colors */}
           <section id="section-colors" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>Colors</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {template.colorSlots.map((slot) => {
                 const current = colors[slot.key] ?? slot.default
+                const isModified = colors[slot.key] !== undefined && colors[slot.key] !== slot.default
+                const presets = slot.presets ?? []
                 return (
-                  <div key={slot.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
-                    <label style={{ ...s.fieldLabel, whiteSpace: 'nowrap' }}>{slot.label}</label>
-                    <input
-                      type="color"
-                      value={current}
-                      onChange={(e) => setColors({ ...colors, [slot.key]: e.target.value })}
-                      style={{ width: 40, height: 40, padding: 2, border: '1px solid var(--line)', borderRadius: '0.25rem', cursor: 'pointer', background: 'none' }}
-                      title={slot.label}
-                    />
-                    <button
-                      type="button"
-                      style={{ ...s.btnGhost, fontSize: '0.7rem', padding: '0.1rem 0.4rem', visibility: current !== slot.default ? 'visible' : 'hidden' }}
-                      onClick={() => { const next = { ...colors }; delete next[slot.key]; setColors(next) }}
-                    >
-                      Reset
-                    </button>
+                  <div key={slot.key} style={s.colorRow}>
+                    <div style={s.colorLabelCol}>
+                      <label style={s.fieldLabel}>{slot.label}</label>
+                      <div style={s.colorSwatchWrap}>
+                        <input
+                          type="color"
+                          value={current}
+                          onChange={(e) => setColors({ ...colors, [slot.key]: e.target.value })}
+                          style={s.colorSwatch}
+                          title={`${slot.label} — open picker`}
+                          aria-label={`${slot.label} color picker`}
+                        />
+                        <input
+                          type="text"
+                          value={current.toUpperCase()}
+                          onChange={(e) => {
+                            const v = e.target.value.trim()
+                            if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+                              setColors({ ...colors, [slot.key]: v.toLowerCase() })
+                            } else if (v === '' || v === '#') {
+                              const next = { ...colors }; delete next[slot.key]; setColors(next)
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                          style={s.hexInput}
+                          spellCheck={false}
+                          aria-label={`${slot.label} hex value`}
+                        />
+                        <button
+                          type="button"
+                          style={{ ...s.btnGhost, fontSize: '0.7rem', padding: '0.15rem 0.5rem', visibility: isModified ? 'visible' : 'hidden' }}
+                          onClick={() => { const next = { ...colors }; delete next[slot.key]; setColors(next) }}
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                    {presets.length > 0 && (
+                      <div style={s.presetRow}>
+                        {presets.map((hex) => {
+                          const active = current.toLowerCase() === hex.toLowerCase()
+                          return (
+                            <button
+                              key={hex}
+                              type="button"
+                              style={{ ...s.presetChip, ...(active ? s.presetChipActive : {}), background: hex }}
+                              onClick={() => setColors({ ...colors, [slot.key]: hex })}
+                              title={hex.toUpperCase()}
+                              aria-label={`Use ${hex.toUpperCase()}`}
+                              aria-pressed={active}
+                            />
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -1529,6 +1570,64 @@ const s: Record<string, React.CSSProperties> = {
     padding: '0.3rem 0.3rem',
     width: '100%',
     boxSizing: 'border-box',
+  },
+  colorRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.45rem',
+    paddingBottom: '0.75rem',
+    borderBottom: '1px solid var(--line)',
+  },
+  colorLabelCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.3rem',
+  },
+  colorSwatchWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    flexWrap: 'wrap',
+  },
+  colorSwatch: {
+    width: 32,
+    height: 32,
+    padding: 2,
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    cursor: 'pointer',
+    background: 'none',
+    flexShrink: 0,
+  },
+  hexInput: {
+    fontFamily: 'inherit',
+    fontSize: '0.85rem',
+    color: 'var(--ink)',
+    background: 'var(--paper)',
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.35rem 0.5rem',
+    width: 90,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  },
+  presetRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.35rem',
+    alignItems: 'center',
+  },
+  presetChip: {
+    width: 22,
+    height: 22,
+    padding: 0,
+    border: '1px solid var(--line)',
+    borderRadius: '999px',
+    cursor: 'pointer',
+  },
+  presetChipActive: {
+    border: '2px solid var(--ink)',
+    boxShadow: '0 0 0 2px var(--paper) inset',
   },
   previewPanel: {
     flex: 1,

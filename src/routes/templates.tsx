@@ -288,7 +288,16 @@ function TemplatesPage() {
 
   const templateEntries = useMemo(() => TEMPLATES.map((tpl) => ({
     tpl,
-    cv: projectCv(fullData, tpl.id, [], [], [], {}, locale, sectionLabels),
+    cv: projectCv(
+      fullData,
+      tpl.id,
+      deferredProfile.hiddenSections ?? [],
+      deferredProfile.pageBreaks ?? [],
+      deferredProfile.sectionOrder ?? [],
+      deferredProfile.colors ?? {},
+      locale,
+      sectionLabels,
+    ),
     isActive: activeTemplateId === tpl.id,
     onSelect: () => {
       saveTemplatePref(tpl.id)

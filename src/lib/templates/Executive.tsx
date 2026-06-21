@@ -236,7 +236,8 @@ const styles = StyleSheet.create({
 
 export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
   const accent = cv.colors.accent ?? ACCENT
-  const paper = cv.colors.paper ?? PAPER
+  const ink = cv.colors.ink ?? INK
+  const muted = cv.colors.muted ?? MUTED
   const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('executive', key, cv.locale)
 
   const customIds = cv.customSections.map((s) => s.id)
@@ -252,17 +253,17 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
 
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
-      <Page size="A4" style={[styles.page, { backgroundColor: paper }]}>
+      <Page size="A4" style={[styles.page, { backgroundColor: PAPER, color: ink }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: accent }]}>
           <Text style={styles.name}>{cv.profile.name}</Text>
-          <Text style={styles.title}>{cv.profile.title}</Text>
+          <Text style={[styles.title, { color: muted }]}>{cv.profile.title}</Text>
           <View style={styles.contactRow}>
-            <Text>{cv.profile.location}</Text>
-            <Text>·</Text>
-            <Text>{cv.profile.email}</Text>
-            <Text>·</Text>
-            <Text>{cv.profile.website}</Text>
+            <Text style={{ color: muted }}>{cv.profile.location}</Text>
+            <Text style={{ color: muted }}>·</Text>
+            <Text style={{ color: muted }}>{cv.profile.email}</Text>
+            <Text style={{ color: muted }}>·</Text>
+            <Text style={{ color: muted }}>{cv.profile.website}</Text>
           </View>
         </View>
 
@@ -280,14 +281,14 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
                 <View key={exp.id} style={styles.expItem}>
                   <View style={styles.expHeader}>
                     <Text style={styles.expRole}>{exp.role}</Text>
-                    <Text style={styles.expPeriod}>{exp.period}</Text>
+                    <Text style={[styles.expPeriod, { color: muted }]}>{exp.period}</Text>
                   </View>
                 <Text style={[styles.expCompany, { color: accent }]}>{exp.company}</Text>
                   <View style={styles.bulletList}>
                     {exp.highlights.map((h, i) => (
                       <View key={i} style={styles.bulletItem}>
-                        <Text style={styles.bulletDot}>–</Text>
-                        <Text style={styles.bulletText}>{h}</Text>
+                        <Text style={[styles.bulletDot, { color: muted }]}>–</Text>
+                        <Text style={[styles.bulletText, { color: ink }]}>{h}</Text>
                       </View>
                     ))}
                   </View>
@@ -302,8 +303,8 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
                 {cv.education.map((edu) => (
                   <View key={edu.id} style={styles.eduItem}>
                     <Text style={styles.eduDegree}>{edu.degree}</Text>
-                    <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                    <Text style={styles.eduPeriod}>{edu.period}</Text>
+                    <Text style={[styles.eduInstitution, { color: muted }]}>{edu.institution}</Text>
+                    <Text style={[styles.eduPeriod, { color: muted }]}>{edu.period}</Text>
                   </View>
                 ))}
               </View>
@@ -316,7 +317,7 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
                 {cv.certifications.map((cert) => (
                   <View key={cert.id} style={styles.certItem}>
                     <Text style={styles.certName}>{cert.name}</Text>
-                    <Text style={styles.certMeta}>{cert.issuer} · {cert.year}</Text>
+                    <Text style={[styles.certMeta, { color: muted }]}>{cert.issuer} · {cert.year}</Text>
                   </View>
                 ))}
               </View>
@@ -327,36 +328,36 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
               <Text style={[styles.sectionTitle, { color: accent }]}>{label('languages')}</Text>
               <View style={styles.langTable}>
                 <View style={styles.langMotherRow}>
-                  <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
-                  <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Mother Tongue</Text>
+                  <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0, color: ink }]}>{motherTongueLabel}</Text>
                 </View>
                 <View style={styles.langGroupRow}>
-                  <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>{''}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Understanding</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Speaking</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>Writing</Text>
                 </View>
                 <View style={styles.langSubHeaderRow}>
-                  <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Other languages</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Listening</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reading</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Dialog</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reproduce</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>{''}</Text>
                 </View>
                 {otherLanguages.map((lang, i) => (
                   <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
-                    <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
+                    <Text style={[styles.langCell, styles.langColName, { color: ink }]}>{lang.language}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'listening')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'reading')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'dialog')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'reproduce')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink, borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
                   </View>
                 ))}
               </View>
-              <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
-              <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
+              <Text style={[styles.langNote, { color: muted }]}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+              <Text style={[styles.langNote, { color: muted }]}>Common European Framework of Reference for Language</Text>
             </View>
           )
           const custom = cv.customSections.find((s) => s.id === key)
@@ -365,8 +366,8 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
               <Text style={[styles.sectionTitle, { color: accent }]}>{custom.title}</Text>
               {custom.bullets.filter(Boolean).map((b, i) => (
                 <View key={i} style={styles.bulletItem}>
-                  <Text style={styles.bulletDot}>{'–'}</Text>
-                  <Text style={styles.bulletText}>{b}</Text>
+                  <Text style={[styles.bulletDot, { color: muted }]}>{'–'}</Text>
+                  <Text style={[styles.bulletText, { color: ink }]}>{b}</Text>
                 </View>
               ))}
             </View>

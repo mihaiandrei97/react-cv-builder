@@ -224,7 +224,8 @@ function normalizeForPdf(text: string): string {
 
 export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   const accent = cv.colors.accent ?? ACCENT
-  const paper = cv.colors.paper ?? PAPER
+  const ink = cv.colors.ink ?? INK
+  const muted = cv.colors.muted ?? MUTED
   const t = (value: string) => normalizeForPdf(value)
   const label = (key: string) => t(cv.sectionLabels[key] ?? getDefaultSectionLabel('classic', key, cv.locale))
 
@@ -241,17 +242,17 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
 
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
-      <Page size="A4" style={[styles.page, { backgroundColor: paper }]}>
+      <Page size="A4" style={[styles.page, { backgroundColor: PAPER, color: ink }]}>
         {/* Header */}
         <View style={[styles.hero, { borderBottomColor: accent }]}>
           <View>
             <Text style={[styles.heroName, { color: accent }]}>{t(cv.profile.name)}</Text>
-            <Text style={styles.heroRole}>{t(cv.profile.title)}</Text>
+            <Text style={[styles.heroRole, { color: muted }]}>{t(cv.profile.title)}</Text>
           </View>
           <View style={styles.contactList}>
-            <Text style={styles.contactItem}>{t(cv.profile.location)}</Text>
-            <Text style={styles.contactItem}>{t(cv.profile.email)}</Text>
-            <Text style={styles.contactItem}>{t(cv.profile.website)}</Text>
+            <Text style={[styles.contactItem, { color: muted }]}>{t(cv.profile.location)}</Text>
+            <Text style={[styles.contactItem, { color: muted }]}>{t(cv.profile.email)}</Text>
+            <Text style={[styles.contactItem, { color: muted }]}>{t(cv.profile.website)}</Text>
           </View>
         </View>
 
@@ -279,13 +280,13 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
                 <View key={exp.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>
                     <Text style={styles.experienceTitle}>{t(exp.role)} – {t(exp.company)}</Text>
-                    <Text style={styles.experiencePeriod}>{t(exp.period)}</Text>
+                    <Text style={[styles.experiencePeriod, { color: muted }]}>{t(exp.period)}</Text>
                   </View>
                   <View style={styles.bulletList}>
                     {exp.highlights.map((h, i) => (
                       <View key={i} style={styles.bulletItem}>
-                        <Text style={styles.bulletDot}>•</Text>
-                        <Text style={styles.bulletText}>{t(h)}</Text>
+                        <Text style={[styles.bulletDot, { color: muted }]}>•</Text>
+                        <Text style={[styles.bulletText, { color: ink }]}>{t(h)}</Text>
                       </View>
                     ))}
                   </View>
@@ -300,7 +301,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
                 <View key={project.id} style={styles.projectItem} wrap={false}>
                   <Text style={styles.projectName}>{t(project.name)}</Text>
                   <Text style={styles.projectDesc}>{t(project.description)}</Text>
-                  <Text style={styles.projectStack}>{t(project.stack)}</Text>
+                  <Text style={[styles.projectStack, { color: muted }]}>{t(project.stack)}</Text>
                 </View>
               ))}
             </View>
@@ -312,9 +313,9 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
                 <View key={edu.id} style={styles.experienceItem} wrap={false}>
                   <View style={styles.experienceHeader}>
                     <Text style={styles.experienceTitle}>{t(edu.degree)}</Text>
-                    <Text style={styles.experiencePeriod}>{t(edu.period)}</Text>
+                    <Text style={[styles.experiencePeriod, { color: muted }]}>{t(edu.period)}</Text>
                   </View>
-                  <Text style={{ fontSize: 9, color: MUTED, marginTop: 1 }}>{t(edu.institution)}</Text>
+                  <Text style={{ fontSize: 9, color: muted, marginTop: 1 }}>{t(edu.institution)}</Text>
                 </View>
               ))}
             </View>
@@ -324,36 +325,36 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
               <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('languages')}</Text>
               <View style={styles.langTable}>
                 <View style={styles.langMotherRow}>
-                  <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
-                  <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Mother Tongue</Text>
+                  <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0, color: ink }]}>{motherTongueLabel}</Text>
                 </View>
                 <View style={styles.langGroupRow}>
-                  <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>{''}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Understanding</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Speaking</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>Writing</Text>
                 </View>
                 <View style={styles.langSubHeaderRow}>
-                  <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
-                  <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Other languages</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Listening</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reading</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Dialog</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reproduce</Text>
+                  <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>{''}</Text>
                 </View>
                 {otherLanguages.map((lang, i) => (
                   <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
-                    <Text style={[styles.langCell, styles.langColName]}>{t(lang.language)}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
-                    <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
+                    <Text style={[styles.langCell, styles.langColName, { color: ink }]}>{t(lang.language)}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'listening')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'reading')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'dialog')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'reproduce')}</Text>
+                    <Text style={[styles.langCell, styles.langColLevel, { color: ink, borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
                   </View>
                 ))}
               </View>
-              <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
-              <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
+              <Text style={[styles.langNote, { color: muted }]}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+              <Text style={[styles.langNote, { color: muted }]}>Common European Framework of Reference for Language</Text>
             </View>
           )
           const custom = cv.customSections.find((s) => s.id === key)
@@ -362,8 +363,8 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
               <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{t(custom.title)}</Text>
               {custom.bullets.filter(Boolean).map((b, i) => (
                 <View key={i} style={styles.bulletItem}>
-                  <Text style={styles.bulletDot}>{'•'}</Text>
-                  <Text style={styles.bulletText}>{t(b)}</Text>
+                  <Text style={[styles.bulletDot, { color: muted }]}>{'•'}</Text>
+                  <Text style={[styles.bulletText, { color: ink }]}>{t(b)}</Text>
                 </View>
               ))}
             </View>

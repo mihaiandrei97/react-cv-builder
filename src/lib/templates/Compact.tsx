@@ -285,6 +285,8 @@ const styles = StyleSheet.create({
 
 export function CompactDocument({ cv }: { cv: CompactCvData }) {
   const accent = cv.colors.accent ?? ACCENT
+  const ink = cv.colors.ink ?? INK
+  const muted = cv.colors.muted ?? MUTED
   const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('compact', key, cv.locale)
   const motherTongue = cv.languages[0]
   const otherLanguages = cv.languages.slice(1)
@@ -298,7 +300,7 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
 
   return (
     <Document key={JSON.stringify(cv.colors)}>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={[styles.page, { color: ink }]}>
         {/* Top bar */}
         <View style={[styles.topBar, { backgroundColor: accent }]}>
           <View>
@@ -346,13 +348,13 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
                     <View key={exp.id} style={styles.expItem}>
                       <View style={styles.expHeader}>
                         <Text style={styles.expRole}>{exp.role}</Text>
-                        <Text style={styles.expPeriod}>{exp.period}</Text>
+                        <Text style={[styles.expPeriod, { color: muted }]}>{exp.period}</Text>
                       </View>
                       <Text style={[styles.expCompany, { color: accent }]}>{exp.company}</Text>
                       {exp.highlights.map((h, i) => (
                         <View key={i} style={styles.bulletItem}>
-                          <Text style={styles.bulletDot}>·</Text>
-                          <Text style={styles.bulletText}>{h}</Text>
+                          <Text style={[styles.bulletDot, { color: muted }]}>·</Text>
+                          <Text style={[styles.bulletText, { color: ink }]}>{h}</Text>
                         </View>
                       ))}
                     </View>
@@ -367,9 +369,9 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
                     <View key={edu.id} style={styles.eduItem}>
                       <View style={styles.eduHeader}>
                         <Text style={styles.eduDegree}>{edu.degree}</Text>
-                        <Text style={styles.eduPeriod}>{edu.period}</Text>
+                        <Text style={[styles.eduPeriod, { color: muted }]}>{edu.period}</Text>
                       </View>
-                      <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                      <Text style={[styles.eduInstitution, { color: muted }]}>{edu.institution}</Text>
                     </View>
                   ))}
                 </View>
@@ -380,36 +382,36 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
                   <Text style={styles.mainSectionTitle}>{label('languages')}</Text>
                   <View style={styles.langTable}>
                     <View style={styles.langMotherRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
-                      <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Mother Tongue</Text>
+                      <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0, color: ink }]}>{motherTongueLabel}</Text>
                     </View>
                     <View style={styles.langGroupRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>{''}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Understanding</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Speaking</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>Writing</Text>
                     </View>
                     <View style={styles.langSubHeaderRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Other languages</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Listening</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reading</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Dialog</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reproduce</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>{''}</Text>
                     </View>
                     {otherLanguages.map((lang, i) => (
                       <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
-                        <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
+                        <Text style={[styles.langCell, styles.langColName, { color: ink }]}>{lang.language}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'listening')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'reading')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'dialog')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { color: ink }]}>{getLanguageLevel(lang, 'reproduce')}</Text>
+                        <Text style={[styles.langCell, styles.langColLevel, { color: ink, borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
                       </View>
                     ))}
                   </View>
-                  <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
-                  <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
+                  <Text style={[styles.langNote, { color: muted }]}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+                  <Text style={[styles.langNote, { color: muted }]}>Common European Framework of Reference for Language</Text>
                 </View>
               )
 
@@ -420,8 +422,8 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
                   <Text style={styles.mainSectionTitle}>{custom.title}</Text>
                   {custom.bullets.filter(Boolean).map((b, i) => (
                     <View key={i} style={styles.bulletItem}>
-                      <Text style={styles.bulletDot}>·</Text>
-                      <Text style={styles.bulletText}>{b}</Text>
+                      <Text style={[styles.bulletDot, { color: muted }]}>·</Text>
+                      <Text style={[styles.bulletText, { color: ink }]}>{b}</Text>
                     </View>
                   ))}
                 </View>
