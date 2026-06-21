@@ -272,6 +272,11 @@ function normalizeForPdf(text: string): string {
 }
 
 export function TimelineDocument({ cv }: { cv: TimelineCvData }) {
+  // Defensive fallbacks: skills/projects may be absent during template-switch transitions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const skills: typeof cv.skills = (cv as any).skills ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const projects: typeof cv.projects = (cv as any).projects ?? []
   const accent = cv.colors.accent ?? ACCENT
   const ink = cv.colors.ink ?? INK
   const muted = cv.colors.muted ?? MUTED
@@ -312,11 +317,11 @@ export function TimelineDocument({ cv }: { cv: TimelineCvData }) {
         </View>
 
         {ordered.map((key) => {
-          if (key === 'skills' && cv.skills.length > 0) return (
+          if (key === 'skills' && skills.length > 0) return (
             <View key="skills" style={styles.section} break={cv.pageBreaks.includes('skills')}>
               <Text style={[styles.sectionTitle, { color: accent }]}>{label('skills')}</Text>
               <Text style={styles.skillsInline}>
-                {cv.skills.map((skill, i) => (
+                {skills.map((skill, i) => (
                   <Text key={i}>
                     {i > 0 ? <Text style={{ color: muted }}>{'  ·  '}</Text> : null}
                     <Text>{t(skill)}</Text>
@@ -356,10 +361,10 @@ export function TimelineDocument({ cv }: { cv: TimelineCvData }) {
               })}
             </View>
           )
-          if (key === 'projects' && cv.projects.length > 0) return (
+          if (key === 'projects' && projects.length > 0) return (
             <View key="projects" style={styles.section} break={cv.pageBreaks.includes('projects')}>
               <Text style={[styles.sectionTitle, { color: accent }]}>{label('projects')}</Text>
-              {cv.projects.map((project) => (
+              {projects.map((project) => (
                 <View key={project.id} style={styles.projectItem} wrap={false}>
                   <Text style={[styles.projectName, { color: ink }]}>{t(project.name)}</Text>
                   <Text style={styles.projectDesc}>{t(project.description)}</Text>

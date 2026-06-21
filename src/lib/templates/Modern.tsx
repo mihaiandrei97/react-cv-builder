@@ -24,15 +24,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Classic Serif TTF',
     fontSize: 10,
     backgroundColor: MAIN_BG,
+    paddingTop: '14mm',
+    paddingBottom: '14mm',
   },
 
   // Sidebar background – fixed so it repeats on every overflow page
   sidebarBg: {
     position: 'absolute',
     top: 0,
+    bottom: 0,
     left: 0,
     width: SIDEBAR_WIDTH,
-    height: '100%',
     backgroundColor: SIDEBAR_BG,
   },
 
@@ -110,8 +112,6 @@ const styles = StyleSheet.create({
   // Main content – flows naturally; marginLeft reserves space for sidebar
   main: {
     marginLeft: SIDEBAR_WIDTH,
-    paddingTop: '14mm',
-    paddingBottom: '14mm',
     paddingLeft: '11mm',
     paddingRight: '11mm',
     flexDirection: 'column',
@@ -258,6 +258,11 @@ const styles = StyleSheet.create({
 })
 
 export function ModernDocument({ cv }: { cv: ModernCvData }) {
+  // Defensive fallbacks: skills/projects may be absent during template-switch transitions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const skills: typeof cv.skills = (cv as any).skills ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const projects: typeof cv.projects = (cv as any).projects ?? []
   const sidebarBg = cv.colors.sidebarBg ?? SIDEBAR_BG
   const sidebarAccent = cv.colors.sidebarAccent ?? SIDEBAR_ACCENT
   const accent = cv.colors.accent ?? MAIN_ACCENT
@@ -303,11 +308,11 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
             </View>
           </View>
 
-          {cv.skills.length > 0 && (
+          {skills.length > 0 && (
             <View>
               <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{label('skills')}</Text>
               <View style={styles.skillsWrap}>
-                {cv.skills.map((skill, i) => (
+                {skills.map((skill, i) => (
                   <Text key={i} style={styles.skillChip}>
                     {skill}
                   </Text>
@@ -349,10 +354,10 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                   ))}
                 </View>
               )
-              if (key === 'projects' && cv.projects.length > 0) return (
+              if (key === 'projects' && projects.length > 0) return (
                 <View key="projects" break={cv.pageBreaks.includes('projects')}>
                   <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('projects')}</Text>
-                  {cv.projects.map((project) => (
+                  {projects.map((project) => (
                     <View key={project.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
                         <Text style={[styles.entryRole, { color: ink }]}>{project.name}</Text>

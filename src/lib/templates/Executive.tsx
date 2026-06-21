@@ -235,6 +235,9 @@ const styles = StyleSheet.create({
 })
 
 export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
+  // Defensive fallback: certifications may be absent during template-switch transitions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const certifications: typeof cv.certifications = (cv as any).certifications ?? []
   const accent = cv.colors.accent ?? ACCENT
   const ink = cv.colors.ink ?? INK
   const muted = cv.colors.muted ?? MUTED
@@ -310,11 +313,11 @@ export function ExecutiveDocument({ cv }: { cv: ExecutiveCvData }) {
               </View>
             </View>
           )
-          if (key === 'certifications' && cv.certifications.length > 0) return (
+          if (key === 'certifications' && certifications.length > 0) return (
             <View key="certifications" style={styles.section} break={cv.pageBreaks.includes('certifications')}>
               <Text style={[styles.sectionTitle, { color: accent }]}>{label('certifications')}</Text>
               <View style={styles.certRow}>
-                {cv.certifications.map((cert) => (
+                {certifications.map((cert) => (
                   <View key={cert.id} style={styles.certItem}>
                     <Text style={styles.certName}>{cert.name}</Text>
                     <Text style={[styles.certMeta, { color: muted }]}>{cert.issuer} · {cert.year}</Text>

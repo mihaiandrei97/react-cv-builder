@@ -706,7 +706,10 @@ function EditPage() {
     }).filter((item): item is { key: string; title: string; anchorId: string } => item !== null),
   ]
 
-  const previewDoc = useMemo(() => (Doc ? <Doc cv={debouncedCv} /> : null), [debouncedCv, Doc])
+  const previewDoc = useMemo(
+    () => (Doc ? <Doc cv={debouncedCv} /> : null),
+    [debouncedCv, Doc],
+  )
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

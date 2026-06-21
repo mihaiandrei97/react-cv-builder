@@ -25,15 +25,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Classic Serif TTF',
     fontSize: 10,
     backgroundColor: MAIN_BG,
+    paddingTop: '14mm',
+    paddingBottom: '14mm',
   },
 
   // Sidebar background — fixed so it repeats on every overflow page
   sidebarBg: {
     position: 'absolute',
     top: 0,
+    bottom: 0,
     left: MAIN_WIDTH,
     width: SIDEBAR_WIDTH,
-    height: '100%',
     backgroundColor: SIDEBAR_BG,
     borderLeftWidth: 1.5,
     borderLeftColor: ACCENT,
@@ -133,8 +135,6 @@ const styles = StyleSheet.create({
   // Main content — flows naturally; width reserves space for sidebar
   main: {
     width: MAIN_WIDTH,
-    paddingTop: '14mm',
-    paddingBottom: '14mm',
     paddingLeft: '14mm',
     paddingRight: '11mm',
     flexDirection: 'column',
@@ -217,6 +217,11 @@ const styles = StyleSheet.create({
 })
 
 export function SidebarDocument({ cv }: { cv: SidebarCvData }) {
+  // Defensive fallbacks: skills/projects may be absent during template-switch transitions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const skills: typeof cv.skills = (cv as any).skills ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const projects: typeof cv.projects = (cv as any).projects ?? []
   const sidebarBg = cv.colors.sidebarBg ?? SIDEBAR_BG
   const accent = cv.colors.accent ?? ACCENT
   const ink = cv.colors.ink ?? MAIN_INK
@@ -258,11 +263,11 @@ export function SidebarDocument({ cv }: { cv: SidebarCvData }) {
             </View>
           </View>
 
-          {cv.skills.length > 0 && (
+          {skills.length > 0 && (
             <View>
               <Text style={[styles.sidebarSectionTitle, { color: accent }]}>{label('skills')}</Text>
               <View style={styles.skillsWrap}>
-                {cv.skills.map((skill, i) => (
+                {skills.map((skill, i) => (
                   <Text key={i} style={styles.skillChip}>
                     {skill}
                   </Text>
@@ -319,10 +324,10 @@ export function SidebarDocument({ cv }: { cv: SidebarCvData }) {
                   ))}
                 </View>
               )
-              if (key === 'projects' && cv.projects.length > 0) return (
+              if (key === 'projects' && projects.length > 0) return (
                 <View key="projects" break={cv.pageBreaks.includes('projects')}>
                   <Text style={[styles.sectionTitle, { color: ink, borderBottomColor: accent }]}>{label('projects')}</Text>
-                  {cv.projects.map((project) => (
+                  {projects.map((project) => (
                     <View key={project.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
                         <Text style={[styles.entryRole, { color: ink }]}>{project.name}</Text>
