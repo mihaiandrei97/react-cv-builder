@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
-import { memo, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { useActiveProfile, saveTemplatePref, cvStore } from '../lib/cv-store'
@@ -33,6 +33,8 @@ const TemplateCard = memo(function TemplateCard({
 }) {
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
   const [ready, setReady] = useState(false)
+  const [wasVisible, setWasVisible] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -44,20 +46,44 @@ const TemplateCard = memo(function TemplateCard({
     }
   }, [tpl.id])
 
-  // Stagger BlobProvider mount so 4 PDFs never render simultaneously.
-  // On first visit, dynamic imports naturally stagger; on subsequent visits
-  // the component cache resolves all at once — this delay ensures the page
-  // shell paints first and PDFs render one-by-one.
+  // Lazy-mount: only render PDF when card enters viewport.
+  // rootMargin pre-renders 300px before visible so scrolling feels instant.
+  // Once visible, wasVisible stays true permanently — BlobProvider stays
+  // mounted so scrolling back up doesn't trigger a re-render.
   useEffect(() => {
-    const timer = setTimeout(() => setReady(true), 150 * index)
+    const el = cardRef.current
+    if (!el || !('IntersectionObserver' in window)) {
+      setWasVisible(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setWasVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '300px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // Stagger BlobProvider mount so PDFs render one-by-one, not all at once.
+  // Active template renders immediately (0ms); others stagger by index.
+  useEffect(() => {
+    if (!wasVisible) return
+    const delay = isActive ? 0 : Math.min(40 * index, 400)
+    const timer = setTimeout(() => setReady(true), delay)
     return () => clearTimeout(timer)
-  }, [index])
+  }, [wasVisible, index, isActive])
 
   const documentEl = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
-  const canRender = ready && Doc
+  const canRender = wasVisible && ready && Doc
 
   return (
     <div
+      ref={cardRef}
       style={{
         background: '#fffdf7',
         border: `2px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
@@ -247,7 +273,7 @@ const TemplateCard = memo(function TemplateCard({
   )
 })
 
-function IframePreview({ url }: { url: string }) {
+const IframePreview = memo(function IframePreview({ url }: { url: string }) {
   return (
     <iframe
       src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
@@ -263,7 +289,7 @@ function IframePreview({ url }: { url: string }) {
       title="PDF Preview"
     />
   )
-}
+})
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
