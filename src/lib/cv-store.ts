@@ -416,8 +416,10 @@ export function setSectionLabels(sectionLabels: Record<string, string>) {
   dispatch({ type: 'sectionLabels.set', sectionLabels })
 }
 
-export function addCustomSection() {
-  dispatch({ type: 'customSection.add', id: crypto.randomUUID() }, { immediatePersist: true })
+export function addCustomSection(): string {
+  const id = crypto.randomUUID()
+  dispatch({ type: 'customSection.add', id }, { immediatePersist: true })
+  return id
 }
 
 export function removeCustomSection(id: string) {

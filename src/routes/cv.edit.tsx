@@ -3,8 +3,8 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
-import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore } from '../lib/cv-store'
-import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
+import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore, saveTemplatePref } from '../lib/cv-store'
+import { getTemplate, loadTemplateComponent, type TemplateComponent, TEMPLATES } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -34,8 +34,83 @@ export const Route = createFileRoute('/cv/edit')({
 
 // ── Nav ──────────────────────────────────────────────────────────────────────
 
+function TemplateSwitcher({
+  currentTemplateId,
+  isCompact,
+}: {
+  currentTemplateId: string
+  isCompact: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement | null>(null)
+  const current = getTemplate(currentTemplateId)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('pointerdown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        style={{ ...s.templateBadgeLink, ...(isCompact ? { flex: 1 } : {}) }}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="Change template"
+      >
+        {current.name}
+        <span style={s.templateBadgeHint}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={s.templateMenu} role="listbox">
+          {TEMPLATES.map((tpl) => {
+            const isActive = tpl.id === currentTemplateId
+            return (
+              <button
+                key={tpl.id}
+                type="button"
+                role="option"
+                aria-selected={isActive}
+                style={isActive ? s.templateMenuItemActive : s.templateMenuItem}
+                onClick={() => {
+                  saveTemplatePref(tpl.id)
+                  setOpen(false)
+                }}
+              >
+                <span style={s.templateMenuItemName}>{tpl.name}</span>
+                <span style={s.templateMenuItemDesc}>{tpl.description}</span>
+                {isActive && <span style={s.templateMenuItemCheck}>✓</span>}
+              </button>
+            )
+          })}
+          <Link
+            to="/templates"
+            style={s.templateMenuCompareLink}
+            onClick={() => setOpen(false)}
+          >
+            Compare all side-by-side →
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TopBar({
-  templateName,
+  templateId,
   saveStatus,
   isCompact,
   activePane,
@@ -43,7 +118,7 @@ function TopBar({
   onReset,
   onDownload,
 }: {
-  templateName: string
+  templateId: string
   saveStatus: string
   isCompact: boolean
   activePane: 'form' | 'preview'
@@ -58,10 +133,7 @@ function TopBar({
       </div>
       <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
-        <Link to="/templates" style={s.templateBadgeLink} title="Change template">
-          {templateName}
-          <span style={s.templateBadgeHint}>change</span>
-        </Link>
+        <TemplateSwitcher currentTemplateId={templateId} isCompact={isCompact} />
         {isCompact && (
           <div style={s.viewSwitch}>
             <button
@@ -120,12 +192,14 @@ function Input({
   onBlur,
   type = 'text',
   placeholder,
+  focusId,
 }: {
   value: string
   onChange: (v: string) => void
   onBlur?: () => void
   type?: string
   placeholder?: string
+  focusId?: string
 }) {
   return (
     <input
@@ -134,6 +208,7 @@ function Input({
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
+      data-focus-id={focusId}
       style={s.input}
     />
   )
@@ -297,6 +372,7 @@ function EditPage() {
   const [newLang, setNewLang] = useState('')
   const [activePane, setActivePane] = useState<'form' | 'preview'>('form')
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(() => new Set())
+  const focusTargetRef = useRef<string | null>(null)
 
   function toggleItemCollapse(id: string) {
     setCollapsedItems((prev) => {
@@ -306,6 +382,21 @@ function EditPage() {
       return next
     })
   }
+
+  function expandItem(id: string) {
+    setCollapsedItems((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  function requestFocus(id: string) {
+    focusTargetRef.current = id
+    setFocusNonce((n) => n + 1)
+  }
+  const [focusNonce, setFocusNonce] = useState(0)
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
   const [isCompactLayout, setIsCompactLayout] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
@@ -349,6 +440,17 @@ function EditPage() {
       cancelled = true
     }
   }, [templateId])
+
+  useEffect(() => {
+    const target = focusTargetRef.current
+    if (!target) return
+    const el = document.querySelector<HTMLElement>(`[data-focus-id="${target}"]`)
+    if (el) {
+      el.focus()
+      if (el instanceof HTMLInputElement) el.select()
+    }
+    focusTargetRef.current = null
+  }, [focusNonce])
 
   function scrollToSection(anchorId: string) {
     document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -396,6 +498,8 @@ function EditPage() {
   function addExperience() {
     const entry: Experience = { id: crypto.randomUUID(), company: '', role: '', period: '', highlights: [''] }
     setFullData((prev) => ({ ...prev, experiences: [...prev.experiences, entry] }))
+    expandItem(entry.id)
+    requestFocus(`exp-role-${entry.id}`)
   }
   function removeExperience(i: number) {
     setFullData((prev) => ({ ...prev, experiences: prev.experiences.filter((_, idx) => idx !== i) }))
@@ -413,6 +517,8 @@ function EditPage() {
       experiences[expI] = { ...experiences[expI], highlights: [...experiences[expI].highlights, ''] }
       return { ...prev, experiences }
     })
+    const exp = fullData.experiences[expI]
+    if (exp) requestFocus(`exp-bullet-${exp.id}-${exp.highlights.length}`)
   }
   function removeHighlight(expI: number, hI: number) {
     setFullData((prev) => {
@@ -438,6 +544,8 @@ function EditPage() {
   function addProject() {
     const entry: Project = { id: crypto.randomUUID(), name: '', description: '', stack: '' }
     setFullData((prev) => ({ ...prev, projects: [...prev.projects, entry] }))
+    expandItem(entry.id)
+    requestFocus(`proj-name-${entry.id}`)
   }
   function removeProject(i: number) {
     setFullData((prev) => ({ ...prev, projects: prev.projects.filter((_, idx) => idx !== i) }))
@@ -454,6 +562,8 @@ function EditPage() {
   function addEducation() {
     const entry: Education = { id: crypto.randomUUID(), degree: '', institution: '', period: '' }
     setFullData((prev) => ({ ...prev, education: [...prev.education, entry] }))
+    expandItem(entry.id)
+    requestFocus(`edu-degree-${entry.id}`)
   }
   function removeEducation(i: number) {
     setFullData((prev) => ({ ...prev, education: prev.education.filter((_, idx) => idx !== i) }))
@@ -470,6 +580,8 @@ function EditPage() {
   function addCertification() {
     const entry: Certification = { id: crypto.randomUUID(), name: '', issuer: '', year: '' }
     setFullData((prev) => ({ ...prev, certifications: [...prev.certifications, entry] }))
+    expandItem(entry.id)
+    requestFocus(`cert-name-${entry.id}`)
   }
   function removeCertification(i: number) {
     setFullData((prev) => ({ ...prev, certifications: prev.certifications.filter((_, idx) => idx !== i) }))
@@ -496,6 +608,8 @@ function EditPage() {
       writing: 'B1',
     }
     setFullData((prev) => ({ ...prev, languages: [...prev.languages, entry] }))
+    expandItem(entry.id)
+    requestFocus(`lang-name-${entry.id}`)
     setNewLang('')
   }
   function removeLanguage(i: number) {
@@ -594,7 +708,7 @@ function EditPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar
-        templateName={template.name}
+        templateId={templateId}
         saveStatus={saveStatus}
         isCompact={isCompactLayout}
         activePane={activePane}
@@ -806,6 +920,7 @@ function EditPage() {
                               <input
                                 type="text"
                                 value={lang.language}
+                                data-focus-id={`lang-name-${lang.id}`}
                                 onChange={(e) => updateLanguage(i, 'language', e.target.value)}
                                 style={{ ...s.input, flex: 1 }}
                               />
@@ -869,7 +984,7 @@ function EditPage() {
                       {!isCollapsed && (
                         <>
                           <div style={s.fieldGrid}>
-                            <Field label="Role"><Input value={exp.role} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
+                            <Field label="Role"><Input value={exp.role} focusId={`exp-role-${exp.id}`} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
                             <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
                             <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
                           </div>
@@ -877,7 +992,7 @@ function EditPage() {
                             <span style={s.fieldLabel}>Highlights</span>
                             {exp.highlights.map((h, hi) => (
                               <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
+                                <input type="text" value={h} placeholder="Bullet point..." data-focus-id={`exp-bullet-${exp.id}-${hi}`} onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
                                 <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
                               </div>
                             ))}
@@ -914,7 +1029,7 @@ function EditPage() {
                       {!isCollapsed && (
                         <>
                           <div style={s.fieldGrid}>
-                            <Field label="Name"><Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} /></Field>
+                            <Field label="Name"><Input value={project.name} focusId={`proj-name-${project.id}`} onChange={(v) => updateProject(i, 'name', v)} /></Field>
                             <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
                           </div>
                           <Field label="Description" fullWidth>
@@ -950,7 +1065,7 @@ function EditPage() {
                       />
                       {!isCollapsed && (
                         <div style={s.fieldGrid}>
-                          <Field label="Degree"><Input value={edu.degree} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
+                          <Field label="Degree"><Input value={edu.degree} focusId={`edu-degree-${edu.id}`} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
                           <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
                           <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
                         </div>
@@ -984,7 +1099,7 @@ function EditPage() {
                       {!isCollapsed && (
                         <div style={s.fieldGrid}>
                           <Field label="Name" fullWidth>
-                            <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
+                            <Input value={cert.name} focusId={`cert-name-${cert.id}`} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
                           </Field>
                           <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
                           <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
@@ -1015,6 +1130,7 @@ function EditPage() {
                   <Field label="Section Title" fullWidth>
                     <Input
                       value={custom.title}
+                      focusId={`custom-title-${custom.id}`}
                       placeholder="e.g. Volunteer Work"
                       onChange={(v) => {
                         setFullData((prev) => ({
@@ -1032,6 +1148,7 @@ function EditPage() {
                       <input
                         type="text"
                         value={b}
+                        data-focus-id={`custom-bullet-${custom.id}-${bi}`}
                         placeholder="Bullet point..."
                         onChange={(e) => {
                           setFullData((prev) => ({
@@ -1068,6 +1185,7 @@ function EditPage() {
                           s.id === key ? { ...s, bullets: [...s.bullets, ''] } : s
                         ),
                       }))
+                      requestFocus(`custom-bullet-${key}-${custom.bullets.length}`)
                     }}
                   >+ Add bullet</button>
                 </div>
@@ -1082,7 +1200,10 @@ function EditPage() {
             <button
               type="button"
               style={s.btnAdd}
-              onClick={() => { addCustomSection() }}
+              onClick={() => {
+                const id = addCustomSection()
+                requestFocus(`custom-title-${id}`)
+              }}
             >+ Add Custom Section</button>
           </div>
           </main>
@@ -1233,6 +1354,81 @@ const s: Record<string, React.CSSProperties> = {
     letterSpacing: '0.05em',
     color: '#b8722f',
     opacity: 0.7,
+  },
+  templateMenu: {
+    position: 'absolute',
+    top: 'calc(100% + 0.4rem)',
+    right: 0,
+    minWidth: 280,
+    maxWidth: 340,
+    background: '#fffdf7',
+    border: '1px solid var(--line)',
+    borderRadius: '0.4rem',
+    boxShadow: '0 12px 28px rgba(34,34,34,0.14)',
+    padding: '0.35rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.2rem',
+    zIndex: 20,
+  },
+  templateMenuItem: {
+    fontFamily: 'inherit',
+    textAlign: 'left',
+    color: 'var(--ink)',
+    background: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: '0.3rem',
+    padding: '0.55rem 0.7rem',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.15rem',
+    position: 'relative',
+  },
+  templateMenuItemActive: {
+    fontFamily: 'inherit',
+    textAlign: 'left',
+    color: 'var(--accent)',
+    background: '#fdf0e6',
+    border: '1px solid #f0c89a',
+    borderRadius: '0.3rem',
+    padding: '0.55rem 0.7rem',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.15rem',
+    position: 'relative',
+  },
+  templateMenuItemName: {
+    fontSize: '0.88rem',
+    fontWeight: 700,
+  },
+  templateMenuItemDesc: {
+    fontSize: '0.72rem',
+    color: 'var(--muted)',
+    lineHeight: 1.4,
+  },
+  templateMenuItemCheck: {
+    position: 'absolute',
+    top: '0.55rem',
+    right: '0.7rem',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    color: 'var(--green)',
+  },
+  templateMenuCompareLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'var(--muted)',
+    textDecoration: 'none',
+    background: 'transparent',
+    border: 0,
+    borderTop: '1px solid var(--line)',
+    borderRadius: 0,
+    padding: '0.5rem 0.7rem',
+    cursor: 'pointer',
+    textAlign: 'left',
   },
   btnPrimary: {
     fontFamily: 'inherit',
