@@ -36,10 +36,29 @@ type LanguageLike = {
 
 type LanguageSkill = 'listening' | 'reading' | 'dialog' | 'reproduce' | 'writing'
 
+const CEFR_RANK: Record<string, number> = {
+  A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6,
+}
+
 export function isMotherTongueLanguage(language: LanguageLike): boolean {
   return Boolean(language.motherTongue) || /native|mother/i.test(language.proficiency ?? '')
 }
 
 export function getLanguageLevel(language: LanguageLike, skill: LanguageSkill): string {
   return toCefrLevel(language[skill] ?? language.proficiency ?? '')
+}
+
+export function getOverallLevel(language: LanguageLike): string {
+  const skills: LanguageSkill[] = ['listening', 'reading', 'dialog', 'reproduce', 'writing']
+  const levels = skills
+    .map((s) => language[s])
+    .filter((v): v is string => Boolean(v))
+  if (levels.length === 0) {
+    return toCefrLevel(language.proficiency ?? '')
+  }
+  return levels.reduce((lowest, current) => {
+    const a = toCefrLevel(lowest)
+    const b = toCefrLevel(current)
+    return (CEFR_RANK[b] ?? 0) < (CEFR_RANK[a] ?? 0) ? b : a
+  }, toCefrLevel(levels[0]!))
 }
