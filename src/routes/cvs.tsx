@@ -145,6 +145,11 @@ function CvsPage() {
   const importInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (profiles.length > 0) return
+    setCreatingNew(true)
+  }, [profiles.length])
+
+  useEffect(() => {
     const id = 'cvs-card-hover'
     if (document.getElementById(id)) return
     const style = document.createElement('style')
@@ -227,123 +232,207 @@ function CvsPage() {
       </header>
 
       <main style={s.main}>
-        <section style={s.heroStrip}>
-          <div style={s.heroStat}>
-            <span style={s.heroStatLabel}>CVs</span>
-            <strong style={s.heroStatValue}>{profiles.length}</strong>
-          </div>
-          <div style={s.heroDivider} />
-          <div style={s.heroHint}>
-            Tip: keep one CV per role target — tune the summary and skills for each.
-          </div>
-        </section>
-
-        {importError && (
-          <div style={s.errorBanner}>
-            <span>{importError}</span>
-            <button type="button" onClick={() => setImportError(null)} style={s.errorClose}>
-              ×
-            </button>
-          </div>
-        )}
-
-        {creatingNew && (
-          <div style={s.newCard}>
-            <span style={s.newTitle}>New CV</span>
-            <input
-              autoFocus
-              type="text"
-              placeholder="e.g. Frontend Dev, Freelance…"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate()
-                if (e.key === 'Escape') {
-                  setCreatingNew(false)
-                  setNewName('')
-                  setNewLocale('en')
-                }
-              }}
-              style={s.newInput}
-            />
-            <div style={s.newRow}>
-              <div style={s.localeToggle}>
-                {(['en', 'ro'] as CvLocale[]).map((loc) => (
+        {profiles.length === 0 ? (
+          <section style={s.emptyState}>
+            <div style={s.emptyIcon}>✦</div>
+            <h2 style={s.emptyTitle}>No CVs yet</h2>
+            <p style={s.emptyHint}>
+              Create your first CV to pick a template and start filling in your details.
+            </p>
+            {creatingNew ? (
+              <div style={{ ...s.newCard, width: '100%', maxWidth: 460 }}>
+                <span style={s.newTitle}>New CV</span>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="e.g. Frontend Dev, Freelance…"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreate()
+                    if (e.key === 'Escape') {
+                      setCreatingNew(false)
+                      setNewName('')
+                      setNewLocale('en')
+                    }
+                  }}
+                  style={s.newInput}
+                />
+                <div style={s.newRow}>
+                  <div style={s.localeToggle}>
+                    {(['en', 'ro'] as CvLocale[]).map((loc) => (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => setNewLocale(loc)}
+                        style={{
+                          ...(newLocale === loc ? s.localeBtnActive : s.localeBtn),
+                          borderRight: loc === 'en' ? '1px solid var(--line)' : 0,
+                        }}
+                      >
+                        {loc.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
                   <button
-                    key={loc}
                     type="button"
-                    onClick={() => setNewLocale(loc)}
-                    style={{
-                      ...(newLocale === loc ? s.localeBtnActive : s.localeBtn),
-                      borderRight: loc === 'en' ? '1px solid var(--line)' : 0,
-                    }}
+                    onClick={handleCreate}
+                    disabled={!newName.trim()}
+                    style={newName.trim() ? s.btnPrimary : s.btnPrimaryDisabled}
                   >
-                    {loc.toUpperCase()}
+                    Create &amp; open
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatingNew(false)
+                      setNewName('')
+                      setNewLocale('en')
+                    }}
+                    style={s.btnSecondary}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
+            ) : (
               <button
                 type="button"
-                onClick={handleCreate}
-                disabled={!newName.trim()}
-                style={newName.trim() ? s.btnPrimary : s.btnPrimaryDisabled}
+                onClick={() => setCreatingNew(true)}
+                style={s.btnPrimary}
               >
-                Create &amp; open
+                + Create your first CV
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreatingNew(false)
-                  setNewName('')
-                  setNewLocale('en')
-                }}
-                style={s.btnSecondary}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div style={s.grid}>
-          {profiles.map((p) => (
-            <CvCard
-              key={p.id}
-              profile={p}
-              isActive={p.id === activeProfileId}
-              canDelete={profiles.length > 1}
-              isRenaming={renamingId === p.id}
-              renameValue={renameValue}
-              onOpen={() => handleOpen(p.id)}
-              onDuplicate={() => handleDuplicate(p.id)}
-              onDelete={() => handleDelete(p.id)}
-              onExport={() => exportProfile(p.id)}
-              onRenameStart={() => handleRenameStart(p.id, p.name)}
-              onRenameChange={setRenameValue}
-              onRenameCommit={() => handleRenameCommit(p.id)}
-              onRenameCancel={() => setRenamingId(null)}
-            />
-          ))}
-
-          {!creatingNew && (
+            )}
             <button
               type="button"
-              onClick={() => setCreatingNew(true)}
-              style={s.newTile}
-              className="cv-card-new"
+              style={s.importLink}
+              onClick={() => importInputRef.current?.click()}
             >
-              <span style={s.newTilePlus}>+</span>
-              <span style={s.newTileLabel}>New CV</span>
-              <span style={s.newTileHint}>Start from a fresh template</span>
+              Or import a backup
             </button>
-          )}
-        </div>
+          </section>
+        ) : (
+          <>
+            <section style={s.heroStrip}>
+              <div style={s.heroStat}>
+                <span style={s.heroStatLabel}>CVs</span>
+                <strong style={s.heroStatValue}>{profiles.length}</strong>
+              </div>
+              <div style={s.heroDivider} />
+              <div style={s.heroHint}>
+                Tip: keep one CV per role target — tune the summary and skills for each.
+              </div>
+            </section>
 
-        <footer style={s.footer}>
-          <button type="button" style={s.importLink} onClick={() => importInputRef.current?.click()}>
-            Import backup
-          </button>
-        </footer>
+            {importError && (
+              <div style={s.errorBanner}>
+                <span>{importError}</span>
+                <button type="button" onClick={() => setImportError(null)} style={s.errorClose}>
+                  ×
+                </button>
+              </div>
+            )}
+
+            {creatingNew && (
+              <div style={s.newCard}>
+                <span style={s.newTitle}>New CV</span>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="e.g. Frontend Dev, Freelance…"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreate()
+                    if (e.key === 'Escape') {
+                      setCreatingNew(false)
+                      setNewName('')
+                      setNewLocale('en')
+                    }
+                  }}
+                  style={s.newInput}
+                />
+                <div style={s.newRow}>
+                  <div style={s.localeToggle}>
+                    {(['en', 'ro'] as CvLocale[]).map((loc) => (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => setNewLocale(loc)}
+                        style={{
+                          ...(newLocale === loc ? s.localeBtnActive : s.localeBtn),
+                          borderRight: loc === 'en' ? '1px solid var(--line)' : 0,
+                        }}
+                      >
+                        {loc.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreate}
+                    disabled={!newName.trim()}
+                    style={newName.trim() ? s.btnPrimary : s.btnPrimaryDisabled}
+                  >
+                    Create &amp; open
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatingNew(false)
+                      setNewName('')
+                      setNewLocale('en')
+                    }}
+                    style={s.btnSecondary}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div style={s.grid}>
+              {profiles.map((p) => (
+                <CvCard
+                  key={p.id}
+                  profile={p}
+                  isActive={p.id === activeProfileId}
+                  canDelete={profiles.length > 1}
+                  isRenaming={renamingId === p.id}
+                  renameValue={renameValue}
+                  onOpen={() => handleOpen(p.id)}
+                  onDuplicate={() => handleDuplicate(p.id)}
+                  onDelete={() => handleDelete(p.id)}
+                  onExport={() => exportProfile(p.id)}
+                  onRenameStart={() => handleRenameStart(p.id, p.name)}
+                  onRenameChange={setRenameValue}
+                  onRenameCommit={() => handleRenameCommit(p.id)}
+                  onRenameCancel={() => setRenamingId(null)}
+                />
+              ))}
+
+              {!creatingNew && (
+                <button
+                  type="button"
+                  onClick={() => setCreatingNew(true)}
+                  style={s.newTile}
+                  className="cv-card-new"
+                >
+                  <span style={s.newTilePlus}>+</span>
+                  <span style={s.newTileLabel}>New CV</span>
+                  <span style={s.newTileHint}>Start from a fresh template</span>
+                </button>
+              )}
+            </div>
+
+            <footer style={s.footer}>
+              <button type="button" style={s.importLink} onClick={() => importInputRef.current?.click()}>
+                Import backup
+              </button>
+            </footer>
+          </>
+        )}
       </main>
     </div>
   )
@@ -790,5 +879,33 @@ const s: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid transparent',
     padding: '0.25rem 0.5rem',
     cursor: 'pointer',
+  },
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.85rem',
+    padding: '4rem 1.5rem 5rem',
+    textAlign: 'center',
+  },
+  emptyIcon: {
+    fontSize: '2.4rem',
+    color: 'var(--accent)',
+    lineHeight: 1,
+    marginBottom: '0.25rem',
+  },
+  emptyTitle: {
+    margin: 0,
+    fontSize: '1.4rem',
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+    color: 'var(--ink)',
+  },
+  emptyHint: {
+    margin: 0,
+    fontSize: '0.92rem',
+    color: 'var(--muted)',
+    lineHeight: 1.55,
+    maxWidth: 440,
   },
 }

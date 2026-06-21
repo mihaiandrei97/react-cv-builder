@@ -261,6 +261,8 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
   const sidebarBg = cv.colors.sidebarBg ?? SIDEBAR_BG
   const sidebarAccent = cv.colors.sidebarAccent ?? SIDEBAR_ACCENT
   const accent = cv.colors.accent ?? MAIN_ACCENT
+  const ink = cv.colors.ink ?? MAIN_INK
+  const muted = cv.colors.muted ?? MAIN_MUTED
   const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('modern', key, cv.locale)
 
   const customIds = cv.customSections.map((s) => s.id)
@@ -330,15 +332,15 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                     <View key={exp.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.entryRole}>{exp.role}</Text>
-                          <Text style={styles.entryCompany}>{exp.company}</Text>
+                          <Text style={[styles.entryRole, { color: ink }]}>{exp.role}</Text>
+                          <Text style={[styles.entryCompany, { color: muted }]}>{exp.company}</Text>
                         </View>
-                        <Text style={styles.entryPeriod}>{exp.period}</Text>
+                        <Text style={[styles.entryPeriod, { color: muted }]}>{exp.period}</Text>
                       </View>
                       <View style={styles.bulletList}>
                         {exp.highlights.map((h, i) => (
                           <View key={i} style={styles.bulletItem}>
-                            <Text style={styles.bulletDot}>•</Text>
+                            <Text style={[styles.bulletDot, { color: muted }]}>•</Text>
                             <Text style={styles.bulletText}>{h}</Text>
                           </View>
                         ))}
@@ -353,7 +355,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                   {cv.projects.map((project) => (
                     <View key={project.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
-                        <Text style={styles.entryRole}>{project.name}</Text>
+                        <Text style={[styles.entryRole, { color: ink }]}>{project.name}</Text>
                         <Text style={[styles.entryPeriod, styles.projectStack]}>{project.stack}</Text>
                       </View>
                       <Text style={styles.projectDesc}>{project.description}</Text>
@@ -368,10 +370,10 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                     <View key={edu.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.entryRole}>{edu.degree}</Text>
-                          <Text style={styles.entryCompany}>{edu.institution}</Text>
+                          <Text style={[styles.entryRole, { color: ink }]}>{edu.degree}</Text>
+                          <Text style={[styles.entryCompany, { color: muted }]}>{edu.institution}</Text>
                         </View>
-                        <Text style={styles.entryPeriod}>{edu.period}</Text>
+                        <Text style={[styles.entryPeriod, { color: muted }]}>{edu.period}</Text>
                       </View>
                     </View>
                   ))}
@@ -382,22 +384,22 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                   <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('languages')}</Text>
                   <View style={styles.langTable}>
                     <View style={styles.langMotherRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName]}>Mother Tongue</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Mother Tongue</Text>
                       <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
                     </View>
                     <View style={styles.langGroupRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName]}>{''}</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Understanding</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColTwo]}>Speaking</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>Writing</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>{''}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Understanding</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Speaking</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>Writing</Text>
                     </View>
                     <View style={styles.langSubHeaderRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName]}>Other languages</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Listening</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reading</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Dialog</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel]}>Reproduce</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { borderRightWidth: 0 }]}>{''}</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Other languages</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Listening</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reading</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Dialog</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reproduce</Text>
+                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>{''}</Text>
                     </View>
                     {otherLanguages.map((lang, i) => (
                       <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
@@ -410,8 +412,8 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                       </View>
                     ))}
                   </View>
-                  <Text style={styles.langNote}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
-                  <Text style={styles.langNote}>Common European Framework of Reference for Language</Text>
+                  <Text style={[styles.langNote, { color: muted }]}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
+                  <Text style={[styles.langNote, { color: muted }]}>Common European Framework of Reference for Language</Text>
                 </View>
               )
               const custom = cv.customSections.find((s) => s.id === key)
@@ -420,7 +422,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                   <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{custom.title}</Text>
                   {custom.bullets.filter(Boolean).map((b, i) => (
                     <View key={i} style={styles.bulletItem}>
-                      <Text style={styles.bulletDot}>{'\u2022'}</Text>
+                      <Text style={[styles.bulletDot, { color: muted }]}>{'\u2022'}</Text>
                       <Text style={styles.bulletText}>{b}</Text>
                     </View>
                   ))}

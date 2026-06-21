@@ -32,7 +32,6 @@ function makeProfile(name: string, templateId = 'classic', data?: FullCvData, lo
 
 function loadState(): ProfilesState {
   return loadProfilesState({
-    makeProfile,
     defaultSectionOrder: DEFAULT_SECTION_ORDER,
   })
 }
@@ -59,7 +58,7 @@ function getCvContentState(state: ProfilesState): CvContentState {
     hiddenSections: active.hiddenSections ?? [],
     pageBreaks: active.pageBreaks ?? [],
     sectionOrder: active.sectionOrder ?? DEFAULT_SECTION_ORDER,
-    colors: active.colors ?? {},
+    colors: (active.colors ?? {})[active.templateId] ?? {},
     sectionLabels: active.sectionLabels ?? {},
     name: active.name,
     updatedAt: active.updatedAt,
@@ -257,8 +256,14 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
 
     case 'colors.set': {
       return withActiveProfile(state, (profile) => {
-        if (shallowEqualRecord(profile.colors ?? {}, action.colors)) return profile
-        return { ...profile, colors: action.colors, updatedAt: Date.now() }
+        const tid = profile.templateId
+        const current = (profile.colors ?? {})[tid] ?? {}
+        if (shallowEqualRecord(current, action.colors)) return profile
+        return {
+          ...profile,
+          colors: { ...(profile.colors ?? {}), [tid]: action.colors },
+          updatedAt: Date.now(),
+        }
       })
     }
 
@@ -411,8 +416,10 @@ export function setSectionLabels(sectionLabels: Record<string, string>) {
   dispatch({ type: 'sectionLabels.set', sectionLabels })
 }
 
-export function addCustomSection() {
-  dispatch({ type: 'customSection.add', id: crypto.randomUUID() }, { immediatePersist: true })
+export function addCustomSection(): string {
+  const id = crypto.randomUUID()
+  dispatch({ type: 'customSection.add', id }, { immediatePersist: true })
+  return id
 }
 
 export function removeCustomSection(id: string) {

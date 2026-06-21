@@ -1,12 +1,15 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
 import { memo, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
-import { useActiveProfile, saveTemplatePref } from '../lib/cv-store'
+import { useActiveProfile, saveTemplatePref, cvStore } from '../lib/cv-store'
 import { projectCv, type CvData } from '../lib/types'
 import { WorkflowNav } from '../components/WorkflowNav'
 
 export const Route = createFileRoute('/templates')({
+  beforeLoad: () => {
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+  },
   component: TemplatesPage,
 })
 
@@ -288,7 +291,16 @@ function TemplatesPage() {
 
   const templateEntries = useMemo(() => TEMPLATES.map((tpl) => ({
     tpl,
-    cv: projectCv(fullData, tpl.id, [], [], [], {}, locale, sectionLabels),
+    cv: projectCv(
+      fullData,
+      tpl.id,
+      deferredProfile.hiddenSections ?? [],
+      deferredProfile.pageBreaks ?? [],
+      deferredProfile.sectionOrder ?? [],
+      (deferredProfile.colors ?? {})[tpl.id] ?? {},
+      locale,
+      sectionLabels,
+    ),
     isActive: activeTemplateId === tpl.id,
     onSelect: () => {
       saveTemplatePref(tpl.id)

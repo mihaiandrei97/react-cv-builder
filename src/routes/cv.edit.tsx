@@ -1,10 +1,10 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
-import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
-import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
+import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore, saveTemplatePref } from '../lib/cv-store'
+import { getTemplate, loadTemplateComponent, type TemplateComponent, TEMPLATES } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -16,15 +16,101 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
+const CEFR_FIELDS = [
+  { key: 'listening', label: 'Listen', title: 'Listening' },
+  { key: 'reading', label: 'Read', title: 'Reading' },
+  { key: 'dialog', label: 'Speak', title: 'Spoken interaction' },
+  { key: 'reproduce', label: 'Produce', title: 'Spoken production' },
+  { key: 'writing', label: 'Write', title: 'Writing' },
+] as const
+
 export const Route = createFileRoute('/cv/edit')({
+  beforeLoad: () => {
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+  },
   component: EditPage,
 })
 
 
 // ── Nav ──────────────────────────────────────────────────────────────────────
 
+function TemplateSwitcher({
+  currentTemplateId,
+  isCompact,
+}: {
+  currentTemplateId: string
+  isCompact: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement | null>(null)
+  const current = getTemplate(currentTemplateId)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('pointerdown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        style={{ ...s.templateBadgeLink, ...(isCompact ? { flex: 1 } : {}) }}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="Change template"
+      >
+        {current.name}
+        <span style={s.templateBadgeHint}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={s.templateMenu} role="listbox">
+          {TEMPLATES.map((tpl) => {
+            const isActive = tpl.id === currentTemplateId
+            return (
+              <button
+                key={tpl.id}
+                type="button"
+                role="option"
+                aria-selected={isActive}
+                style={isActive ? s.templateMenuItemActive : s.templateMenuItem}
+                onClick={() => {
+                  saveTemplatePref(tpl.id)
+                  setOpen(false)
+                }}
+              >
+                <span style={s.templateMenuItemName}>{tpl.name}</span>
+                <span style={s.templateMenuItemDesc}>{tpl.description}</span>
+                {isActive && <span style={s.templateMenuItemCheck}>✓</span>}
+              </button>
+            )
+          })}
+          <Link
+            to="/templates"
+            style={s.templateMenuCompareLink}
+            onClick={() => setOpen(false)}
+          >
+            Compare all side-by-side →
+          </Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TopBar({
-  templateName,
+  templateId,
   saveStatus,
   isCompact,
   activePane,
@@ -32,7 +118,7 @@ function TopBar({
   onReset,
   onDownload,
 }: {
-  templateName: string
+  templateId: string
   saveStatus: string
   isCompact: boolean
   activePane: 'form' | 'preview'
@@ -47,10 +133,7 @@ function TopBar({
       </div>
       <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
-        <Link to="/templates" style={s.templateBadgeLink} title="Change template">
-          {templateName}
-          <span style={s.templateBadgeHint}>change</span>
-        </Link>
+        <TemplateSwitcher currentTemplateId={templateId} isCompact={isCompact} />
         {isCompact && (
           <div style={s.viewSwitch}>
             <button
@@ -109,12 +192,14 @@ function Input({
   onBlur,
   type = 'text',
   placeholder,
+  focusId,
 }: {
   value: string
   onChange: (v: string) => void
   onBlur?: () => void
   type?: string
   placeholder?: string
+  focusId?: string
 }) {
   return (
     <input
@@ -123,6 +208,7 @@ function Input({
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
+      data-focus-id={focusId}
       style={s.input}
     />
   )
@@ -206,6 +292,65 @@ function CollapsibleSection({
   )
 }
 
+function ItemHeader({
+  number,
+  summary,
+  isCollapsed,
+  onToggleCollapse,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: {
+  number: number
+  summary: string
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+  isFirst: boolean
+  isLast: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onRemove: () => void
+}) {
+  return (
+    <div style={s.itemHeader}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
+        <button
+          type="button"
+          style={s.btnChevron}
+          onClick={onToggleCollapse}
+          aria-label={isCollapsed ? 'Expand entry' : 'Collapse entry'}
+          aria-expanded={!isCollapsed}
+        >
+          {isCollapsed ? '▸' : '▾'}
+        </button>
+        <span style={s.itemNumber}>#{number}</span>
+        {isCollapsed && <span style={s.itemSummary}>{summary}</span>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <button
+          type="button"
+          style={{ ...s.btnMove, ...(isFirst ? { opacity: 0.3, cursor: 'default' } : {}) }}
+          disabled={isFirst}
+          onClick={onMoveUp}
+          title="Move up"
+          aria-label="Move entry up"
+        >↑</button>
+        <button
+          type="button"
+          style={{ ...s.btnMove, ...(isLast ? { opacity: 0.3, cursor: 'default' } : {}) }}
+          disabled={isLast}
+          onClick={onMoveDown}
+          title="Move down"
+          aria-label="Move entry down"
+        >↓</button>
+        <button type="button" style={s.removeBtnText} onClick={onRemove}>Remove</button>
+      </div>
+    </div>
+  )
+}
+
 function EditPage() {
   const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
   const activeProfile = useActiveProfile()
@@ -217,7 +362,7 @@ function EditPage() {
   const hiddenSections = activeProfile.hiddenSections ?? []
   const pageBreaks = activeProfile.pageBreaks ?? []
   const sectionOrder = activeProfile.sectionOrder ?? [...DEFAULT_SECTION_ORDER]
-  const colors = activeProfile.colors ?? {}
+  const colors = (activeProfile.colors ?? {})[templateId] ?? {}
   const activeUpdatedAt = activeProfile.updatedAt
   const cv = useCvData()
   const debouncedCv = useDebounce(cv, 500)
@@ -226,6 +371,32 @@ function EditPage() {
   const [newSkill, setNewSkill] = useState('')
   const [newLang, setNewLang] = useState('')
   const [activePane, setActivePane] = useState<'form' | 'preview'>('form')
+  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(() => new Set())
+  const focusTargetRef = useRef<string | null>(null)
+
+  function toggleItemCollapse(id: string) {
+    setCollapsedItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function expandItem(id: string) {
+    setCollapsedItems((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  function requestFocus(id: string) {
+    focusTargetRef.current = id
+    setFocusNonce((n) => n + 1)
+  }
+  const [focusNonce, setFocusNonce] = useState(0)
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
   const [isCompactLayout, setIsCompactLayout] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
@@ -269,6 +440,17 @@ function EditPage() {
       cancelled = true
     }
   }, [templateId])
+
+  useEffect(() => {
+    const target = focusTargetRef.current
+    if (!target) return
+    const el = document.querySelector<HTMLElement>(`[data-focus-id="${target}"]`)
+    if (el) {
+      el.focus()
+      if (el instanceof HTMLInputElement) el.select()
+    }
+    focusTargetRef.current = null
+  }, [focusNonce])
 
   function scrollToSection(anchorId: string) {
     document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -316,6 +498,8 @@ function EditPage() {
   function addExperience() {
     const entry: Experience = { id: crypto.randomUUID(), company: '', role: '', period: '', highlights: [''] }
     setFullData((prev) => ({ ...prev, experiences: [...prev.experiences, entry] }))
+    expandItem(entry.id)
+    requestFocus(`exp-role-${entry.id}`)
   }
   function removeExperience(i: number) {
     setFullData((prev) => ({ ...prev, experiences: prev.experiences.filter((_, idx) => idx !== i) }))
@@ -333,6 +517,8 @@ function EditPage() {
       experiences[expI] = { ...experiences[expI], highlights: [...experiences[expI].highlights, ''] }
       return { ...prev, experiences }
     })
+    const exp = fullData.experiences[expI]
+    if (exp) requestFocus(`exp-bullet-${exp.id}-${exp.highlights.length}`)
   }
   function removeHighlight(expI: number, hI: number) {
     setFullData((prev) => {
@@ -358,6 +544,8 @@ function EditPage() {
   function addProject() {
     const entry: Project = { id: crypto.randomUUID(), name: '', description: '', stack: '' }
     setFullData((prev) => ({ ...prev, projects: [...prev.projects, entry] }))
+    expandItem(entry.id)
+    requestFocus(`proj-name-${entry.id}`)
   }
   function removeProject(i: number) {
     setFullData((prev) => ({ ...prev, projects: prev.projects.filter((_, idx) => idx !== i) }))
@@ -374,6 +562,8 @@ function EditPage() {
   function addEducation() {
     const entry: Education = { id: crypto.randomUUID(), degree: '', institution: '', period: '' }
     setFullData((prev) => ({ ...prev, education: [...prev.education, entry] }))
+    expandItem(entry.id)
+    requestFocus(`edu-degree-${entry.id}`)
   }
   function removeEducation(i: number) {
     setFullData((prev) => ({ ...prev, education: prev.education.filter((_, idx) => idx !== i) }))
@@ -390,6 +580,8 @@ function EditPage() {
   function addCertification() {
     const entry: Certification = { id: crypto.randomUUID(), name: '', issuer: '', year: '' }
     setFullData((prev) => ({ ...prev, certifications: [...prev.certifications, entry] }))
+    expandItem(entry.id)
+    requestFocus(`cert-name-${entry.id}`)
   }
   function removeCertification(i: number) {
     setFullData((prev) => ({ ...prev, certifications: prev.certifications.filter((_, idx) => idx !== i) }))
@@ -416,6 +608,8 @@ function EditPage() {
       writing: 'B1',
     }
     setFullData((prev) => ({ ...prev, languages: [...prev.languages, entry] }))
+    expandItem(entry.id)
+    requestFocus(`lang-name-${entry.id}`)
     setNewLang('')
   }
   function removeLanguage(i: number) {
@@ -435,6 +629,42 @@ function EditPage() {
       if (swapWith < 0 || swapWith >= languages.length) return prev
       ;[languages[i], languages[swapWith]] = [languages[swapWith], languages[i]]
       return { ...prev, languages }
+    })
+  }
+  function moveExperience(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const experiences = [...prev.experiences]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= experiences.length) return prev
+      ;[experiences[i], experiences[swapWith]] = [experiences[swapWith], experiences[i]]
+      return { ...prev, experiences }
+    })
+  }
+  function moveProject(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const projects = [...prev.projects]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= projects.length) return prev
+      ;[projects[i], projects[swapWith]] = [projects[swapWith], projects[i]]
+      return { ...prev, projects }
+    })
+  }
+  function moveEducation(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const education = [...prev.education]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= education.length) return prev
+      ;[education[i], education[swapWith]] = [education[swapWith], education[i]]
+      return { ...prev, education }
+    })
+  }
+  function moveCertification(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const certifications = [...prev.certifications]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= certifications.length) return prev
+      ;[certifications[i], certifications[swapWith]] = [certifications[swapWith], certifications[i]]
+      return { ...prev, certifications }
     })
   }
 
@@ -478,7 +708,7 @@ function EditPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar
-        templateName={template.name}
+        templateId={templateId}
         saveStatus={saveStatus}
         isCompact={isCompactLayout}
         activePane={activePane}
@@ -535,26 +765,67 @@ function EditPage() {
           {/* Colors */}
           <section id="section-colors" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>Colors</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {template.colorSlots.map((slot) => {
                 const current = colors[slot.key] ?? slot.default
+                const isModified = colors[slot.key] !== undefined && colors[slot.key] !== slot.default
+                const presets = slot.presets ?? []
                 return (
-                  <div key={slot.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
-                    <label style={{ ...s.fieldLabel, whiteSpace: 'nowrap' }}>{slot.label}</label>
-                    <input
-                      type="color"
-                      value={current}
-                      onChange={(e) => setColors({ ...colors, [slot.key]: e.target.value })}
-                      style={{ width: 40, height: 40, padding: 2, border: '1px solid var(--line)', borderRadius: '0.25rem', cursor: 'pointer', background: 'none' }}
-                      title={slot.label}
-                    />
-                    <button
-                      type="button"
-                      style={{ ...s.btnGhost, fontSize: '0.7rem', padding: '0.1rem 0.4rem', visibility: current !== slot.default ? 'visible' : 'hidden' }}
-                      onClick={() => { const next = { ...colors }; delete next[slot.key]; setColors(next) }}
-                    >
-                      Reset
-                    </button>
+                  <div key={slot.key} style={s.colorRow}>
+                    <div style={s.colorLabelCol}>
+                      <label style={s.fieldLabel}>{slot.label}</label>
+                      <div style={s.colorSwatchWrap}>
+                        <input
+                          type="color"
+                          value={current}
+                          onChange={(e) => setColors({ ...colors, [slot.key]: e.target.value })}
+                          style={s.colorSwatch}
+                          title={`${slot.label} — open picker`}
+                          aria-label={`${slot.label} color picker`}
+                        />
+                        <input
+                          type="text"
+                          value={current.toUpperCase()}
+                          onChange={(e) => {
+                            const v = e.target.value.trim()
+                            if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+                              setColors({ ...colors, [slot.key]: v.toLowerCase() })
+                            } else if (v === '' || v === '#') {
+                              const next = { ...colors }; delete next[slot.key]; setColors(next)
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                          style={s.hexInput}
+                          spellCheck={false}
+                          aria-label={`${slot.label} hex value`}
+                        />
+                        <button
+                          type="button"
+                          style={{ ...s.btnGhost, fontSize: '0.7rem', padding: '0.15rem 0.5rem', visibility: isModified ? 'visible' : 'hidden' }}
+                          onClick={() => { const next = { ...colors }; delete next[slot.key]; setColors(next) }}
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                    {presets.length > 0 && (
+                      <div style={s.presetRow}>
+                        {presets.map((hex) => {
+                          const active = current.toLowerCase() === hex.toLowerCase()
+                          return (
+                            <button
+                              key={hex}
+                              type="button"
+                              style={{ ...s.presetChip, ...(active ? s.presetChipActive : {}), background: hex }}
+                              onClick={() => setColors({ ...colors, [slot.key]: hex })}
+                              title={hex.toUpperCase()}
+                              aria-label={`Use ${hex.toUpperCase()}`}
+                              aria-pressed={active}
+                            />
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -624,69 +895,58 @@ function EditPage() {
             if (key === 'languages' && showLanguages) return (
               <CollapsibleSection key="languages" title="Languages" sectionKey="languages" anchorId="section-languages" {...sharedProps}>
                 <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>
-                  First language row is used as Mother Tongue in the PDF table. Reorder rows to change it.
+                  First row is Mother Tongue in the PDF — reorder to change.
                 </p>
-                {fullData.languages.map((lang, i) => (
-                  <div key={lang.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <button
-                          type="button"
-                          style={{ ...s.btnMove, ...(i === 0 ? { opacity: 0.3, cursor: 'default' } : {}) }}
-                          disabled={i === 0}
-                          onClick={() => moveLanguage(i, 'up')}
-                          title="Move up"
-                        >↑</button>
-                        <button
-                          type="button"
-                          style={{ ...s.btnMove, ...(i === fullData.languages.length - 1 ? { opacity: 0.3, cursor: 'default' } : {}) }}
-                          disabled={i === fullData.languages.length - 1}
-                          onClick={() => moveLanguage(i, 'down')}
-                          title="Move down"
-                        >↓</button>
-                        <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
-                      </div>
+                {fullData.languages.map((lang, i) => {
+                  const isCollapsed = collapsedItems.has(lang.id)
+                  const summary = `${lang.language || 'Untitled'}${i === 0 ? ' · Mother Tongue' : ''}`
+                  return (
+                    <div key={lang.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(lang.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.languages.length - 1}
+                        onMoveUp={() => moveLanguage(i, 'up')}
+                        onMoveDown={() => moveLanguage(i, 'down')}
+                        onRemove={() => removeLanguage(i)}
+                      />
+                      {!isCollapsed && (
+                        <>
+                          <Field label="Language" fullWidth>
+                            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                value={lang.language}
+                                data-focus-id={`lang-name-${lang.id}`}
+                                onChange={(e) => updateLanguage(i, 'language', e.target.value)}
+                                style={{ ...s.input, flex: 1 }}
+                              />
+                              {i === 0 && <span style={s.motherTongueBadge}>Mother tongue</span>}
+                            </div>
+                          </Field>
+                          <div style={s.cefrRow}>
+                            {CEFR_FIELDS.map((f) => (
+                              <label key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                <span style={s.cefrLabel} title={f.title}>{f.label}</span>
+                                <select
+                                  value={lang[f.key] ?? lang.proficiency ?? 'B1'}
+                                  onChange={(e) => updateLanguage(i, f.key, e.target.value)}
+                                  style={s.cefrSelect}
+                                  title={f.title}
+                                >
+                                  {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                              </label>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Language">
-                        <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} />
-                      </Field>
-                      <Field label="Used as">
-                        <div style={{ ...s.input, display: 'flex', alignItems: 'center', minHeight: 34, color: i === 0 ? 'var(--green)' : 'var(--muted)' }}>
-                          {i === 0 ? 'Mother Tongue (first row)' : 'Other language'}
-                        </div>
-                      </Field>
-                    </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Listening">
-                        <select value={lang.listening ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'listening', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Reading">
-                        <select value={lang.reading ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'reading', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Dialog">
-                        <select value={lang.dialog ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'dialog', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Reproduce">
-                        <select value={lang.reproduce ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'reproduce', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Writing">
-                        <select value={lang.writing ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'writing', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     type="text"
@@ -705,29 +965,44 @@ function EditPage() {
               <CollapsibleSection key="experience" title="Experience" sectionKey="experience" anchorId="section-experience" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
               >
-                {fullData.experiences.map((exp, i) => (
-                  <div key={exp.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeExperience(i)}>Remove</button>
+                {fullData.experiences.map((exp, i) => {
+                  const isCollapsed = collapsedItems.has(exp.id)
+                  const summary = [exp.role, exp.company].filter(Boolean).join(' — ') || 'Untitled'
+                  return (
+                    <div key={exp.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(exp.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.experiences.length - 1}
+                        onMoveUp={() => moveExperience(i, 'up')}
+                        onMoveDown={() => moveExperience(i, 'down')}
+                        onRemove={() => removeExperience(i)}
+                      />
+                      {!isCollapsed && (
+                        <>
+                          <div style={s.fieldGrid}>
+                            <Field label="Role"><Input value={exp.role} focusId={`exp-role-${exp.id}`} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
+                            <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
+                            <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <span style={s.fieldLabel}>Highlights</span>
+                            {exp.highlights.map((h, hi) => (
+                              <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <input type="text" value={h} placeholder="Bullet point..." data-focus-id={`exp-bullet-${exp.id}-${hi}`} onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
+                                <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
+                              </div>
+                            ))}
+                            <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>+ Add bullet</button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Role"><Input value={exp.role} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
-                      <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
-                      <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <span style={s.fieldLabel}>Highlights</span>
-                      {exp.highlights.map((h, hi) => (
-                        <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
-                          <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
-                        </div>
-                      ))}
-                      <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>+ Add bullet</button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -735,21 +1010,36 @@ function EditPage() {
               <CollapsibleSection key="projects" title="Selected Projects" sectionKey="projects" anchorId="section-projects" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
               >
-                {fullData.projects.map((project, i) => (
-                  <div key={project.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeProject(i)}>Remove</button>
+                {fullData.projects.map((project, i) => {
+                  const isCollapsed = collapsedItems.has(project.id)
+                  const summary = project.name || 'Untitled'
+                  return (
+                    <div key={project.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(project.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.projects.length - 1}
+                        onMoveUp={() => moveProject(i, 'up')}
+                        onMoveDown={() => moveProject(i, 'down')}
+                        onRemove={() => removeProject(i)}
+                      />
+                      {!isCollapsed && (
+                        <>
+                          <div style={s.fieldGrid}>
+                            <Field label="Name"><Input value={project.name} focusId={`proj-name-${project.id}`} onChange={(v) => updateProject(i, 'name', v)} /></Field>
+                            <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
+                          </div>
+                          <Field label="Description" fullWidth>
+                            <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
+                          </Field>
+                        </>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Name"><Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} /></Field>
-                      <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
-                    </div>
-                    <Field label="Description" fullWidth>
-                      <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
-                    </Field>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -757,19 +1047,32 @@ function EditPage() {
               <CollapsibleSection key="education" title="Education" sectionKey="education" anchorId="section-education" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
               >
-                {fullData.education.map((edu, i) => (
-                  <div key={edu.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeEducation(i)}>Remove</button>
+                {fullData.education.map((edu, i) => {
+                  const isCollapsed = collapsedItems.has(edu.id)
+                  const summary = [edu.degree, edu.institution].filter(Boolean).join(' — ') || 'Untitled'
+                  return (
+                    <div key={edu.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(edu.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.education.length - 1}
+                        onMoveUp={() => moveEducation(i, 'up')}
+                        onMoveDown={() => moveEducation(i, 'down')}
+                        onRemove={() => removeEducation(i)}
+                      />
+                      {!isCollapsed && (
+                        <div style={s.fieldGrid}>
+                          <Field label="Degree"><Input value={edu.degree} focusId={`edu-degree-${edu.id}`} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
+                          <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
+                          <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
+                        </div>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Degree"><Input value={edu.degree} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
-                      <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
-                      <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -777,21 +1080,34 @@ function EditPage() {
               <CollapsibleSection key="certifications" title="Certifications" sectionKey="certifications" anchorId="section-certifications" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
               >
-                {fullData.certifications.map((cert, i) => (
-                  <div key={cert.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeCertification(i)}>Remove</button>
+                {fullData.certifications.map((cert, i) => {
+                  const isCollapsed = collapsedItems.has(cert.id)
+                  const summary = [cert.name, cert.issuer].filter(Boolean).join(' — ') || 'Untitled'
+                  return (
+                    <div key={cert.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(cert.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.certifications.length - 1}
+                        onMoveUp={() => moveCertification(i, 'up')}
+                        onMoveDown={() => moveCertification(i, 'down')}
+                        onRemove={() => removeCertification(i)}
+                      />
+                      {!isCollapsed && (
+                        <div style={s.fieldGrid}>
+                          <Field label="Name" fullWidth>
+                            <Input value={cert.name} focusId={`cert-name-${cert.id}`} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
+                          </Field>
+                          <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
+                          <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
+                        </div>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Name" fullWidth>
-                        <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
-                      </Field>
-                      <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
-                      <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -814,6 +1130,7 @@ function EditPage() {
                   <Field label="Section Title" fullWidth>
                     <Input
                       value={custom.title}
+                      focusId={`custom-title-${custom.id}`}
                       placeholder="e.g. Volunteer Work"
                       onChange={(v) => {
                         setFullData((prev) => ({
@@ -831,6 +1148,7 @@ function EditPage() {
                       <input
                         type="text"
                         value={b}
+                        data-focus-id={`custom-bullet-${custom.id}-${bi}`}
                         placeholder="Bullet point..."
                         onChange={(e) => {
                           setFullData((prev) => ({
@@ -867,6 +1185,7 @@ function EditPage() {
                           s.id === key ? { ...s, bullets: [...s.bullets, ''] } : s
                         ),
                       }))
+                      requestFocus(`custom-bullet-${key}-${custom.bullets.length}`)
                     }}
                   >+ Add bullet</button>
                 </div>
@@ -881,7 +1200,10 @@ function EditPage() {
             <button
               type="button"
               style={s.btnAdd}
-              onClick={() => { addCustomSection() }}
+              onClick={() => {
+                const id = addCustomSection()
+                requestFocus(`custom-title-${id}`)
+              }}
             >+ Add Custom Section</button>
           </div>
           </main>
@@ -1032,6 +1354,81 @@ const s: Record<string, React.CSSProperties> = {
     letterSpacing: '0.05em',
     color: '#b8722f',
     opacity: 0.7,
+  },
+  templateMenu: {
+    position: 'absolute',
+    top: 'calc(100% + 0.4rem)',
+    right: 0,
+    minWidth: 280,
+    maxWidth: 340,
+    background: '#fffdf7',
+    border: '1px solid var(--line)',
+    borderRadius: '0.4rem',
+    boxShadow: '0 12px 28px rgba(34,34,34,0.14)',
+    padding: '0.35rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.2rem',
+    zIndex: 20,
+  },
+  templateMenuItem: {
+    fontFamily: 'inherit',
+    textAlign: 'left',
+    color: 'var(--ink)',
+    background: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: '0.3rem',
+    padding: '0.55rem 0.7rem',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.15rem',
+    position: 'relative',
+  },
+  templateMenuItemActive: {
+    fontFamily: 'inherit',
+    textAlign: 'left',
+    color: 'var(--accent)',
+    background: '#fdf0e6',
+    border: '1px solid #f0c89a',
+    borderRadius: '0.3rem',
+    padding: '0.55rem 0.7rem',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.15rem',
+    position: 'relative',
+  },
+  templateMenuItemName: {
+    fontSize: '0.88rem',
+    fontWeight: 700,
+  },
+  templateMenuItemDesc: {
+    fontSize: '0.72rem',
+    color: 'var(--muted)',
+    lineHeight: 1.4,
+  },
+  templateMenuItemCheck: {
+    position: 'absolute',
+    top: '0.55rem',
+    right: '0.7rem',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    color: 'var(--green)',
+  },
+  templateMenuCompareLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    color: 'var(--muted)',
+    textDecoration: 'none',
+    background: 'transparent',
+    border: 0,
+    borderTop: '1px solid var(--line)',
+    borderRadius: 0,
+    padding: '0.5rem 0.7rem',
+    cursor: 'pointer',
+    textAlign: 'left',
   },
   btnPrimary: {
     fontFamily: 'inherit',
@@ -1315,6 +1712,121 @@ const s: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     color: 'var(--muted)',
+  },
+  btnChevron: {
+    fontFamily: 'inherit',
+    fontSize: '0.7rem',
+    lineHeight: '1',
+    color: 'var(--muted)',
+    background: 'transparent',
+    border: 0,
+    padding: '0.15rem 0.25rem',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  itemSummary: {
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    flex: 1,
+    minWidth: 0,
+  },
+  motherTongueBadge: {
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: 'var(--green)',
+    background: '#edf6f2',
+    border: '1px solid #b8d8cc',
+    borderRadius: '999px',
+    padding: '0.2rem 0.55rem',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  cefrRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    gap: '0.4rem',
+  },
+  cefrLabel: {
+    fontSize: '0.66rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    color: 'var(--muted)',
+  },
+  cefrSelect: {
+    fontFamily: 'inherit',
+    fontSize: '0.82rem',
+    color: 'var(--ink)',
+    background: 'var(--paper)',
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.3rem 0.3rem',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  colorRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.45rem',
+    paddingBottom: '0.75rem',
+    borderBottom: '1px solid var(--line)',
+  },
+  colorLabelCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.3rem',
+  },
+  colorSwatchWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+    flexWrap: 'wrap',
+  },
+  colorSwatch: {
+    width: 32,
+    height: 32,
+    padding: 2,
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    cursor: 'pointer',
+    background: 'none',
+    flexShrink: 0,
+  },
+  hexInput: {
+    fontFamily: 'inherit',
+    fontSize: '0.85rem',
+    color: 'var(--ink)',
+    background: 'var(--paper)',
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.35rem 0.5rem',
+    width: 90,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  },
+  presetRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '0.35rem',
+    alignItems: 'center',
+  },
+  presetChip: {
+    width: 22,
+    height: 22,
+    padding: 0,
+    border: '1px solid var(--line)',
+    borderRadius: '999px',
+    cursor: 'pointer',
+  },
+  presetChipActive: {
+    border: '2px solid var(--ink)',
+    boxShadow: '0 0 0 2px var(--paper) inset',
   },
   previewPanel: {
     flex: 1,

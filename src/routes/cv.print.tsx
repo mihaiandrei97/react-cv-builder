@@ -1,13 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useRef, useMemo, memo, useCallback, useEffect, useState } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
-import { useActiveProfile, useCvData } from '../lib/cv-store'
+import { useActiveProfile, useCvData, cvStore } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
 
 export const Route = createFileRoute('/cv/print')({
+  beforeLoad: () => {
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+  },
   component: PrintPage,
 })
 
