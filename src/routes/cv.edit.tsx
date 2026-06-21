@@ -16,6 +16,14 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
+const CEFR_FIELDS = [
+  { key: 'listening', label: 'Listen', title: 'Listening' },
+  { key: 'reading', label: 'Read', title: 'Reading' },
+  { key: 'dialog', label: 'Speak', title: 'Spoken interaction' },
+  { key: 'reproduce', label: 'Produce', title: 'Spoken production' },
+  { key: 'writing', label: 'Write', title: 'Writing' },
+] as const
+
 export const Route = createFileRoute('/cv/edit')({
   component: EditPage,
 })
@@ -206,6 +214,65 @@ function CollapsibleSection({
   )
 }
 
+function ItemHeader({
+  number,
+  summary,
+  isCollapsed,
+  onToggleCollapse,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: {
+  number: number
+  summary: string
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+  isFirst: boolean
+  isLast: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onRemove: () => void
+}) {
+  return (
+    <div style={s.itemHeader}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
+        <button
+          type="button"
+          style={s.btnChevron}
+          onClick={onToggleCollapse}
+          aria-label={isCollapsed ? 'Expand entry' : 'Collapse entry'}
+          aria-expanded={!isCollapsed}
+        >
+          {isCollapsed ? '▸' : '▾'}
+        </button>
+        <span style={s.itemNumber}>#{number}</span>
+        {isCollapsed && <span style={s.itemSummary}>{summary}</span>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <button
+          type="button"
+          style={{ ...s.btnMove, ...(isFirst ? { opacity: 0.3, cursor: 'default' } : {}) }}
+          disabled={isFirst}
+          onClick={onMoveUp}
+          title="Move up"
+          aria-label="Move entry up"
+        >↑</button>
+        <button
+          type="button"
+          style={{ ...s.btnMove, ...(isLast ? { opacity: 0.3, cursor: 'default' } : {}) }}
+          disabled={isLast}
+          onClick={onMoveDown}
+          title="Move down"
+          aria-label="Move entry down"
+        >↓</button>
+        <button type="button" style={s.removeBtnText} onClick={onRemove}>Remove</button>
+      </div>
+    </div>
+  )
+}
+
 function EditPage() {
   const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
   const activeProfile = useActiveProfile()
@@ -226,6 +293,16 @@ function EditPage() {
   const [newSkill, setNewSkill] = useState('')
   const [newLang, setNewLang] = useState('')
   const [activePane, setActivePane] = useState<'form' | 'preview'>('form')
+  const [collapsedItems, setCollapsedItems] = useState<Set<string>>(() => new Set())
+
+  function toggleItemCollapse(id: string) {
+    setCollapsedItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
   const [isCompactLayout, setIsCompactLayout] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
@@ -437,6 +514,42 @@ function EditPage() {
       return { ...prev, languages }
     })
   }
+  function moveExperience(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const experiences = [...prev.experiences]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= experiences.length) return prev
+      ;[experiences[i], experiences[swapWith]] = [experiences[swapWith], experiences[i]]
+      return { ...prev, experiences }
+    })
+  }
+  function moveProject(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const projects = [...prev.projects]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= projects.length) return prev
+      ;[projects[i], projects[swapWith]] = [projects[swapWith], projects[i]]
+      return { ...prev, projects }
+    })
+  }
+  function moveEducation(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const education = [...prev.education]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= education.length) return prev
+      ;[education[i], education[swapWith]] = [education[swapWith], education[i]]
+      return { ...prev, education }
+    })
+  }
+  function moveCertification(i: number, direction: 'up' | 'down') {
+    setFullData((prev) => {
+      const certifications = [...prev.certifications]
+      const swapWith = direction === 'up' ? i - 1 : i + 1
+      if (swapWith < 0 || swapWith >= certifications.length) return prev
+      ;[certifications[i], certifications[swapWith]] = [certifications[swapWith], certifications[i]]
+      return { ...prev, certifications }
+    })
+  }
 
   const showSkills = cv.kind === 'classic' || cv.kind === 'modern' || cv.kind === 'compact'
   const showProjects = cv.kind === 'classic' || cv.kind === 'modern'
@@ -624,69 +737,57 @@ function EditPage() {
             if (key === 'languages' && showLanguages) return (
               <CollapsibleSection key="languages" title="Languages" sectionKey="languages" anchorId="section-languages" {...sharedProps}>
                 <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>
-                  First language row is used as Mother Tongue in the PDF table. Reorder rows to change it.
+                  First row is Mother Tongue in the PDF — reorder to change.
                 </p>
-                {fullData.languages.map((lang, i) => (
-                  <div key={lang.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <button
-                          type="button"
-                          style={{ ...s.btnMove, ...(i === 0 ? { opacity: 0.3, cursor: 'default' } : {}) }}
-                          disabled={i === 0}
-                          onClick={() => moveLanguage(i, 'up')}
-                          title="Move up"
-                        >↑</button>
-                        <button
-                          type="button"
-                          style={{ ...s.btnMove, ...(i === fullData.languages.length - 1 ? { opacity: 0.3, cursor: 'default' } : {}) }}
-                          disabled={i === fullData.languages.length - 1}
-                          onClick={() => moveLanguage(i, 'down')}
-                          title="Move down"
-                        >↓</button>
-                        <button type="button" style={s.removeBtnText} onClick={() => removeLanguage(i)}>Remove</button>
-                      </div>
+                {fullData.languages.map((lang, i) => {
+                  const isCollapsed = collapsedItems.has(lang.id)
+                  const summary = `${lang.language || 'Untitled'}${i === 0 ? ' · Mother Tongue' : ''}`
+                  return (
+                    <div key={lang.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(lang.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.languages.length - 1}
+                        onMoveUp={() => moveLanguage(i, 'up')}
+                        onMoveDown={() => moveLanguage(i, 'down')}
+                        onRemove={() => removeLanguage(i)}
+                      />
+                      {!isCollapsed && (
+                        <>
+                          <Field label="Language" fullWidth>
+                            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                value={lang.language}
+                                onChange={(e) => updateLanguage(i, 'language', e.target.value)}
+                                style={{ ...s.input, flex: 1 }}
+                              />
+                              {i === 0 && <span style={s.motherTongueBadge}>Mother tongue</span>}
+                            </div>
+                          </Field>
+                          <div style={s.cefrRow}>
+                            {CEFR_FIELDS.map((f) => (
+                              <label key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                <span style={s.cefrLabel} title={f.title}>{f.label}</span>
+                                <select
+                                  value={lang[f.key] ?? lang.proficiency ?? 'B1'}
+                                  onChange={(e) => updateLanguage(i, f.key, e.target.value)}
+                                  style={s.cefrSelect}
+                                  title={f.title}
+                                >
+                                  {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                              </label>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Language">
-                        <Input value={lang.language} onChange={(v) => updateLanguage(i, 'language', v)} />
-                      </Field>
-                      <Field label="Used as">
-                        <div style={{ ...s.input, display: 'flex', alignItems: 'center', minHeight: 34, color: i === 0 ? 'var(--green)' : 'var(--muted)' }}>
-                          {i === 0 ? 'Mother Tongue (first row)' : 'Other language'}
-                        </div>
-                      </Field>
-                    </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Listening">
-                        <select value={lang.listening ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'listening', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Reading">
-                        <select value={lang.reading ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'reading', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Dialog">
-                        <select value={lang.dialog ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'dialog', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Reproduce">
-                        <select value={lang.reproduce ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'reproduce', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Writing">
-                        <select value={lang.writing ?? lang.proficiency ?? 'B1'} onChange={(e) => updateLanguage(i, 'writing', e.target.value)} style={s.input}>
-                          {CEFR_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </Field>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     type="text"
@@ -705,29 +806,44 @@ function EditPage() {
               <CollapsibleSection key="experience" title="Experience" sectionKey="experience" anchorId="section-experience" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
               >
-                {fullData.experiences.map((exp, i) => (
-                  <div key={exp.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeExperience(i)}>Remove</button>
+                {fullData.experiences.map((exp, i) => {
+                  const isCollapsed = collapsedItems.has(exp.id)
+                  const summary = [exp.role, exp.company].filter(Boolean).join(' — ') || 'Untitled'
+                  return (
+                    <div key={exp.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(exp.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.experiences.length - 1}
+                        onMoveUp={() => moveExperience(i, 'up')}
+                        onMoveDown={() => moveExperience(i, 'down')}
+                        onRemove={() => removeExperience(i)}
+                      />
+                      {!isCollapsed && (
+                        <>
+                          <div style={s.fieldGrid}>
+                            <Field label="Role"><Input value={exp.role} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
+                            <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
+                            <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <span style={s.fieldLabel}>Highlights</span>
+                            {exp.highlights.map((h, hi) => (
+                              <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
+                                <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
+                              </div>
+                            ))}
+                            <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>+ Add bullet</button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Role"><Input value={exp.role} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
-                      <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
-                      <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <span style={s.fieldLabel}>Highlights</span>
-                      {exp.highlights.map((h, hi) => (
-                        <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <input type="text" value={h} placeholder="Bullet point..." onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
-                          <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
-                        </div>
-                      ))}
-                      <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>+ Add bullet</button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -735,21 +851,36 @@ function EditPage() {
               <CollapsibleSection key="projects" title="Selected Projects" sectionKey="projects" anchorId="section-projects" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
               >
-                {fullData.projects.map((project, i) => (
-                  <div key={project.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeProject(i)}>Remove</button>
+                {fullData.projects.map((project, i) => {
+                  const isCollapsed = collapsedItems.has(project.id)
+                  const summary = project.name || 'Untitled'
+                  return (
+                    <div key={project.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(project.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.projects.length - 1}
+                        onMoveUp={() => moveProject(i, 'up')}
+                        onMoveDown={() => moveProject(i, 'down')}
+                        onRemove={() => removeProject(i)}
+                      />
+                      {!isCollapsed && (
+                        <>
+                          <div style={s.fieldGrid}>
+                            <Field label="Name"><Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} /></Field>
+                            <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
+                          </div>
+                          <Field label="Description" fullWidth>
+                            <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
+                          </Field>
+                        </>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Name"><Input value={project.name} onChange={(v) => updateProject(i, 'name', v)} /></Field>
-                      <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
-                    </div>
-                    <Field label="Description" fullWidth>
-                      <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
-                    </Field>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -757,19 +888,32 @@ function EditPage() {
               <CollapsibleSection key="education" title="Education" sectionKey="education" anchorId="section-education" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
               >
-                {fullData.education.map((edu, i) => (
-                  <div key={edu.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeEducation(i)}>Remove</button>
+                {fullData.education.map((edu, i) => {
+                  const isCollapsed = collapsedItems.has(edu.id)
+                  const summary = [edu.degree, edu.institution].filter(Boolean).join(' — ') || 'Untitled'
+                  return (
+                    <div key={edu.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(edu.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.education.length - 1}
+                        onMoveUp={() => moveEducation(i, 'up')}
+                        onMoveDown={() => moveEducation(i, 'down')}
+                        onRemove={() => removeEducation(i)}
+                      />
+                      {!isCollapsed && (
+                        <div style={s.fieldGrid}>
+                          <Field label="Degree"><Input value={edu.degree} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
+                          <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
+                          <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
+                        </div>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Degree"><Input value={edu.degree} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
-                      <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
-                      <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -777,21 +921,34 @@ function EditPage() {
               <CollapsibleSection key="certifications" title="Certifications" sectionKey="certifications" anchorId="section-certifications" {...sharedProps}
                 addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
               >
-                {fullData.certifications.map((cert, i) => (
-                  <div key={cert.id} style={s.itemBlock}>
-                    <div style={s.itemHeader}>
-                      <span style={s.itemNumber}>#{i + 1}</span>
-                      <button type="button" style={s.removeBtnText} onClick={() => removeCertification(i)}>Remove</button>
+                {fullData.certifications.map((cert, i) => {
+                  const isCollapsed = collapsedItems.has(cert.id)
+                  const summary = [cert.name, cert.issuer].filter(Boolean).join(' — ') || 'Untitled'
+                  return (
+                    <div key={cert.id} style={s.itemBlock}>
+                      <ItemHeader
+                        number={i + 1}
+                        summary={summary}
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => toggleItemCollapse(cert.id)}
+                        isFirst={i === 0}
+                        isLast={i === fullData.certifications.length - 1}
+                        onMoveUp={() => moveCertification(i, 'up')}
+                        onMoveDown={() => moveCertification(i, 'down')}
+                        onRemove={() => removeCertification(i)}
+                      />
+                      {!isCollapsed && (
+                        <div style={s.fieldGrid}>
+                          <Field label="Name" fullWidth>
+                            <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
+                          </Field>
+                          <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
+                          <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
+                        </div>
+                      )}
                     </div>
-                    <div style={s.fieldGrid}>
-                      <Field label="Name" fullWidth>
-                        <Input value={cert.name} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
-                      </Field>
-                      <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
-                      <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </CollapsibleSection>
             )
 
@@ -1315,6 +1472,63 @@ const s: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     color: 'var(--muted)',
+  },
+  btnChevron: {
+    fontFamily: 'inherit',
+    fontSize: '0.7rem',
+    lineHeight: '1',
+    color: 'var(--muted)',
+    background: 'transparent',
+    border: 0,
+    padding: '0.15rem 0.25rem',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  itemSummary: {
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    flex: 1,
+    minWidth: 0,
+  },
+  motherTongueBadge: {
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: 'var(--green)',
+    background: '#edf6f2',
+    border: '1px solid #b8d8cc',
+    borderRadius: '999px',
+    padding: '0.2rem 0.55rem',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  cefrRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    gap: '0.4rem',
+  },
+  cefrLabel: {
+    fontSize: '0.66rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    color: 'var(--muted)',
+  },
+  cefrSelect: {
+    fontFamily: 'inherit',
+    fontSize: '0.82rem',
+    color: 'var(--ink)',
+    background: 'var(--paper)',
+    border: '1px solid var(--line)',
+    borderRadius: '0.25rem',
+    padding: '0.3rem 0.3rem',
+    width: '100%',
+    boxSizing: 'border-box',
   },
   previewPanel: {
     flex: 1,
