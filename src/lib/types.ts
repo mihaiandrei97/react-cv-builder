@@ -149,7 +149,7 @@ export type CvProfile = {
   hiddenSections: string[];
   pageBreaks: string[];
   sectionOrder: string[];
-  colors: Record<string, string>;
+  colors: Record<string, Record<string, string>>;
   createdAt: number;
   updatedAt: number;
 };

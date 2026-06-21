@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
 import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
-import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
+import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
 
@@ -25,6 +25,9 @@ const CEFR_FIELDS = [
 ] as const
 
 export const Route = createFileRoute('/cv/edit')({
+  beforeLoad: () => {
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+  },
   component: EditPage,
 })
 
@@ -284,7 +287,7 @@ function EditPage() {
   const hiddenSections = activeProfile.hiddenSections ?? []
   const pageBreaks = activeProfile.pageBreaks ?? []
   const sectionOrder = activeProfile.sectionOrder ?? [...DEFAULT_SECTION_ORDER]
-  const colors = activeProfile.colors ?? {}
+  const colors = (activeProfile.colors ?? {})[templateId] ?? {}
   const activeUpdatedAt = activeProfile.updatedAt
   const cv = useCvData()
   const debouncedCv = useDebounce(cv, 500)
