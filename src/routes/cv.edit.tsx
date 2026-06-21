@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import type { Experience, Project, Education, Certification, Language, Profile, CvLocale } from '../lib/types'
+import type { Experience, Project, Education, Certification, Language, Profile } from '../lib/types'
 import { getDefaultSectionLabelsForTemplate } from '../lib/types'
-import { useSelector } from '@tanstack/react-store'
-import { cvStore, cvDerived, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, setLocale } from '../lib/cv-store'
+import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
+import { WorkflowNav } from '../components/WorkflowNav'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -24,57 +24,33 @@ export const Route = createFileRoute('/cv/edit')({
 // ── Nav ──────────────────────────────────────────────────────────────────────
 
 function TopBar({
-  profileName,
   templateName,
-  locale,
   saveStatus,
   isCompact,
   activePane,
   onPaneChange,
-  onLocaleChange,
   onReset,
+  onDownload,
 }: {
-  profileName: string
   templateName: string
-  locale: CvLocale
   saveStatus: string
   isCompact: boolean
   activePane: 'form' | 'preview'
   onPaneChange: (pane: 'form' | 'preview') => void
-  onLocaleChange: (locale: CvLocale) => void
   onReset: () => void
+  onDownload: () => void
 }) {
   return (
     <header style={{ ...s.topBar, ...(isCompact ? s.topBarCompact : {}) }}>
       <div style={{ ...s.topBarLeft, ...(isCompact ? s.topBarLeftCompact : {}) }}>
-        <h1 style={s.topBarTitle}>CV Editor</h1>
-        <nav style={{ ...s.topBarNav, ...(isCompact ? s.topBarNavCompact : {}) }}>
-          <NavLink to="/templates" label="Templates" />
-          <NavLink to="/cv/edit" label="Edit" active />
-          <NavLink to="/cv/print" label="Preview" />
-          <NavLink to="/profiles" label="Profiles" />
-        </nav>
+        <WorkflowNav active="edit" />
       </div>
       <div style={{ ...s.topBarActions, ...(isCompact ? s.topBarActionsCompact : {}) }}>
         {saveStatus && <span style={s.saveStatus}>{saveStatus}</span>}
-        <span style={s.templateBadge}>{profileName}</span>
-        <span style={s.templateBadge}>{templateName}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <button
-            type="button"
-            style={locale === 'en' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
-            onClick={() => onLocaleChange('en')}
-          >
-            EN
-          </button>
-          <button
-            type="button"
-            style={locale === 'ro' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
-            onClick={() => onLocaleChange('ro')}
-          >
-            RO
-          </button>
-        </div>
+        <Link to="/templates" style={s.templateBadgeLink} title="Change template">
+          {templateName}
+          <span style={s.templateBadgeHint}>change</span>
+        </Link>
         {isCompact && (
           <div style={s.viewSwitch}>
             <button
@@ -97,32 +73,14 @@ function TopBar({
             </button>
           </div>
         )}
-        <button type="button" style={s.btnSecondary} onClick={onReset}>
+        <button type="button" style={s.btnDownload} onClick={onDownload}>
+          Download PDF
+        </button>
+        <button type="button" style={s.btnGhostReset} onClick={onReset}>
           Reset
         </button>
       </div>
     </header>
-  )
-}
-
-function NavLink({ to, label, active }: { to: string; label: string; active?: boolean }) {
-  return (
-    <Link
-      to={to}
-      style={{
-        fontFamily: 'inherit',
-        fontSize: '0.9rem',
-        whiteSpace: 'nowrap',
-        textDecoration: 'none',
-        color: active ? 'var(--ink)' : 'var(--muted)',
-        padding: '0.35rem 0.75rem',
-        borderRadius: '0.25rem',
-        border: active ? '1px solid var(--line)' : '1px solid transparent',
-        background: active ? 'var(--paper)' : 'transparent',
-      }}
-    >
-      {label}
-    </Link>
   )
 }
 
@@ -250,10 +208,10 @@ function CollapsibleSection({
 
 function EditPage() {
   const CEFR_OPTIONS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
-  const activeProfile = useSelector(cvStore, (s) => (s.profiles.find((p) => p.id === s.activeProfileId) ?? s.profiles[0]))
+  const activeProfile = useActiveProfile()
   const locale = activeProfile.locale
-  const fullData = activeProfile.localized[locale].data
-  const sectionLabels = activeProfile.localized[locale].sectionLabels ?? {}
+  const fullData = activeProfile.data
+  const sectionLabels = activeProfile.sectionLabels ?? {}
   const templateId = activeProfile.templateId
   const profileName = activeProfile.name
   const hiddenSections = activeProfile.hiddenSections ?? []
@@ -261,7 +219,7 @@ function EditPage() {
   const sectionOrder = activeProfile.sectionOrder ?? [...DEFAULT_SECTION_ORDER]
   const colors = activeProfile.colors ?? {}
   const activeUpdatedAt = activeProfile.updatedAt
-  const cv = useSelector(cvDerived, (s) => s)
+  const cv = useCvData()
   const debouncedCv = useDebounce(cv, 500)
   const [saveStatus, setSaveStatus] = useState('All changes saved')
   const lastUpdatedAtRef = useRef(activeUpdatedAt)
@@ -272,6 +230,7 @@ function EditPage() {
   const [isCompactLayout, setIsCompactLayout] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 1100 : false,
   )
+  const blobUrlRef = useRef<string | null>(null)
 
   const template = getTemplate(templateId)
 
@@ -319,6 +278,15 @@ function EditPage() {
     if (confirm('Reset all CV data to defaults? This cannot be undone.')) {
       resetCv()
     }
+  }
+
+  function downloadPdf() {
+    if (!blobUrlRef.current) return
+    const a = document.createElement('a')
+    a.href = blobUrlRef.current
+    const safeName = profileName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    a.download = `${safeName || 'cv'}.pdf`
+    a.click()
   }
 
   // Profile mutations
@@ -510,15 +478,13 @@ function EditPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar
-        profileName={profileName}
         templateName={template.name}
-        locale={locale}
         saveStatus={saveStatus}
         isCompact={isCompactLayout}
         activePane={activePane}
         onPaneChange={setActivePane}
-        onLocaleChange={setLocale}
         onReset={handleReset}
+        onDownload={downloadPdf}
       />
 
       <div style={{ ...s.split, ...(isCompactLayout ? s.splitCompact : {}) }}>
@@ -930,6 +896,7 @@ function EditPage() {
           ) : (
             <BlobProvider document={previewDoc}>
               {({ url, loading, error }) => {
+                if (url) blobUrlRef.current = url
                 if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Rendering preview…</div>
                 if (error) return <div style={{ padding: '2rem', textAlign: 'center', color: '#9c2f1f', fontSize: '0.85rem' }}>Error rendering preview</div>
                 if (!url) return null
@@ -968,7 +935,8 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '1rem',
     padding: '0.75rem 1.5rem',
-    background: '#fffdf7',
+    background: 'rgba(255, 253, 247, 0.92)',
+    backdropFilter: 'blur(6px)',
     borderBottom: '1px solid var(--line)',
     boxShadow: '0 2px 8px rgba(34,34,34,0.08)',
   },
@@ -986,20 +954,6 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: '0.6rem',
-  },
-  topBarNav: {
-    display: 'flex',
-    gap: '0.25rem',
-  },
-  topBarNavCompact: {
-    width: '100%',
-    overflowX: 'auto',
-    paddingBottom: '0.1rem',
-  },
-  topBarTitle: {
-    margin: 0,
-    fontSize: '1.1rem',
-    fontWeight: 700,
   },
   topBarActions: {
     display: 'flex',
@@ -1056,6 +1010,29 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: '0.25rem',
     padding: '0.2rem 0.55rem',
   },
+  templateBadgeLink: {
+    fontFamily: 'inherit',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: 'var(--accent)',
+    background: '#fdf0e6',
+    border: '1px solid #f0c89a',
+    borderRadius: '0.25rem',
+    padding: '0.2rem 0.55rem',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.4rem',
+  },
+  templateBadgeHint: {
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: '#b8722f',
+    opacity: 0.7,
+  },
   btnPrimary: {
     fontFamily: 'inherit',
     fontWeight: 700,
@@ -1067,15 +1044,32 @@ const s: Record<string, React.CSSProperties> = {
     padding: '0.45rem 1rem',
     cursor: 'pointer',
   },
-  btnSecondary: {
+  btnDownload: {
     fontFamily: 'inherit',
-    fontSize: '0.9rem',
+    fontWeight: 700,
+    fontSize: '0.85rem',
+    color: '#fff',
+    background: 'var(--green)',
+    border: 0,
+    borderRadius: '0.25rem',
+    padding: '0.4rem 0.9rem',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    boxShadow: '0 2px 8px rgba(45,93,76,0.18)',
+  },
+  btnGhostReset: {
+    fontFamily: 'inherit',
+    fontSize: '0.82rem',
+    fontWeight: 600,
     color: 'var(--muted)',
     background: 'transparent',
-    border: '1px solid var(--line)',
+    border: 'none',
     borderRadius: '0.25rem',
-    padding: '0.4rem 0.85rem',
+    padding: '0.4rem 0.5rem',
     cursor: 'pointer',
+    textDecoration: 'underline',
+    textDecorationColor: 'transparent',
+    textUnderlineOffset: '0.15em',
   },
   btnAdd: {
     fontFamily: 'inherit',
