@@ -284,6 +284,9 @@ const styles = StyleSheet.create({
 })
 
 export function CompactDocument({ cv }: { cv: CompactCvData }) {
+  // Defensive fallback: skills may be absent during template-switch transitions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const skills: typeof cv.skills = (cv as any).skills ?? []
   const accent = cv.colors.accent ?? ACCENT
   const ink = cv.colors.ink ?? INK
   const muted = cv.colors.muted ?? MUTED
@@ -325,10 +328,10 @@ export function CompactDocument({ cv }: { cv: CompactCvData }) {
             </View>
 
             {/* Skills */}
-            {cv.skills.length > 0 && (
+            {skills.length > 0 && (
               <View style={styles.sideSection}>
                 <Text style={[styles.sideSectionTitle, { color: accent }]}>{label('skills')}</Text>
-                {cv.skills.map((skill, i) => (
+                {skills.map((skill, i) => (
                   <View key={i} style={styles.skillRow}>
                     <Text style={styles.skillLabel}>{skill}</Text>
                   </View>

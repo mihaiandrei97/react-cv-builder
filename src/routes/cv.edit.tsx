@@ -668,8 +668,8 @@ function EditPage() {
     })
   }
 
-  const showSkills = cv.kind === 'classic' || cv.kind === 'modern' || cv.kind === 'compact'
-  const showProjects = cv.kind === 'classic' || cv.kind === 'modern'
+  const showSkills = cv.kind === 'classic' || cv.kind === 'modern' || cv.kind === 'compact' || cv.kind === 'minimal' || cv.kind === 'sidebar' || cv.kind === 'timeline'
+  const showProjects = cv.kind === 'classic' || cv.kind === 'modern' || cv.kind === 'minimal' || cv.kind === 'sidebar' || cv.kind === 'timeline'
   const showCertifications = cv.kind === 'executive'
   const showLanguages = true
 
@@ -678,6 +678,9 @@ function EditPage() {
     modern: ['skills', 'experience', 'projects', 'education', 'languages'],
     executive: ['experience', 'education', 'certifications', 'languages'],
     compact: ['skills', 'languages', 'experience', 'education'],
+    minimal: ['skills', 'experience', 'projects', 'education', 'languages'],
+    sidebar: ['skills', 'experience', 'projects', 'education', 'languages'],
+    timeline: ['skills', 'experience', 'projects', 'education', 'languages'],
   }
   const customIds = (fullData.customSections ?? []).map((s) => s.id)
   const templateSections = [...(TEMPLATE_SECTIONS[templateId] ?? TEMPLATE_SECTIONS.classic), ...customIds]
@@ -703,7 +706,10 @@ function EditPage() {
     }).filter((item): item is { key: string; title: string; anchorId: string } => item !== null),
   ]
 
-  const previewDoc = useMemo(() => (Doc ? <Doc cv={debouncedCv} /> : null), [debouncedCv, Doc])
+  const previewDoc = useMemo(
+    () => (Doc ? <Doc cv={debouncedCv} /> : null),
+    [debouncedCv, Doc],
+  )
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

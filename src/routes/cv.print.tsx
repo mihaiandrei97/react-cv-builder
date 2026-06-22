@@ -57,7 +57,10 @@ function PrintPage() {
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
 
   const template = getTemplate(templateId)
-  const docElement = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
+  const docElement = useMemo(
+    () => (Doc ? <Doc cv={cv} /> : null),
+    [Doc, cv],
+  )
 
   useEffect(() => {
     let cancelled = false

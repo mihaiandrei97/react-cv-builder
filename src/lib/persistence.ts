@@ -22,7 +22,16 @@ function sanitizeProfiles(state: ProfilesState, defaultSectionOrder: string[]): 
   }))
 
   for (const p of profiles) {
-    p.data = { ...p.data, customSections: p.data.customSections ?? [] }
+    p.data = {
+      ...p.data,
+      skills: p.data.skills ?? [],
+      experiences: p.data.experiences ?? [],
+      projects: p.data.projects ?? [],
+      education: p.data.education ?? [],
+      certifications: p.data.certifications ?? [],
+      languages: p.data.languages ?? [],
+      customSections: p.data.customSections ?? [],
+    }
   }
 
   const activeProfileId = profiles.some((p) => p.id === state.activeProfileId)

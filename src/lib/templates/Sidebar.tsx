@@ -1,20 +1,21 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
-import type { ModernCvData } from '../types'
+import type { SidebarCvData } from '../types'
 import { getDefaultSectionLabel } from '../types'
 import '../fonts'
-import { getLanguageLevel } from './language-level'
-const SIDEBAR_BG = '#1e2b3c'
-const SIDEBAR_ACCENT = '#7dd3fc'
-const SIDEBAR_MUTED = '#64748b'
-const SIDEBAR_CHIP_BG = '#2d3f54'
-const SIDEBAR_CHIP_BORDER = '#3b5268'
-const SIDEBAR_CHIP_TEXT = '#bfdbfe'
-const SIDEBAR_DIVIDER = '#2d3f54'
+import { getOverallLevel, isMotherTongueLanguage } from './language-level'
+
+const SIDEBAR_BG = '#f6f1e7'
+const SIDEBAR_INK = '#1c1c1a'
+const SIDEBAR_MUTED = '#6b6b62'
+const SIDEBAR_DIVIDER = '#e0d9c8'
+const SIDEBAR_CHIP_BG = '#efe8d6'
+const SIDEBAR_CHIP_BORDER = '#e0d9c8'
+const SIDEBAR_CHIP_TEXT = '#3a3530'
 const MAIN_BG = '#ffffff'
-const MAIN_INK = '#0f172a'
-const MAIN_BODY = '#334155'
-const MAIN_MUTED = '#64748b'
-const MAIN_ACCENT = '#0ea5e9'
+const MAIN_INK = '#1c1c1a'
+const MAIN_BODY = '#3a3530'
+const MAIN_MUTED = '#6b6b62'
+const ACCENT = '#1f3a5f'
 
 const SIDEBAR_WIDTH = '36%'
 const MAIN_WIDTH = '64%'
@@ -28,21 +29,23 @@ const styles = StyleSheet.create({
     paddingBottom: '14mm',
   },
 
-  // Sidebar background – fixed so it repeats on every overflow page
+  // Sidebar background — fixed so it repeats on every overflow page
   sidebarBg: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 0,
+    left: MAIN_WIDTH,
     width: SIDEBAR_WIDTH,
     backgroundColor: SIDEBAR_BG,
+    borderLeftWidth: 1.5,
+    borderLeftColor: ACCENT,
   },
 
-  // Sidebar content – absolutely positioned, appears on page 1 only
+  // Sidebar content — absolutely positioned, appears on page 1 only
   sidebar: {
     position: 'absolute',
     top: '14mm',
-    left: 0,
+    left: MAIN_WIDTH,
     width: SIDEBAR_WIDTH,
     paddingLeft: '10mm',
     paddingRight: '10mm',
@@ -50,26 +53,25 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sidebarName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 700,
-    color: '#ffffff',
-    lineHeight: 1.2,
+    color: SIDEBAR_INK,
+    lineHeight: 1.15,
     marginBottom: 3,
   },
   sidebarTitle: {
     fontSize: 8,
-    color: SIDEBAR_ACCENT,
-    fontWeight: 400,
+    color: ACCENT,
+    fontWeight: 600,
     letterSpacing: 0.3,
-    marginBottom: 0,
   },
   sidebarSectionTitle: {
     fontSize: 6.5,
     fontWeight: 700,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    color: SIDEBAR_ACCENT,
-    borderBottomWidth: 1,
+    color: ACCENT,
+    borderBottomWidth: 0.5,
     borderBottomColor: SIDEBAR_DIVIDER,
     paddingBottom: 3,
     marginBottom: 6,
@@ -87,7 +89,7 @@ const styles = StyleSheet.create({
   },
   contactValue: {
     fontSize: 7.5,
-    color: '#cbd5e1',
+    color: '#3a3530',
   },
   skillsWrap: {
     flexDirection: 'row',
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     fontWeight: 400,
     backgroundColor: SIDEBAR_CHIP_BG,
     color: SIDEBAR_CHIP_TEXT,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: SIDEBAR_CHIP_BORDER,
     borderRadius: 2,
     paddingTop: 2,
@@ -109,10 +111,31 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  // Main content – flows naturally; marginLeft reserves space for sidebar
+  // Compact languages list
+  langItem: {
+    marginBottom: 5,
+  },
+  langName: {
+    fontSize: 8,
+    fontWeight: 700,
+    color: SIDEBAR_INK,
+  },
+  langLevel: {
+    fontSize: 7,
+    color: SIDEBAR_MUTED,
+    marginTop: 1,
+  },
+  langNote: {
+    marginTop: 6,
+    fontSize: 6.2,
+    lineHeight: 1.35,
+    color: SIDEBAR_MUTED,
+  },
+
+  // Main content — flows naturally; width reserves space for sidebar
   main: {
-    marginLeft: SIDEBAR_WIDTH,
-    paddingLeft: '11mm',
+    width: MAIN_WIDTH,
+    paddingLeft: '14mm',
     paddingRight: '11mm',
     flexDirection: 'column',
     gap: 10,
@@ -123,8 +146,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     color: MAIN_INK,
-    borderBottomWidth: 2,
-    borderBottomColor: MAIN_ACCENT,
+    borderBottomWidth: 1.5,
+    borderBottomColor: ACCENT,
     paddingBottom: 3,
     marginBottom: 6,
   },
@@ -156,7 +179,7 @@ const styles = StyleSheet.create({
   },
   entryPeriod: {
     fontSize: 7.5,
-    color: '#94a3b8',
+    color: '#8a857a',
     flexShrink: 0,
     marginLeft: 8,
   },
@@ -182,7 +205,7 @@ const styles = StyleSheet.create({
   projectStack: {
     fontSize: 7.5,
     fontStyle: 'italic',
-    color: MAIN_ACCENT,
+    color: ACCENT,
   },
   projectDesc: {
     fontSize: 8,
@@ -191,109 +214,41 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 2,
   },
-
-  // Languages table
-  langTable: {
-    borderWidth: 1,
-    borderColor: '#dbe4ee',
-  },
-  langMotherRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbe4ee',
-  },
-  langGroupRow: {
-    flexDirection: 'row',
-    backgroundColor: '#f8fbff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbe4ee',
-  },
-  langSubHeaderRow: {
-    flexDirection: 'row',
-    backgroundColor: '#f8fbff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbe4ee',
-  },
-  langRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbe4ee',
-  },
-  langHeaderCell: {
-    fontSize: 6.8,
-    fontWeight: 700,
-    color: MAIN_MUTED,
-    paddingTop: 4,
-    paddingBottom: 4,
-    paddingLeft: 4,
-    paddingRight: 4,
-    borderRightWidth: 1,
-    borderRightColor: '#dbe4ee',
-  },
-  langCell: {
-    fontSize: 7.8,
-    color: MAIN_BODY,
-    paddingTop: 4,
-    paddingBottom: 4,
-    paddingLeft: 4,
-    paddingRight: 4,
-    borderRightWidth: 1,
-    borderRightColor: '#dbe4ee',
-  },
-  langColName: {
-    width: '30%',
-  },
-  langColTwo: {
-    width: '28%',
-  },
-  langColLevel: {
-    width: '14%',
-  },
-  langNote: {
-    marginTop: 6,
-    fontSize: 7,
-    lineHeight: 1.35,
-    color: MAIN_MUTED,
-  },
 })
 
-export function ModernDocument({ cv }: { cv: ModernCvData }) {
+export function SidebarDocument({ cv }: { cv: SidebarCvData }) {
   // Defensive fallbacks: skills/projects may be absent during template-switch transitions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const skills: typeof cv.skills = (cv as any).skills ?? []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const projects: typeof cv.projects = (cv as any).projects ?? []
   const sidebarBg = cv.colors.sidebarBg ?? SIDEBAR_BG
-  const sidebarAccent = cv.colors.sidebarAccent ?? SIDEBAR_ACCENT
-  const accent = cv.colors.accent ?? MAIN_ACCENT
+  const accent = cv.colors.accent ?? ACCENT
   const ink = cv.colors.ink ?? MAIN_INK
   const muted = cv.colors.muted ?? MAIN_MUTED
-  const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('modern', key, cv.locale)
+  const label = (key: string) => cv.sectionLabels[key] ?? getDefaultSectionLabel('sidebar', key, cv.locale)
 
   const customIds = cv.customSections.map((s) => s.id)
-  const orderedMain = [...['experience', 'projects', 'education', 'languages'], ...customIds].sort((a, b) => {
+  const orderedMain = [...['experience', 'projects', 'education'], ...customIds].sort((a, b) => {
     const ai = cv.sectionOrder.indexOf(a); const bi = cv.sectionOrder.indexOf(b)
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
   })
-  const motherTongue = cv.languages[0]
-  const otherLanguages = cv.languages.slice(1)
-  const motherTongueLabel = motherTongue?.language || 'Romanian'
 
   return (
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
       <Page size="A4" style={styles.page}>
-        {/* Dark sidebar background — fixed so it appears on every overflow page */}
-        <View style={[styles.sidebarBg, { backgroundColor: sidebarBg }]} fixed />
+        {/* Light sidebar background — fixed so it appears on every overflow page */}
+        <View style={[styles.sidebarBg, { backgroundColor: sidebarBg, borderLeftColor: accent }]} fixed />
 
         {/* Sidebar content — not fixed, so only renders on page 1 */}
         <View style={styles.sidebar}>
           <View>
-            <Text style={styles.sidebarName}>{cv.profile.name}</Text>
-            <Text style={[styles.sidebarTitle, { color: sidebarAccent }]}>{cv.profile.title}</Text>
+            <Text style={[styles.sidebarName, { color: ink }]}>{cv.profile.name}</Text>
+            <Text style={[styles.sidebarTitle, { color: accent }]}>{cv.profile.title}</Text>
           </View>
 
           <View>
-            <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{label('contact')}</Text>
+            <Text style={[styles.sidebarSectionTitle, { color: accent }]}>{label('contact')}</Text>
             <View style={styles.contactItem}>
               <Text style={styles.contactLabel}>Location</Text>
               <Text style={styles.contactValue}>{cv.profile.location}</Text>
@@ -310,7 +265,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
 
           {skills.length > 0 && (
             <View>
-              <Text style={[styles.sidebarSectionTitle, { color: sidebarAccent }]}>{label('skills')}</Text>
+              <Text style={[styles.sidebarSectionTitle, { color: accent }]}>{label('skills')}</Text>
               <View style={styles.skillsWrap}>
                 {skills.map((skill, i) => (
                   <Text key={i} style={styles.skillChip}>
@@ -320,19 +275,34 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               </View>
             </View>
           )}
+
+          {cv.languages.length > 0 && (
+            <View>
+              <Text style={[styles.sidebarSectionTitle, { color: accent }]}>{label('languages')}</Text>
+              {cv.languages.map((lang) => (
+                <View key={lang.id} style={styles.langItem}>
+                  <Text style={styles.langName}>{lang.language}</Text>
+                  <Text style={styles.langLevel}>
+                    {isMotherTongueLanguage(lang) ? 'Mother tongue' : getOverallLevel(lang)}
+                  </Text>
+                </View>
+              ))}
+              <Text style={styles.langNote}>Levels: A1/A2: Basic - B1/B2: Independent - C1/C2: Proficient (CEFR)</Text>
+            </View>
+          )}
         </View>
 
-        {/* Main content — all sections together, auto-flows to page 2 if needed */}
+        {/* Main content — flows naturally on the left */}
         <View style={styles.main}>
           <View>
-            <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('profile')}</Text>
+            <Text style={[styles.sectionTitle, { color: ink, borderBottomColor: accent }]}>{label('profile')}</Text>
             <Text style={styles.paragraph}>{cv.profile.summary}</Text>
           </View>
 
           {orderedMain.map((key) => {
               if (key === 'experience' && cv.experiences.length > 0) return (
                 <View key="experience" break={cv.pageBreaks.includes('experience')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('experience')}</Text>
+                  <Text style={[styles.sectionTitle, { color: ink, borderBottomColor: accent }]}>{label('experience')}</Text>
                   {cv.experiences.map((exp) => (
                     <View key={exp.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -356,7 +326,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'projects' && projects.length > 0) return (
                 <View key="projects" break={cv.pageBreaks.includes('projects')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('projects')}</Text>
+                  <Text style={[styles.sectionTitle, { color: ink, borderBottomColor: accent }]}>{label('projects')}</Text>
                   {projects.map((project) => (
                     <View key={project.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -370,7 +340,7 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
               )
               if (key === 'education' && cv.education.length > 0) return (
                 <View key="education" break={cv.pageBreaks.includes('education')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('education')}</Text>
+                  <Text style={[styles.sectionTitle, { color: ink, borderBottomColor: accent }]}>{label('education')}</Text>
                   {cv.education.map((edu) => (
                     <View key={edu.id} style={styles.entry} wrap={false}>
                       <View style={styles.entryHeader}>
@@ -384,47 +354,10 @@ export function ModernDocument({ cv }: { cv: ModernCvData }) {
                   ))}
                 </View>
               )
-              if (key === 'languages' && cv.languages.length > 0) return (
-                <View key="languages" break={cv.pageBreaks.includes('languages')}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('languages')}</Text>
-                  <View style={styles.langTable}>
-                    <View style={styles.langMotherRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Mother Tongue</Text>
-                      <Text style={[styles.langCell, { width: '70%', borderRightWidth: 0 }]}>{motherTongueLabel}</Text>
-                    </View>
-                    <View style={styles.langGroupRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>{''}</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Understanding</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColTwo, { color: muted }]}>Speaking</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>Writing</Text>
-                    </View>
-                    <View style={styles.langSubHeaderRow}>
-                      <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Other languages</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Listening</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reading</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Dialog</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted }]}>Reproduce</Text>
-                      <Text style={[styles.langHeaderCell, styles.langColLevel, { color: muted, borderRightWidth: 0 }]}>{''}</Text>
-                    </View>
-                    {otherLanguages.map((lang, i) => (
-                      <View key={lang.id} style={i === otherLanguages.length - 1 ? [styles.langRow, { borderBottomWidth: 0 }] : styles.langRow}>
-                        <Text style={[styles.langCell, styles.langColName]}>{lang.language}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'listening')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reading')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'dialog')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel]}>{getLanguageLevel(lang, 'reproduce')}</Text>
-                        <Text style={[styles.langCell, styles.langColLevel, { borderRightWidth: 0 }]}>{getLanguageLevel(lang, 'writing')}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <Text style={[styles.langNote, { color: muted }]}>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user</Text>
-                  <Text style={[styles.langNote, { color: muted }]}>Common European Framework of Reference for Language</Text>
-                </View>
-              )
               const custom = cv.customSections.find((s) => s.id === key)
               if (custom) return (
                 <View key={key} break={cv.pageBreaks.includes(key)}>
-                  <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{custom.title}</Text>
+                  <Text style={[styles.sectionTitle, { color: ink, borderBottomColor: accent }]}>{custom.title}</Text>
                   {custom.bullets.filter(Boolean).map((b, i) => (
                     <View key={i} style={styles.bulletItem}>
                       <Text style={[styles.bulletDot, { color: muted }]}>{'\u2022'}</Text>

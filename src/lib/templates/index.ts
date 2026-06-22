@@ -3,7 +3,7 @@ import type { CvData } from '../types'
 
 export type ColorSlot = { key: string; label: string; default: string; presets?: string[] }
 export type TemplateComponent = (props: { cv: CvData }) => React.ReactNode
-export type TemplateId = 'classic' | 'modern' | 'executive' | 'compact'
+export type TemplateId = 'classic' | 'modern' | 'executive' | 'compact' | 'minimal' | 'sidebar' | 'timeline'
 
 export type TemplateDefinition = {
   id: TemplateId
@@ -97,6 +97,67 @@ export const TEMPLATES: TemplateDefinition[] = [
       },
     ],
   },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    description: 'Airy single-column layout with centered header, hairline rules, and inline skills.',
+    colorSlots: [
+      {
+        key: 'accent', label: 'Accent', default: '#44403c',
+        presets: ['#44403c', '#1c1c1a', '#3a3a3a', '#5a5a52', '#6b6b62', '#2d2d2d'],
+      },
+      {
+        key: 'ink', label: 'Text', default: '#1c1c1a',
+        presets: ['#1c1c1a', '#111111', '#222222', '#1a1a18', '#2d2d2d', '#1e293b'],
+      },
+      {
+        key: 'muted', label: 'Secondary Text', default: '#6b6b62',
+        presets: ['#6b6b62', '#5a5a52', '#757575', '#64748b', '#71717a', '#525252'],
+      },
+    ],
+  },
+  {
+    id: 'sidebar',
+    name: 'Sidebar',
+    description: 'Light cream sidebar on the right with contact, skills, and languages; main content on the left.',
+    colorSlots: [
+      {
+        key: 'sidebarBg', label: 'Sidebar', default: '#f6f1e7',
+        presets: ['#f6f1e7', '#f0ebe0', '#eef2f7', '#f0e8f0', '#e8f0ea', '#f7eaea'],
+      },
+      {
+        key: 'accent', label: 'Accent', default: '#1f3a5f',
+        presets: ['#1f3a5f', '#0f766e', '#7c3aed', '#be123c', '#c2410c', '#15803d'],
+      },
+      {
+        key: 'ink', label: 'Text', default: '#1c1c1a',
+        presets: ['#1c1c1a', '#111111', '#222222', '#1a1a18', '#2d2d2d', '#1e293b'],
+      },
+      {
+        key: 'muted', label: 'Secondary Text', default: '#6b6b62',
+        presets: ['#6b6b62', '#5a5a52', '#757575', '#64748b', '#71717a', '#525252'],
+      },
+    ],
+  },
+  {
+    id: 'timeline',
+    name: 'Timeline',
+    description: 'Centered header with a vertical accent timeline and dot markers for experience entries.',
+    colorSlots: [
+      {
+        key: 'accent', label: 'Accent', default: '#0f766e',
+        presets: ['#0f766e', '#1f3a5f', '#7c3aed', '#be123c', '#c2410c', '#1a5c8a'],
+      },
+      {
+        key: 'ink', label: 'Text', default: '#1c1c1a',
+        presets: ['#1c1c1a', '#111111', '#222222', '#1a1a18', '#2d2d2d', '#1e293b'],
+      },
+      {
+        key: 'muted', label: 'Secondary Text', default: '#6b6b62',
+        presets: ['#6b6b62', '#5a5a52', '#757575', '#64748b', '#71717a', '#525252'],
+      },
+    ],
+  },
 ]
 
 const componentCache: Partial<Record<TemplateId, Promise<TemplateComponent>>> = {}
@@ -118,6 +179,12 @@ export function loadTemplateComponent(id: string): Promise<TemplateComponent> {
           return import('./Executive').then((m) => m.ExecutiveDocument as TemplateComponent)
         case 'compact':
           return import('./Compact').then((m) => m.CompactDocument as TemplateComponent)
+        case 'minimal':
+          return import('./Minimal').then((m) => m.MinimalDocument as TemplateComponent)
+        case 'sidebar':
+          return import('./Sidebar').then((m) => m.SidebarDocument as TemplateComponent)
+        case 'timeline':
+          return import('./Timeline').then((m) => m.TimelineDocument as TemplateComponent)
       }
     })()
   }

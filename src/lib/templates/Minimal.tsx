@@ -1,14 +1,14 @@
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer'
-import type { ClassicCvData } from '../types'
+import type { MinimalCvData } from '../types'
 import { getDefaultSectionLabel } from '../types'
 import '../fonts'
 import { getLanguageLevel } from './language-level'
 
-const PAPER = '#fcfcf8'
-const INK = '#222222'
-const MUTED = '#5d5d55'
-const LINE = '#d4d0c4'
-const ACCENT = '#c06b31'
+const PAPER = '#fafaf8'
+const INK = '#1c1c1a'
+const MUTED = '#6b6b62'
+const LINE = '#d8d4ca'
+const ACCENT = '#44403c'
 
 const styles = StyleSheet.create({
   page: {
@@ -16,132 +16,239 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: INK,
     backgroundColor: PAPER,
-    paddingTop: '14mm',
-    paddingBottom: '14mm',
-    paddingLeft: '14mm',
-    paddingRight: '14mm',
+    paddingTop: '20mm',
+    paddingBottom: '20mm',
+    paddingLeft: '22mm',
+    paddingRight: '22mm',
   },
 
-  // Header
-  hero: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingBottom: 8,
-    borderBottomWidth: 1,
+  // Header — centered, airy
+  header: {
+    alignItems: 'center',
+    textAlign: 'center',
+    marginBottom: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 0.5,
     borderBottomColor: LINE,
-    marginBottom: 10,
   },
-  eyebrow: {
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    fontSize: 7,
+  name: {
+    fontSize: 22,
     fontWeight: 700,
-    color: ACCENT,
-    marginBottom: 3,
+    letterSpacing: 0.5,
+    lineHeight: 1.15,
+    marginBottom: 4,
   },
-  heroName: {
-    fontSize: 24,
-    fontWeight: 700,
-    lineHeight: 1.1,
-    marginBottom: 3,
-  },
-  heroRole: {
+  role: {
     fontSize: 10,
     color: MUTED,
+    marginBottom: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
-  contactList: {
-    alignItems: 'flex-end',
+  contactRow: {
+    flexDirection: 'row',
+    gap: 10,
     fontSize: 8.5,
     color: MUTED,
-    lineHeight: 1.6,
+    justifyContent: 'center',
   },
-  contactItem: {
-    marginBottom: 1,
+  contactSep: {
+    color: LINE,
   },
 
   // Sections
   section: {
-    marginBottom: 10,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: 0.7,
+    letterSpacing: 2.4,
     color: ACCENT,
-    borderBottomWidth: 1,
+    textAlign: 'center',
+    marginBottom: 8,
+    paddingBottom: 4,
+    borderBottomWidth: 0.5,
     borderBottomColor: LINE,
-    paddingBottom: 3,
-    marginBottom: 6,
   },
   paragraph: {
-    lineHeight: 1.5,
     fontSize: 9.5,
+    lineHeight: 1.65,
+    color: INK,
+    textAlign: 'center',
   },
 
-  // Skills grid (two columns)
-  skillGrid: {
+  // Skills — inline comma-separated, centered
+  skillsInline: {
+    fontSize: 9.5,
+    lineHeight: 1.6,
+    color: INK,
+    textAlign: 'center',
+  },
+  skillSep: {
+    color: MUTED,
+  },
+
+  // Experience
+  expItem: {
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  expHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 5,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 1,
+    width: '100%',
   },
-  skillItem: {
-    width: '50%',
+  expRole: {
+    fontSize: 10,
+    fontWeight: 700,
+  },
+  expPeriod: {
+    fontSize: 8.5,
+    color: MUTED,
+    fontStyle: 'italic',
+    flexShrink: 0,
+    marginLeft: 8,
+    marginTop: 1,
+  },
+  expCompany: {
     fontSize: 9,
-    marginBottom: 2.5,
+    color: ACCENT,
+    marginBottom: 4,
+  },
+  bulletList: {
+    marginTop: 2,
+    width: '100%',
+  },
+  bulletItem: {
+    flexDirection: 'row',
+    marginBottom: 2,
+    paddingLeft: 12,
+    paddingRight: 12,
+  },
+  bulletDot: {
+    fontSize: 8,
+    marginRight: 6,
+    color: MUTED,
+    width: 6,
+    marginTop: 1,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 9,
+    lineHeight: 1.55,
+    color: INK,
   },
 
-  // Languages table
+  // Projects
+  projectItem: {
+    marginBottom: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  projectName: {
+    fontSize: 10,
+    fontWeight: 700,
+    marginBottom: 2,
+  },
+  projectDesc: {
+    fontSize: 9,
+    lineHeight: 1.55,
+    color: INK,
+    marginBottom: 2,
+    textAlign: 'center',
+    paddingLeft: 12,
+    paddingRight: 12,
+  },
+  projectStack: {
+    fontSize: 8.5,
+    fontStyle: 'italic',
+    color: MUTED,
+  },
+
+  // Education
+  eduItem: {
+    marginBottom: 7,
+    alignItems: 'center',
+    width: '100%',
+  },
+  eduHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 1,
+  },
+  eduDegree: {
+    fontSize: 9.5,
+    fontWeight: 700,
+  },
+  eduPeriod: {
+    fontSize: 8.5,
+    color: MUTED,
+    fontStyle: 'italic',
+    flexShrink: 0,
+    marginLeft: 8,
+    marginTop: 1,
+  },
+  eduInstitution: {
+    fontSize: 9,
+    color: MUTED,
+  },
+
+  // Languages — hairline table, no fills
   langTable: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: LINE,
   },
   langMotherRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: LINE,
   },
   langGroupRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: LINE,
-    backgroundColor: '#f7f4eb',
   },
   langSubHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#f7f4eb',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: LINE,
   },
   langRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: LINE,
   },
   langHeaderCell: {
-    fontSize: 7.5,
+    fontSize: 7,
     fontWeight: 700,
     color: MUTED,
     paddingTop: 4,
     paddingBottom: 4,
-    paddingLeft: 5,
-    paddingRight: 5,
-    borderRightWidth: 1,
+    paddingLeft: 6,
+    paddingRight: 6,
+    borderRightWidth: 0.5,
     borderRightColor: LINE,
+    textAlign: 'center',
   },
   langCell: {
     fontSize: 8.5,
     color: INK,
     paddingTop: 4,
     paddingBottom: 4,
-    paddingLeft: 5,
-    paddingRight: 5,
-    borderRightWidth: 1,
+    paddingLeft: 6,
+    paddingRight: 6,
+    borderRightWidth: 0.5,
     borderRightColor: LINE,
+    textAlign: 'center',
   },
   langColName: {
     width: '30%',
+    textAlign: 'left',
   },
   langColTwo: {
     width: '28%',
@@ -151,70 +258,10 @@ const styles = StyleSheet.create({
   },
   langNote: {
     marginTop: 6,
-    fontSize: 7.2,
+    fontSize: 7,
     lineHeight: 1.4,
     color: MUTED,
-  },
-
-  // Experience
-  experienceItem: {
-    marginTop: 7,
-  },
-  experienceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 3,
-  },
-  experienceTitle: {
-    fontSize: 10,
-    fontWeight: 700,
-    flex: 1,
-  },
-  experiencePeriod: {
-    fontSize: 8.5,
-    color: MUTED,
-    flexShrink: 0,
-    marginLeft: 8,
-  },
-  bulletList: {
-    marginTop: 2,
-  },
-  bulletItem: {
-    flexDirection: 'row',
-    marginBottom: 2,
-  },
-  bulletDot: {
-    fontSize: 9,
-    marginRight: 5,
-    color: MUTED,
-    width: 8,
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 9,
-    lineHeight: 1.45,
-    color: INK,
-  },
-
-  // Projects
-  projectItem: {
-    marginTop: 7,
-  },
-  projectName: {
-    fontSize: 10,
-    fontWeight: 700,
-    marginBottom: 2,
-  },
-  projectDesc: {
-    fontSize: 9,
-    lineHeight: 1.45,
-    marginBottom: 2,
-  },
-  projectStack: {
-    fontSize: 8.5,
-    fontStyle: 'italic',
-    color: MUTED,
+    textAlign: 'center',
   },
 })
 
@@ -222,7 +269,7 @@ function normalizeForPdf(text: string): string {
   return text.normalize('NFC')
 }
 
-export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
+export function MinimalDocument({ cv }: { cv: MinimalCvData }) {
   // Defensive fallbacks: skills/projects may be absent during template-switch transitions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const skills: typeof cv.skills = (cv as any).skills ?? []
@@ -232,7 +279,7 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
   const ink = cv.colors.ink ?? INK
   const muted = cv.colors.muted ?? MUTED
   const t = (value: string) => normalizeForPdf(value)
-  const label = (key: string) => t(cv.sectionLabels[key] ?? getDefaultSectionLabel('classic', key, cv.locale))
+  const label = (key: string) => t(cv.sectionLabels[key] ?? getDefaultSectionLabel('minimal', key, cv.locale))
 
   const customIds = cv.customSections.map((s) => s.id)
   const ordered = [...['skills', 'experience', 'projects', 'education', 'languages'], ...customIds].sort(
@@ -249,48 +296,52 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
     <Document key={cv.sectionOrder.join(',') + JSON.stringify(cv.colors)}>
       <Page size="A4" style={[styles.page, { backgroundColor: PAPER, color: ink }]}>
         {/* Header */}
-        <View style={[styles.hero, { borderBottomColor: accent }]}>
-          <View>
-            <Text style={[styles.heroName, { color: accent }]}>{t(cv.profile.name)}</Text>
-            <Text style={[styles.heroRole, { color: muted }]}>{t(cv.profile.title)}</Text>
-          </View>
-          <View style={styles.contactList}>
-            <Text style={[styles.contactItem, { color: muted }]}>{t(cv.profile.location)}</Text>
-            <Text style={[styles.contactItem, { color: muted }]}>{t(cv.profile.email)}</Text>
-            <Text style={[styles.contactItem, { color: muted }]}>{t(cv.profile.website)}</Text>
+        <View style={[styles.header, { borderBottomColor: muted }]}>
+          <Text style={[styles.name, { color: ink }]}>{t(cv.profile.name)}</Text>
+          <Text style={[styles.role, { color: muted }]}>{t(cv.profile.title)}</Text>
+          <View style={styles.contactRow}>
+            <Text style={{ color: muted }}>{t(cv.profile.location)}</Text>
+            <Text style={[styles.contactSep, { color: muted }]}>{'·'}</Text>
+            <Text style={{ color: muted }}>{t(cv.profile.email)}</Text>
+            <Text style={[styles.contactSep, { color: muted }]}>{'·'}</Text>
+            <Text style={{ color: muted }}>{t(cv.profile.website)}</Text>
           </View>
         </View>
 
         {/* Profile — always first */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('profile')}</Text>
+          <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{label('profile')}</Text>
           <Text style={styles.paragraph}>{t(cv.profile.summary)}</Text>
         </View>
 
         {ordered.map((key) => {
           if (key === 'skills' && skills.length > 0) return (
             <View key="skills" style={styles.section} break={cv.pageBreaks.includes('skills')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('skills')}</Text>
-              <View style={styles.skillGrid}>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{label('skills')}</Text>
+              <Text style={styles.skillsInline}>
                 {skills.map((skill, i) => (
-                  <Text key={i} style={styles.skillItem}>{t(skill)}</Text>
+                  <Text key={i}>
+                    {i > 0 ? <Text style={[styles.skillSep, { color: muted }]}>{'  ·  '}</Text> : null}
+                    <Text>{t(skill)}</Text>
+                  </Text>
                 ))}
-              </View>
+              </Text>
             </View>
           )
           if (key === 'experience' && cv.experiences.length > 0) return (
             <View key="experience" style={styles.section} break={cv.pageBreaks.includes('experience')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('experience')}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{label('experience')}</Text>
               {cv.experiences.map((exp) => (
-                <View key={exp.id} style={styles.experienceItem} wrap={false}>
-                  <View style={styles.experienceHeader}>
-                    <Text style={styles.experienceTitle}>{t(exp.role)} – {t(exp.company)}</Text>
-                    <Text style={[styles.experiencePeriod, { color: muted }]}>{t(exp.period)}</Text>
+                <View key={exp.id} style={styles.expItem} wrap={false}>
+                  <View style={styles.expHeader}>
+                    <Text style={[styles.expRole, { color: ink }]}>{t(exp.role)}</Text>
+                    <Text style={[styles.expPeriod, { color: muted }]}>{t(exp.period)}</Text>
                   </View>
+                  <Text style={[styles.expCompany, { color: accent }]}>{t(exp.company)}</Text>
                   <View style={styles.bulletList}>
                     {exp.highlights.map((h, i) => (
                       <View key={i} style={styles.bulletItem}>
-                        <Text style={[styles.bulletDot, { color: muted }]}>•</Text>
+                        <Text style={[styles.bulletDot, { color: muted }]}>{'—'}</Text>
                         <Text style={[styles.bulletText, { color: ink }]}>{t(h)}</Text>
                       </View>
                     ))}
@@ -301,10 +352,10 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'projects' && projects.length > 0) return (
             <View key="projects" style={styles.section} break={cv.pageBreaks.includes('projects')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('projects')}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{label('projects')}</Text>
               {projects.map((project) => (
                 <View key={project.id} style={styles.projectItem} wrap={false}>
-                  <Text style={styles.projectName}>{t(project.name)}</Text>
+                  <Text style={[styles.projectName, { color: ink }]}>{t(project.name)}</Text>
                   <Text style={styles.projectDesc}>{t(project.description)}</Text>
                   <Text style={[styles.projectStack, { color: muted }]}>{t(project.stack)}</Text>
                 </View>
@@ -313,21 +364,21 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           )
           if (key === 'education' && cv.education.length > 0) return (
             <View key="education" style={styles.section} break={cv.pageBreaks.includes('education')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('education')}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{label('education')}</Text>
               {cv.education.map((edu) => (
-                <View key={edu.id} style={styles.experienceItem} wrap={false}>
-                  <View style={styles.experienceHeader}>
-                    <Text style={styles.experienceTitle}>{t(edu.degree)}</Text>
-                    <Text style={[styles.experiencePeriod, { color: muted }]}>{t(edu.period)}</Text>
+                <View key={edu.id} style={styles.eduItem} wrap={false}>
+                  <View style={styles.eduHeader}>
+                    <Text style={[styles.eduDegree, { color: ink }]}>{t(edu.degree)}</Text>
+                    <Text style={[styles.eduPeriod, { color: muted }]}>{t(edu.period)}</Text>
                   </View>
-                  <Text style={{ fontSize: 9, color: muted, marginTop: 1 }}>{t(edu.institution)}</Text>
+                  <Text style={[styles.eduInstitution, { color: muted }]}>{t(edu.institution)}</Text>
                 </View>
               ))}
             </View>
           )
           if (key === 'languages' && cv.languages.length > 0) return (
             <View key="languages" style={styles.section} break={cv.pageBreaks.includes('languages')}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{label('languages')}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{label('languages')}</Text>
               <View style={styles.langTable}>
                 <View style={styles.langMotherRow}>
                   <Text style={[styles.langHeaderCell, styles.langColName, { color: muted }]}>Mother Tongue</Text>
@@ -365,10 +416,10 @@ export function ClassicDocument({ cv }: { cv: ClassicCvData }) {
           const custom = cv.customSections.find((s) => s.id === key)
           if (custom) return (
             <View key={key} style={styles.section} break={cv.pageBreaks.includes(key)}>
-              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: accent }]}>{t(custom.title)}</Text>
+              <Text style={[styles.sectionTitle, { color: accent, borderBottomColor: muted }]}>{t(custom.title)}</Text>
               {custom.bullets.filter(Boolean).map((b, i) => (
                 <View key={i} style={styles.bulletItem}>
-                  <Text style={[styles.bulletDot, { color: muted }]}>{'•'}</Text>
+                  <Text style={[styles.bulletDot, { color: muted }]}>{'—'}</Text>
                   <Text style={[styles.bulletText, { color: ink }]}>{t(b)}</Text>
                 </View>
               ))}

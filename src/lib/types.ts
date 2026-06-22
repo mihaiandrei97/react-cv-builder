@@ -120,11 +120,62 @@ export type CompactCvData = {
   sectionLabels: Record<string, string>;
 };
 
+export type MinimalCvData = {
+  kind: "minimal";
+  locale: CvLocale;
+  profile: Profile;
+  skills: string[];
+  languages: Language[];
+  experiences: Experience[];
+  projects: Project[];
+  education: Education[];
+  customSections: CustomSection[];
+  pageBreaks: string[];
+  sectionOrder: string[];
+  colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
+};
+
+export type SidebarCvData = {
+  kind: "sidebar";
+  locale: CvLocale;
+  profile: Profile;
+  skills: string[];
+  languages: Language[];
+  experiences: Experience[];
+  projects: Project[];
+  education: Education[];
+  customSections: CustomSection[];
+  pageBreaks: string[];
+  sectionOrder: string[];
+  colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
+};
+
+export type TimelineCvData = {
+  kind: "timeline";
+  locale: CvLocale;
+  profile: Profile;
+  skills: string[];
+  languages: Language[];
+  experiences: Experience[];
+  projects: Project[];
+  education: Education[];
+  customSections: CustomSection[];
+  pageBreaks: string[];
+  sectionOrder: string[];
+  colors: Record<string, string>;
+  sectionLabels: Record<string, string>;
+};
+
 export type CvData =
   | ClassicCvData
   | ModernCvData
   | ExecutiveCvData
-  | CompactCvData;
+  | CompactCvData
+  | MinimalCvData
+  | SidebarCvData
+  | TimelineCvData;
 
 // ── Full store: superset of all template fields ───────────────────────────────
 
@@ -168,17 +219,23 @@ export function projectCv(
   const customSections = (full.customSections ?? []).filter(
     (s) => !hide.has(s.id),
   );
+  const skills = full.skills ?? [];
+  const languages = full.languages ?? [];
+  const experiences = full.experiences ?? [];
+  const projects = full.projects ?? [];
+  const education = full.education ?? [];
+  const certifications = full.certifications ?? [];
   switch (templateId) {
     case "modern":
       return {
         kind: "modern",
         locale,
         profile: full.profile,
-        skills: hide.has("skills") ? [] : full.skills,
-        languages: hide.has("languages") ? [] : full.languages,
-        experiences: hide.has("experience") ? [] : full.experiences,
-        projects: hide.has("projects") ? [] : full.projects,
-        education: hide.has("education") ? [] : full.education,
+        skills: hide.has("skills") ? [] : skills,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        projects: hide.has("projects") ? [] : projects,
+        education: hide.has("education") ? [] : education,
         customSections,
         pageBreaks,
         sectionOrder,
@@ -190,10 +247,10 @@ export function projectCv(
         kind: "executive",
         locale,
         profile: full.profile,
-        languages: hide.has("languages") ? [] : full.languages,
-        experiences: hide.has("experience") ? [] : full.experiences,
-        education: hide.has("education") ? [] : full.education,
-        certifications: hide.has("certifications") ? [] : full.certifications,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        education: hide.has("education") ? [] : education,
+        certifications: hide.has("certifications") ? [] : certifications,
         customSections,
         pageBreaks,
         sectionOrder,
@@ -205,10 +262,58 @@ export function projectCv(
         kind: "compact",
         locale,
         profile: full.profile,
-        skills: hide.has("skills") ? [] : full.skills,
-        languages: hide.has("languages") ? [] : full.languages,
-        experiences: hide.has("experience") ? [] : full.experiences,
-        education: hide.has("education") ? [] : full.education,
+        skills: hide.has("skills") ? [] : skills,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        education: hide.has("education") ? [] : education,
+        customSections,
+        pageBreaks,
+        sectionOrder,
+        colors,
+        sectionLabels,
+      };
+    case "minimal":
+      return {
+        kind: "minimal",
+        locale,
+        profile: full.profile,
+        skills: hide.has("skills") ? [] : skills,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        projects: hide.has("projects") ? [] : projects,
+        education: hide.has("education") ? [] : education,
+        customSections,
+        pageBreaks,
+        sectionOrder,
+        colors,
+        sectionLabels,
+      };
+    case "sidebar":
+      return {
+        kind: "sidebar",
+        locale,
+        profile: full.profile,
+        skills: hide.has("skills") ? [] : skills,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        projects: hide.has("projects") ? [] : projects,
+        education: hide.has("education") ? [] : education,
+        customSections,
+        pageBreaks,
+        sectionOrder,
+        colors,
+        sectionLabels,
+      };
+    case "timeline":
+      return {
+        kind: "timeline",
+        locale,
+        profile: full.profile,
+        skills: hide.has("skills") ? [] : skills,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        projects: hide.has("projects") ? [] : projects,
+        education: hide.has("education") ? [] : education,
         customSections,
         pageBreaks,
         sectionOrder,
@@ -220,11 +325,11 @@ export function projectCv(
         kind: "classic",
         locale,
         profile: full.profile,
-        skills: hide.has("skills") ? [] : full.skills,
-        languages: hide.has("languages") ? [] : full.languages,
-        experiences: hide.has("experience") ? [] : full.experiences,
-        projects: hide.has("projects") ? [] : full.projects,
-        education: hide.has("education") ? [] : full.education,
+        skills: hide.has("skills") ? [] : skills,
+        languages: hide.has("languages") ? [] : languages,
+        experiences: hide.has("experience") ? [] : experiences,
+        projects: hide.has("projects") ? [] : projects,
+        education: hide.has("education") ? [] : education,
         customSections,
         pageBreaks,
         sectionOrder,
@@ -509,6 +614,31 @@ const DEFAULT_SECTION_LABELS: Record<
       education: "Education",
       languages: "Languages",
     },
+    minimal: {
+      profile: "About",
+      skills: "Skills",
+      experience: "Experience",
+      projects: "Projects",
+      education: "Education",
+      languages: "Languages",
+    },
+    sidebar: {
+      profile: "Profile",
+      contact: "Contact",
+      skills: "Skills",
+      experience: "Experience",
+      projects: "Projects",
+      education: "Education",
+      languages: "Languages",
+    },
+    timeline: {
+      profile: "Profile",
+      skills: "Skills",
+      experience: "Experience",
+      projects: "Projects",
+      education: "Education",
+      languages: "Languages",
+    },
   },
   ro: {
     classic: {
@@ -539,6 +669,31 @@ const DEFAULT_SECTION_LABELS: Record<
       about: "Despre",
       skills: "Competente",
       experience: "Experienta",
+      education: "Educatie",
+      languages: "Limbi",
+    },
+    minimal: {
+      profile: "Despre",
+      skills: "Competente",
+      experience: "Experienta",
+      projects: "Proiecte",
+      education: "Educatie",
+      languages: "Limbi",
+    },
+    sidebar: {
+      profile: "Profil",
+      contact: "Contact",
+      skills: "Competente",
+      experience: "Experienta",
+      projects: "Proiecte",
+      education: "Educatie",
+      languages: "Limbi",
+    },
+    timeline: {
+      profile: "Profil",
+      skills: "Competente",
+      experience: "Experienta",
+      projects: "Proiecte",
       education: "Educatie",
       languages: "Limbi",
     },
