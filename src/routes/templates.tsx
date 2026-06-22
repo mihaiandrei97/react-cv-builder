@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
-import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react'
 import { BlobProvider } from '@react-pdf/renderer'
-import { TEMPLATES, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
+import { TEMPLATES, loadTemplateComponent, getTemplate, type TemplateComponent, type TemplateDefinition } from '../lib/templates'
 import { useActiveProfile, saveTemplatePref, cvStore } from '../lib/cv-store'
 import { projectCv, type CvData } from '../lib/types'
 import { WorkflowNav } from '../components/WorkflowNav'
@@ -14,264 +14,271 @@ export const Route = createFileRoute('/templates')({
 })
 
 const A4_WIDTH = 794
-const A4_HEIGHT = 1123 // A4 at 96dpi ≈ 1123px
+const A4_HEIGHT = 1123
 
-const TemplateCard = memo(function TemplateCard({
+// ── Spinner ───────────────────────────────────────────────────────────────────
+
+function Spinner({ size = 22 }: { size?: number }) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        width: size,
+        height: size,
+        border: '2px solid var(--line)',
+        borderTop: '2px solid var(--accent)',
+        borderRadius: '50%',
+        animation: 'spin 0.7s linear infinite',
+      }}
+    />
+  )
+}
+
+// ── Layout silhouette (tiny static preview for list items) ───────────────────
+
+function slotColor(tpl: TemplateDefinition, key: string): string {
+  return tpl.colorSlots.find((s) => s.key === key)?.default ?? '#888888'
+}
+
+function LayoutSilhouette({ tpl }: { tpl: TemplateDefinition }) {
+  const W = 52
+  const H = Math.round(W * (A4_HEIGHT / A4_WIDTH))
+  const accent = slotColor(tpl, 'accent')
+  const sidebarBg = slotColor(tpl, 'sidebarBg')
+  const sidebarAccent = slotColor(tpl, 'sidebarAccent')
+
+  const box: React.CSSProperties = {
+    width: W,
+    height: H,
+    flexShrink: 0,
+    borderRadius: 3,
+    overflow: 'hidden',
+    background: '#fffdf7',
+    border: '1px solid var(--line)',
+    position: 'relative',
+    boxShadow: '0 1px 3px rgba(34,34,34,0.12)',
+  }
+  const ln = (w: string | number): React.CSSProperties => ({
+    height: 2,
+    width: w,
+    background: 'rgba(34,34,34,0.15)',
+    borderRadius: 1,
+    flexShrink: 0,
+  })
+  const col: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 }
+
+  let content: React.ReactNode = null
+  switch (tpl.id) {
+    case 'classic':
+      content = (
+        <>
+          <div style={{ height: '16%', background: accent, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
+            <div style={{ width: '40%', height: 3, background: 'rgba(255,255,255,0.75)', borderRadius: 1 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 4, padding: 4, flex: 1 }}>
+            <div style={{ ...col, flex: 3, gap: 2.5 }}>
+              <div style={ln('100%')} />
+              <div style={ln('88%')} />
+              <div style={ln('92%')} />
+            </div>
+            <div style={{ ...col, flex: 2, gap: 2.5 }}>
+              <div style={ln('100%')} />
+              <div style={ln('70%')} />
+            </div>
+          </div>
+        </>
+      )
+      break
+    case 'modern':
+      content = (
+        <div style={{ display: 'flex', height: '100%' }}>
+          <div style={{ width: '34%', background: sidebarBg, padding: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ width: '75%', height: 3, background: sidebarAccent, borderRadius: 1 }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: sidebarAccent }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: sidebarAccent, opacity: 0.5 }} />
+            <div style={{ width: '85%', height: 2, background: 'rgba(255,255,255,0.25)', borderRadius: 1 }} />
+            <div style={{ width: '60%', height: 2, background: 'rgba(255,255,255,0.25)', borderRadius: 1 }} />
+          </div>
+          <div style={{ ...col, flex: 1, padding: 4, gap: 2.5 }}>
+            <div style={ln('90%')} />
+            <div style={ln('100%')} />
+            <div style={ln('78%')} />
+            <div style={ln('85%')} />
+          </div>
+        </div>
+      )
+      break
+    case 'executive':
+      content = (
+        <>
+          <div style={{ height: '13%', background: accent }} />
+          <div style={{ ...col, alignItems: 'center', padding: '5px 6px', gap: 3 }}>
+            <div style={ln(W * 0.5)} />
+            <div style={ln(W * 0.7)} />
+            <div style={ln(W * 0.55)} />
+            <div style={ln(W * 0.65)} />
+          </div>
+        </>
+      )
+      break
+    case 'compact':
+      content = (
+        <>
+          <div style={{ height: '10%', background: accent }} />
+          <div style={{ display: 'flex', gap: 4, padding: 4, flex: 1 }}>
+            <div style={{ ...col, flex: 1, gap: 2 }}>
+              <div style={ln('100%')} />
+              <div style={ln('82%')} />
+            </div>
+            <div style={{ ...col, flex: 1, gap: 2 }}>
+              <div style={ln('100%')} />
+              <div style={ln('68%')} />
+            </div>
+          </div>
+        </>
+      )
+      break
+    case 'minimal':
+      content = (
+        <div style={{ ...col, alignItems: 'center', padding: '6px 6px', gap: 4 }}>
+          <div style={{ width: '45%', height: 4, background: accent, borderRadius: 1 }} />
+          <div style={{ width: '28%', height: 2, background: 'rgba(34,34,34,0.1)', borderRadius: 1 }} />
+          <div style={ln(W * 0.72)} />
+          <div style={ln(W * 0.6)} />
+          <div style={ln(W * 0.66)} />
+        </div>
+      )
+      break
+    case 'sidebar':
+      content = (
+        <div style={{ display: 'flex', height: '100%' }}>
+          <div style={{ ...col, flex: 3, padding: 4, gap: 2.5 }}>
+            <div style={ln('92%')} />
+            <div style={ln('100%')} />
+            <div style={ln('75%')} />
+          </div>
+          <div style={{ width: '38%', background: sidebarBg, padding: 4, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <div style={{ width: '70%', height: 3, background: accent, borderRadius: 1 }} />
+            <div style={ln('100%')} />
+            <div style={ln('75%')} />
+          </div>
+        </div>
+      )
+      break
+    case 'timeline':
+      content = (
+        <div style={{ display: 'flex', height: '100%', padding: 4, gap: 5 }}>
+          <div style={{ width: 2, background: accent, borderRadius: 1, position: 'relative', marginTop: 5, marginBottom: 5 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: accent, position: 'absolute', left: -1.5, top: 0 }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: accent, position: 'absolute', left: -1.5, top: '35%' }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: accent, position: 'absolute', left: -1.5, top: '70%' }} />
+          </div>
+          <div style={{ ...col, flex: 1, gap: 2.5 }}>
+            <div style={ln('95%')} />
+            <div style={ln('100%')} />
+            <div style={ln('78%')} />
+            <div style={ln('70%')} />
+          </div>
+        </div>
+      )
+      break
+  }
+
+  return <div style={box}>{content}</div>
+}
+
+// ── List item ─────────────────────────────────────────────────────────────────
+
+const activeBadgeStyle: React.CSSProperties = {
+  fontSize: '0.58rem',
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: 'var(--accent)',
+  background: 'rgba(192,107,49,0.12)',
+  padding: '0.1rem 0.35rem',
+  borderRadius: '0.2rem',
+  whiteSpace: 'nowrap',
+}
+
+const TemplateListItem = memo(function TemplateListItem({
   tpl,
   isActive,
-  cv,
+  isSelected,
   onSelect,
-  isStale,
-  index,
+  compact,
 }: {
-  tpl: (typeof TEMPLATES)[0]
+  tpl: TemplateDefinition
   isActive: boolean
-  cv: CvData
-  onSelect: () => void
-  isStale: boolean
-  index: number
+  isSelected: boolean
+  onSelect: (id: string) => void
+  compact: boolean
 }) {
-  const [Doc, setDoc] = useState<TemplateComponent | null>(null)
-  const [ready, setReady] = useState(false)
-  const [wasVisible, setWasVisible] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    loadTemplateComponent(tpl.id).then((component) => {
-      if (!cancelled) setDoc(() => component)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [tpl.id])
-
-  // Lazy-mount: only render PDF when card enters viewport.
-  // rootMargin pre-renders 300px before visible so scrolling feels instant.
-  // Once visible, wasVisible stays true permanently — BlobProvider stays
-  // mounted so scrolling back up doesn't trigger a re-render.
-  useEffect(() => {
-    const el = cardRef.current
-    if (!el || !('IntersectionObserver' in window)) {
-      setWasVisible(true)
-      return
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setWasVisible(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '300px' },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  // Stagger BlobProvider mount so PDFs render one-by-one, not all at once.
-  // Active template renders immediately (0ms); others stagger by index.
-  useEffect(() => {
-    if (!wasVisible) return
-    const delay = isActive ? 0 : Math.min(40 * index, 400)
-    const timer = setTimeout(() => setReady(true), delay)
-    return () => clearTimeout(timer)
-  }, [wasVisible, index, isActive])
-
-  const documentEl = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
-  const canRender = wasVisible && ready && Doc
-
-  return (
-    <div
-      ref={cardRef}
-      style={{
-        background: '#fffdf7',
-        border: `2px solid ${isActive ? 'var(--accent)' : 'var(--line)'}`,
-        borderRadius: '0.5rem',
-        overflow: 'hidden',
-        boxShadow: '0 4px 16px rgba(34,34,34,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'box-shadow 0.15s, border-color 0.15s',
-        position: 'relative',
-      }}
-    >
-      {/* Active ribbon */}
-      {isActive && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 14,
-            right: -22,
-            width: 90,
-            textAlign: 'center',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: '0.6rem',
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            padding: '0.25rem 0',
-            transform: 'rotate(45deg)',
-            transformOrigin: 'center',
-            zIndex: 2,
-            pointerEvents: 'none',
-          }}
-        >
-          Active
-        </div>
-      )}
-        <div
-          style={{
-            width: '100%',
-            aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
-            overflow: 'hidden',
-            position: 'relative',
-            background: '#e8e4da',
-          }}
-        >
-          {!canRender ? (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.6rem',
-                fontSize: '0.8rem',
-                color: 'var(--muted)',
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: 22,
-                  height: 22,
-                  border: '2px solid var(--line)',
-                  borderTop: '2px solid var(--accent)',
-                  borderRadius: '50%',
-                  animation: 'spin 0.7s linear infinite',
-                }}
-              />
-              {Doc ? 'Rendering…' : 'Loading template…'}
-            </div>
-          ) : (
-            <BlobProvider document={documentEl!}>
-              {({ url, loading }) =>
-                loading || !url ? (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.8rem',
-                      color: 'var(--muted)',
-                    }}
-                  >
-                    Rendering…
-                  </div>
-                ) : (
-                  <IframePreview url={url} />
-                )
-              }
-              </BlobProvider>
-          )}
-          {isStale && canRender && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(232, 228, 218, 0.7)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 3,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: '#fffdf7',
-                  borderRadius: '0.35rem',
-                  padding: '0.5rem 0.9rem',
-                  boxShadow: '0 2px 10px rgba(34,34,34,0.12)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  color: 'var(--ink)',
-                }}
-              >
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: 12,
-                    height: 12,
-                    border: '2px solid var(--line)',
-                    borderTop: '2px solid var(--accent)',
-                    borderRadius: '50%',
-                    animation: 'spin 0.7s linear infinite',
-                  }}
-                />
-                Regenerating…
-              </div>
-            </div>
-          )}
-      </div>
-
-      {/* Footer */}
-      <div
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => onSelect(tpl.id)}
+        aria-pressed={isSelected}
         style={{
-          padding: '1rem 1.2rem',
-          borderTop: '1px solid var(--line)',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          gap: '1rem',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.3rem',
+          padding: '0.45rem',
+          border: `2px solid ${isSelected ? 'var(--accent)' : 'transparent'}`,
+          borderRadius: '0.5rem',
+          background: isSelected ? 'rgba(192,107,49,0.06)' : 'transparent',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          flexShrink: 0,
+          position: 'relative',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tpl.name}</span>
-          <p
-            style={{
-              margin: 0,
-              fontSize: '0.8rem',
-              color: 'var(--muted)',
-              maxWidth: 240,
-              lineHeight: 1.4,
-            }}
-          >
-            {tpl.description}
-          </p>
+        <LayoutSilhouette tpl={tpl} />
+        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected ? 'var(--ink)' : 'var(--muted)', whiteSpace: 'nowrap' }}>
+          {tpl.name}
+        </span>
+        {isActive && <span style={{ ...activeBadgeStyle, position: 'absolute', top: 2, right: 2 }}>●</span>}
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(tpl.id)}
+      aria-pressed={isSelected}
+      style={{
+        display: 'flex',
+        gap: '0.7rem',
+        alignItems: 'flex-start',
+        padding: '0.55rem 0.7rem',
+        border: `2px solid ${isSelected ? 'var(--accent)' : 'transparent'}`,
+        borderRadius: '0.5rem',
+        background: isSelected ? 'rgba(192,107,49,0.06)' : 'transparent',
+        cursor: 'pointer',
+        textAlign: 'left',
+        width: '100%',
+        fontFamily: 'inherit',
+        transition: 'background 0.12s, border-color 0.12s',
+      }}
+    >
+      <LayoutSilhouette tpl={tpl} />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{tpl.name}</span>
+          {isActive && <span style={activeBadgeStyle}>Active</span>}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={onSelect}
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              color: '#fff',
-              background: 'var(--green)',
-              border: 0,
-              borderRadius: '0.25rem',
-              padding: '0.5rem 0.9rem',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Use template
-          </button>
-        </div>
+        <p style={{ margin: 0, fontSize: '0.74rem', color: 'var(--muted)', lineHeight: 1.4 }}>
+          {tpl.description}
+        </p>
       </div>
-    </div>
+    </button>
   )
 })
+
+// ── Detail pane ───────────────────────────────────────────────────────────────
 
 const IframePreview = memo(function IframePreview({ url }: { url: string }) {
   return (
@@ -291,6 +298,80 @@ const IframePreview = memo(function IframePreview({ url }: { url: string }) {
   )
 })
 
+const TemplateDetail = memo(function TemplateDetail({
+  tpl,
+  cv,
+  isStale,
+  onUse,
+  isCompact,
+}: {
+  tpl: TemplateDefinition
+  cv: CvData
+  isStale: boolean
+  onUse: () => void
+  isCompact: boolean
+}) {
+  const [Doc, setDoc] = useState<TemplateComponent | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setDoc(null)
+    loadTemplateComponent(tpl.id).then((component) => {
+      if (!cancelled) setDoc(() => component)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tpl.id])
+
+  const documentEl = useMemo(() => (Doc ? <Doc cv={cv} /> : null), [Doc, cv])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minWidth: 0 }}>
+      <div style={s.detailHeader}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: 0 }}>
+          <h2 style={s.detailName}>{tpl.name}</h2>
+          <p style={s.detailDesc}>{tpl.description}</p>
+        </div>
+        <button type="button" style={s.btnUse} onClick={onUse}>
+          Use this template
+        </button>
+      </div>
+      <div style={s.previewArea}>
+        <div style={isCompact ? s.previewFrameCompact : s.previewFrame}>
+          {!Doc ? (
+            <div style={s.loadingState}>
+              <Spinner />
+              Loading template…
+            </div>
+          ) : (
+            <BlobProvider document={documentEl!}>
+              {({ url, loading }) =>
+                loading || !url ? (
+                  <div style={s.loadingState}>
+                    <Spinner />
+                    Rendering…
+                  </div>
+                ) : (
+                  <IframePreview url={url} />
+                )
+              }
+            </BlobProvider>
+          )}
+          {isStale && Doc && (
+            <div style={s.staleOverlay}>
+              <div style={s.staleBadge}>
+                <Spinner size={12} />
+                Regenerating…
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 function TemplatesPage() {
@@ -298,6 +379,27 @@ function TemplatesPage() {
   const deferredProfile = useDeferredValue(activeProfile)
   const isStale = activeProfile !== deferredProfile
   const fullData = deferredProfile.data
+  const sectionLabels = deferredProfile.sectionLabels
+  const locale = deferredProfile.locale
+  const activeTemplateId = activeProfile.templateId
+  const navigate = useNavigate()
+
+  const [selectedId, setSelectedId] = useState(activeTemplateId)
+  const [isCompact, setIsCompact] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 900 : false,
+  )
+
+  const selectedTpl = getTemplate(selectedId)
+
+  useEffect(() => {
+    setSelectedId(activeTemplateId)
+  }, [activeTemplateId])
+
+  useEffect(() => {
+    const onResize = () => setIsCompact(window.innerWidth <= 900)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     const id = 'spin-keyframes'
@@ -310,38 +412,45 @@ function TemplatesPage() {
       style.remove()
     }
   }, [])
-  const sectionLabels = deferredProfile.sectionLabels
-  const locale = deferredProfile.locale
-  const activeTemplateId = activeProfile.templateId
-  const navigate = useNavigate()
 
-  const templateEntries = useMemo(() => TEMPLATES.map((tpl) => ({
-    tpl,
-    cv: projectCv(
-      fullData,
-      tpl.id,
-      deferredProfile.hiddenSections ?? [],
-      deferredProfile.pageBreaks ?? [],
-      deferredProfile.sectionOrder ?? [],
-      (deferredProfile.colors ?? {})[tpl.id] ?? {},
-      locale,
-      sectionLabels,
-    ),
-    isActive: activeTemplateId === tpl.id,
-    onSelect: () => {
-      saveTemplatePref(tpl.id)
-      navigate({ to: '/cv/edit' })
-    },
-  })), [fullData, locale, sectionLabels, activeTemplateId, navigate])
+  const cv = useMemo(
+    () =>
+      projectCv(
+        fullData,
+        selectedTpl.id,
+        deferredProfile.hiddenSections ?? [],
+        deferredProfile.pageBreaks ?? [],
+        deferredProfile.sectionOrder ?? [],
+        (deferredProfile.colors ?? {})[selectedTpl.id] ?? {},
+        locale,
+        sectionLabels,
+      ),
+    [fullData, selectedTpl.id, deferredProfile.hiddenSections, deferredProfile.pageBreaks, deferredProfile.sectionOrder, deferredProfile.colors, locale, sectionLabels],
+  )
+
+  const handleUse = useCallback(() => {
+    saveTemplatePref(selectedTpl.id)
+    navigate({ to: '/cv/edit' })
+  }, [selectedTpl.id, navigate])
+
+  function handleListKey(e: React.KeyboardEvent) {
+    const idx = TEMPLATES.findIndex((t) => t.id === selectedId)
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      const next = TEMPLATES[Math.min(idx + 1, TEMPLATES.length - 1)]
+      if (next) setSelectedId(next.id)
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault()
+      const prev = TEMPLATES[Math.max(idx - 1, 0)]
+      if (prev) setSelectedId(prev.id)
+    }
+  }
 
   return (
     <div style={s.page}>
-      {/* Top bar */}
       <header style={s.header}>
         <WorkflowNav active="templates" />
       </header>
-
-      {/* Grid */}
       <main style={s.main}>
         <section style={s.heroStrip}>
           <div style={s.heroStat}>
@@ -350,28 +459,43 @@ function TemplatesPage() {
           </div>
           <div style={s.heroDivider} />
           <div style={s.heroHint}>
-            Previews render live from your active CV. Pick one to make it the current layout.
+            Click a template to preview it with your data. Hit &ldquo;Use this template&rdquo; to make it your current layout.
           </div>
         </section>
-        <div style={s.grid}>
-          {templateEntries.map((entry, i) => (
-            <TemplateCard
-              key={entry.tpl.id}
-              tpl={entry.tpl}
-              isActive={entry.isActive}
-              cv={entry.cv}
-              onSelect={entry.onSelect}
+        <div style={isCompact ? s.splitCompact : s.split}>
+          <aside
+            style={isCompact ? s.listPaneCompact : s.listPane}
+            tabIndex={0}
+            onKeyDown={handleListKey}
+            aria-label="Template list"
+          >
+            {TEMPLATES.map((tpl) => (
+              <TemplateListItem
+                key={tpl.id}
+                tpl={tpl}
+                isActive={tpl.id === activeTemplateId}
+                isSelected={tpl.id === selectedId}
+                onSelect={setSelectedId}
+                compact={isCompact}
+              />
+            ))}
+          </aside>
+          <section style={isCompact ? s.detailPaneCompact : s.detailPane}>
+            <TemplateDetail
+              tpl={selectedTpl}
+              cv={cv}
               isStale={isStale}
-              index={i}
+              onUse={handleUse}
+              isCompact={isCompact}
             />
-          ))}
+          </section>
         </div>
       </main>
     </div>
   )
 }
 
-// ── Page styles ───────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
   page: {
@@ -444,9 +568,141 @@ const s: Record<string, React.CSSProperties> = {
     flex: 1,
     minWidth: 200,
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-    gap: '2rem',
+  split: {
+    display: 'flex',
+    gap: '1.5rem',
+    alignItems: 'flex-start',
+  },
+  splitCompact: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  },
+  listPane: {
+    width: 360,
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.25rem',
+    overflowY: 'auto',
+    maxHeight: 'calc(100dvh - 200px)',
+    paddingRight: '0.25rem',
+    position: 'sticky',
+    top: 70,
+  },
+  listPaneCompact: {
+    display: 'flex',
+    gap: '0.5rem',
+    overflowX: 'auto',
+    paddingBottom: '0.5rem',
+    flexShrink: 0,
+  },
+  detailPane: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  detailPaneCompact: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+  },
+  detailHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '1rem',
+    background: '#fffdf7',
+    border: '1px solid var(--line)',
+    borderRadius: '0.5rem',
+    padding: '0.8rem 1rem',
+    boxShadow: '0 2px 8px rgba(34,34,34,0.06)',
+  },
+  detailName: {
+    margin: 0,
+    fontSize: '1.15rem',
+    fontWeight: 700,
+    color: 'var(--ink)',
+  },
+  detailDesc: {
+    margin: 0,
+    fontSize: '0.8rem',
+    color: 'var(--muted)',
+    maxWidth: 420,
+    lineHeight: 1.4,
+  },
+  btnUse: {
+    fontFamily: 'inherit',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+    color: '#fff',
+    background: 'var(--green)',
+    border: 0,
+    borderRadius: '0.25rem',
+    padding: '0.6rem 1.1rem',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  previewArea: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    overflow: 'auto',
+    padding: '0.5rem 0',
+  },
+  previewFrame: {
+    aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
+    width: 'min(100%, 460px)',
+    background: '#e8e4da',
+    borderRadius: '0.5rem',
+    overflow: 'hidden',
+    position: 'relative',
+    boxShadow: '0 8px 28px rgba(34,34,34,0.14)',
+  },
+  previewFrameCompact: {
+    aspectRatio: `${A4_WIDTH} / ${A4_HEIGHT}`,
+    width: '100%',
+    maxWidth: 460,
+    background: '#e8e4da',
+    borderRadius: '0.5rem',
+    overflow: 'hidden',
+    position: 'relative',
+    boxShadow: '0 8px 28px rgba(34,34,34,0.14)',
+    margin: '0 auto',
+  },
+  loadingState: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.6rem',
+    fontSize: '0.8rem',
+    color: 'var(--muted)',
+  },
+  staleOverlay: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(232, 228, 218, 0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+  },
+  staleBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    background: '#fffdf7',
+    borderRadius: '0.35rem',
+    padding: '0.5rem 0.9rem',
+    boxShadow: '0 2px 10px rgba(34,34,34,0.12)',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: 'var(--ink)',
   },
 }
