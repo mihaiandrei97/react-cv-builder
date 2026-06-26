@@ -6,7 +6,8 @@ import { getDefaultSectionLabelsForTemplate } from '../lib/types'
 import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore, saveTemplatePref } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent, TEMPLATES } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
-import { useT, type TFunction, templateName, templateDescription, colorSlotLabel } from '../lib/i18n'
+import { type TFunction, templateName, templateDescription, colorSlotLabel, sectionLabel } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -851,13 +852,13 @@ function EditPage() {
           <section id="section-labels" style={{ ...s.card, ...s.anchorCard }}>
             <h2 style={s.cardTitle}>{t('edit.labels.title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
-              {Object.entries(getDefaultSectionLabelsForTemplate(templateId, locale)).map(([key, label]) => (
+              {Object.entries(getDefaultSectionLabelsForTemplate(templateId, locale)).map(([key]) => (
                 <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <label style={s.fieldLabel}>{label}</label>
+                  <label style={s.fieldLabel}>{sectionLabel(t, key)}</label>
                   <input
                     type="text"
                     value={sectionLabels[key] ?? ''}
-                    placeholder={label}
+                    placeholder={sectionLabel(t, key)}
                     onChange={(e) => setSectionLabels({ ...sectionLabels, [key]: e.target.value })}
                     onBlur={(e) => {
                       if (!e.target.value.trim()) {

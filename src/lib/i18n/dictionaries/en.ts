@@ -138,6 +138,8 @@ export const en = {
   "edit.nav.education": "Education",
   "edit.nav.certifications": "Certifications",
   "edit.nav.custom": "Custom Section",
+  "edit.nav.contact": "Contact",
+  "edit.nav.about": "About",
 
   // Profile section
   "edit.profile.title": "Profile",

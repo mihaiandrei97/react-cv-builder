@@ -5,7 +5,8 @@ import { TEMPLATES, loadTemplateComponent, getTemplate, type TemplateComponent, 
 import { useActiveProfile, saveTemplatePref, cvStore } from '../lib/cv-store'
 import { projectCv, type CvData } from '../lib/types'
 import { WorkflowNav } from '../components/WorkflowNav'
-import { useT, type TFunction, templateName, templateDescription } from '../lib/i18n'
+import { type TFunction, templateName, templateDescription } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
 
 export const Route = createFileRoute('/{-$locale}/templates')({
   beforeLoad: () => {

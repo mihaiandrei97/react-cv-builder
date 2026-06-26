@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useT } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
 import { LocaleSwitcher } from '../components/LocaleSwitcher'
 
 export const Route = createFileRoute('/{-$locale}/')({

@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { UI_LOCALES, useUiLocale, type UiLocale } from '../lib/i18n'
+import { UI_LOCALES, type UiLocale } from '../lib/i18n'
+import { useUiLocale } from '../lib/i18n/context'
 
 const switcher: React.CSSProperties = {
   display: 'flex',

@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import {
   DEFAULT_UI_LOCALE,
-  UiLocaleProvider,
   isUiLocale,
   type UiLocale,
 } from "../lib/i18n"
+import { UiLocaleProvider } from "../lib/i18n/context"
 
 export const Route = createFileRoute("/{-$locale}")({
   beforeLoad: ({ params, location }) => {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/{-$locale}")({
       const stripped = location.pathname.replace(/^\/[^/]+/, "") || "/"
       throw redirect({ href: stripped })
     }
-    const locale: UiLocale = isUiLocale(raw) ? raw : DEFAULT_UI_LOCALE
+    const locale = isUiLocale(raw) ? raw : DEFAULT_UI_LOCALE
     return { locale }
   },
   component: LocaleLayout,

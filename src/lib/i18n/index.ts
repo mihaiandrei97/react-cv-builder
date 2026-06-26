@@ -1,10 +1,3 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from "react"
 import { en, type TranslationKey } from "./dictionaries/en"
 import { ro } from "./dictionaries/ro"
 
@@ -15,9 +8,12 @@ export const DEFAULT_UI_LOCALE: UiLocale = "en"
 
 export type Dictionary = { [K in TranslationKey]: string }
 
-const dictionaries: Record<UiLocale, Dictionary> = { en, ro }
-
 export type TranslationVars = Record<string, string | number>
+
+export type TFunction = (
+  key: TranslationKey,
+  vars?: TranslationVars,
+) => string
 
 export function isUiLocale(value: unknown): value is UiLocale {
   return typeof value === "string" && (UI_LOCALES as readonly string[]).includes(value)
@@ -28,7 +24,7 @@ export function translate(
   key: TranslationKey,
   vars?: TranslationVars,
 ): string {
-  const dict = dictionaries[locale] ?? dictionaries[DEFAULT_UI_LOCALE]
+  const dict: Dictionary = locale === "ro" ? ro : en
   let value: string = dict[key] ?? en[key] ?? (key as string)
   if (vars) {
     for (const [name, raw] of Object.entries(vars)) {
@@ -36,40 +32,6 @@ export function translate(
     }
   }
   return value
-}
-
-// ── React context ────────────────────────────────────────────────────────────
-
-const UiLocaleContext = createContext<UiLocale>(DEFAULT_UI_LOCALE)
-
-export function UiLocaleProvider({
-  locale,
-  children,
-}: {
-  locale: UiLocale
-  children: ReactNode
-}) {
-  const value = useMemo<UiLocale>(() => locale, [locale])
-  return (
-    <UiLocaleContext.Provider value={value}>{children}</UiLocaleContext.Provider>
-  )
-}
-
-export function useUiLocale(): UiLocale {
-  return useContext(UiLocaleContext)
-}
-
-export type TFunction = (
-  key: TranslationKey,
-  vars?: TranslationVars,
-) => string
-
-export function useT(): TFunction {
-  const locale = useUiLocale()
-  return useCallback<TFunction>(
-    (key, vars) => translate(locale, key, vars),
-    [locale],
-  )
 }
 
 export { en, ro }
@@ -87,4 +49,8 @@ export function templateDescription(t: TFunction, id: string): string {
 
 export function colorSlotLabel(t: TFunction, key: string): string {
   return t(`template.color.${key}` as TranslationKey)
+}
+
+export function sectionLabel(t: TFunction, key: string): string {
+  return t(`edit.nav.${key}` as TranslationKey)
 }

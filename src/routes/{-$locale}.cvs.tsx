@@ -13,7 +13,8 @@ import {
 } from '../lib/cv-store'
 import { TEMPLATES } from '../lib/templates'
 import type { CvLocale, CvProfile } from '../lib/types'
-import { useT, type TFunction, templateName } from '../lib/i18n'
+import { type TFunction, templateName } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
 import { LocaleSwitcher } from '../components/LocaleSwitcher'
 
 export const Route = createFileRoute('/{-$locale}/cvs')({

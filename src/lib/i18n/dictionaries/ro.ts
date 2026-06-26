@@ -108,7 +108,7 @@ export const ro: Record<TranslationKey, string> = {
 
   // Collapsible section
   "edit.section.hidden": "Ascuns din PDF",
-  "edit.section.pageBreak": "\u23ce Ruptur\u0103 de pagin\u0103",
+  "edit.section.pageBreak": "Page break",
   "edit.section.pageBreak.title": "\u00cencepe aceast\u0103 sec\u021biune pe o pagin\u0103 nou\u0103",
   "edit.section.moveUp.aria": "Mut\u0103 sec\u021biunea sus",
   "edit.section.moveDown.aria": "Mut\u0103 sec\u021biunea jos",
@@ -137,10 +137,12 @@ export const ro: Record<TranslationKey, string> = {
   "edit.nav.skills": "Competen\u021be cheie",
   "edit.nav.languages": "Limbi",
   "edit.nav.experience": "Experien\u021b\u0103",
-  "edit.nav.projects": "Proiecte selectate",
+  "edit.nav.projects": "Proiecte",
   "edit.nav.education": "Educa\u021bie",
   "edit.nav.certifications": "Certific\u0103ri",
   "edit.nav.custom": "Sec\u021biune personalizat\u0103",
+  "edit.nav.contact": "Contact",
+  "edit.nav.about": "Despre",
 
   // Profile section
   "edit.profile.title": "Profil",
@@ -183,7 +185,7 @@ export const ro: Record<TranslationKey, string> = {
   "edit.experience.addBullet": "+ Adaug\u0103 punct",
 
   // Projects
-  "edit.projects.title": "Proiecte selectate",
+  "edit.projects.title": "Proiecte",
   "edit.projects.name": "Nume",
   "edit.projects.stack": "Tehnologii",
   "edit.projects.stack.placeholder": "ex. React, TypeScript",

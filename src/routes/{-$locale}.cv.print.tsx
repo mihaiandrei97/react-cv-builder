@@ -6,7 +6,8 @@ import type { DocumentProps } from '@react-pdf/renderer'
 import { useActiveProfile, useCvData, cvStore } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
-import { useT, type TFunction, templateName } from '../lib/i18n'
+import { templateName, type TFunction } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
 
 export const Route = createFileRoute('/{-$locale}/cv/print')({
   beforeLoad: () => {
