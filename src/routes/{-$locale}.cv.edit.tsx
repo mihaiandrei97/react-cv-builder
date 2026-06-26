@@ -6,6 +6,7 @@ import { getDefaultSectionLabelsForTemplate } from '../lib/types'
 import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore, saveTemplatePref } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent, TEMPLATES } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
+import { useT, type TFunction, templateName, templateDescription, colorSlotLabel } from '../lib/i18n'
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -16,17 +17,19 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
-const CEFR_FIELDS = [
-  { key: 'listening', label: 'Listen', title: 'Listening' },
-  { key: 'reading', label: 'Read', title: 'Reading' },
-  { key: 'dialog', label: 'Speak', title: 'Spoken interaction' },
-  { key: 'reproduce', label: 'Produce', title: 'Spoken production' },
-  { key: 'writing', label: 'Write', title: 'Writing' },
-] as const
+function cefrFields(t: TFunction) {
+  return [
+    { key: 'listening', label: t('edit.cefr.listen'), title: t('edit.cefr.listen.title') },
+    { key: 'reading', label: t('edit.cefr.read'), title: t('edit.cefr.read.title') },
+    { key: 'dialog', label: t('edit.cefr.speak'), title: t('edit.cefr.speak.title') },
+    { key: 'reproduce', label: t('edit.cefr.produce'), title: t('edit.cefr.produce.title') },
+    { key: 'writing', label: t('edit.cefr.write'), title: t('edit.cefr.write.title') },
+  ] as const
+}
 
-export const Route = createFileRoute('/cv/edit')({
+export const Route = createFileRoute('/{-$locale}/cv/edit')({
   beforeLoad: () => {
-    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/{-$locale}/cvs' })
   },
   component: EditPage,
 })
@@ -44,6 +47,7 @@ function TemplateSwitcher({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
   const current = getTemplate(currentTemplateId)
+  const t = useT()
 
   useEffect(() => {
     if (!open) return
@@ -69,9 +73,9 @@ function TemplateSwitcher({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title="Change template"
+        title={t('edit.template.change')}
       >
-        {current.name}
+        {templateName(t, current.id)}
         <span style={s.templateBadgeHint}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
@@ -90,18 +94,18 @@ function TemplateSwitcher({
                   setOpen(false)
                 }}
               >
-                <span style={s.templateMenuItemName}>{tpl.name}</span>
-                <span style={s.templateMenuItemDesc}>{tpl.description}</span>
+                <span style={s.templateMenuItemName}>{templateName(t, tpl.id)}</span>
+                <span style={s.templateMenuItemDesc}>{templateDescription(t, tpl.id)}</span>
                 {isActive && <span style={s.templateMenuItemCheck}>✓</span>}
               </button>
             )
           })}
           <Link
-            to="/templates"
+            to="/{-$locale}/templates"
             style={s.templateMenuCompareLink}
             onClick={() => setOpen(false)}
           >
-            Compare all side-by-side →
+            {t('edit.template.compare')}
           </Link>
         </div>
       )}
@@ -126,6 +130,7 @@ function TopBar({
   onReset: () => void
   onDownload: () => void
 }) {
+  const t = useT()
   return (
     <header style={{ ...s.topBar, ...(isCompact ? s.topBarCompact : {}) }}>
       <div style={{ ...s.topBarLeft, ...(isCompact ? s.topBarLeftCompact : {}) }}>
@@ -141,7 +146,7 @@ function TopBar({
               style={activePane === 'form' ? s.viewSwitchBtnActive : s.viewSwitchBtn}
               onClick={() => onPaneChange('form')}
             >
-              Form
+              {t('edit.topbar.form')}
             </button>
             <button
               type="button"
@@ -152,15 +157,15 @@ function TopBar({
               }
               onClick={() => onPaneChange('preview')}
             >
-              Preview
+              {t('edit.topbar.preview')}
             </button>
           </div>
         )}
         <button type="button" style={s.btnDownload} onClick={onDownload}>
-          Download PDF
+          {t('edit.topbar.download')}
         </button>
         <button type="button" style={s.btnGhostReset} onClick={onReset}>
-          Reset
+          {t('edit.topbar.reset')}
         </button>
       </div>
     </header>
@@ -250,6 +255,7 @@ function CollapsibleSection({
 }) {
   const isHidden = hiddenSections.includes(sectionKey)
   const hasBreak = pageBreaks.includes(sectionKey)
+  const t = useT()
   return (
     <section id={anchorId} style={isHidden ? { ...s.card, ...s.anchorCard, opacity: 0.7 } : { ...s.card, ...s.anchorCard }}>
       <div style={s.sectionHeader}>
@@ -258,10 +264,10 @@ function CollapsibleSection({
           {!isHidden && addButton}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {isHidden && <span style={s.hiddenBadge}>Hidden from PDF</span>}
+          {isHidden && <span style={s.hiddenBadge}>{t('edit.section.hidden')}</span>}
           {!isHidden && (
-            <button type="button" style={hasBreak ? s.btnBreakActive : s.btnBreak} onClick={() => togglePageBreak(sectionKey)} title="Start this section on a new page">
-              ⏎ Page break
+            <button type="button" style={hasBreak ? s.btnBreakActive : s.btnBreak} onClick={() => togglePageBreak(sectionKey)} title={t('edit.section.pageBreak.title')}>
+              {t('edit.section.pageBreak')}
             </button>
           )}
           <div style={{ display: 'flex', gap: '0.15rem' }}>
@@ -270,20 +276,20 @@ function CollapsibleSection({
               style={{ ...s.btnMove, ...(isFirst ? { opacity: 0.3, cursor: 'default' } : {}) }}
               disabled={isFirst}
               onClick={() => moveSection(sectionKey, 'up')}
-              title="Move up"
-              aria-label="Move section up"
+              title={t('edit.moveUp')}
+              aria-label={t('edit.section.moveUp.aria')}
             >↑</button>
             <button
               type="button"
               style={{ ...s.btnMove, ...(isLast ? { opacity: 0.3, cursor: 'default' } : {}) }}
               disabled={isLast}
               onClick={() => moveSection(sectionKey, 'down')}
-              title="Move down"
-              aria-label="Move section down"
+              title={t('edit.moveDown')}
+              aria-label={t('edit.section.moveDown.aria')}
             >↓</button>
           </div>
           <button type="button" style={s.btnToggle} onClick={() => toggleSection(sectionKey)}>
-            {isHidden ? 'Show in PDF' : 'Hide'}
+            {isHidden ? t('edit.section.show') : t('edit.section.hide')}
           </button>
         </div>
       </div>
@@ -313,6 +319,7 @@ function ItemHeader({
   onMoveDown: () => void
   onRemove: () => void
 }) {
+  const t = useT()
   return (
     <div style={s.itemHeader}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
@@ -320,7 +327,7 @@ function ItemHeader({
           type="button"
           style={s.btnChevron}
           onClick={onToggleCollapse}
-          aria-label={isCollapsed ? 'Expand entry' : 'Collapse entry'}
+          aria-label={isCollapsed ? t('edit.item.expand') : t('edit.item.collapse')}
           aria-expanded={!isCollapsed}
         >
           {isCollapsed ? '▸' : '▾'}
@@ -334,18 +341,18 @@ function ItemHeader({
           style={{ ...s.btnMove, ...(isFirst ? { opacity: 0.3, cursor: 'default' } : {}) }}
           disabled={isFirst}
           onClick={onMoveUp}
-          title="Move up"
-          aria-label="Move entry up"
+          title={t('edit.moveUp')}
+          aria-label={t('edit.item.moveUp.aria')}
         >↑</button>
         <button
           type="button"
           style={{ ...s.btnMove, ...(isLast ? { opacity: 0.3, cursor: 'default' } : {}) }}
           disabled={isLast}
           onClick={onMoveDown}
-          title="Move down"
-          aria-label="Move entry down"
+          title={t('edit.moveDown')}
+          aria-label={t('edit.item.moveDown.aria')}
         >↓</button>
-        <button type="button" style={s.removeBtnText} onClick={onRemove}>Remove</button>
+        <button type="button" style={s.removeBtnText} onClick={onRemove}>{t('edit.item.remove')}</button>
       </div>
     </div>
   )
@@ -366,7 +373,8 @@ function EditPage() {
   const activeUpdatedAt = activeProfile.updatedAt
   const cv = useCvData()
   const debouncedCv = useDebounce(cv, 500)
-  const [saveStatus, setSaveStatus] = useState('All changes saved')
+  const t = useT()
+  const [saveStatus, setSaveStatus] = useState(t('edit.save.saved'))
   const lastUpdatedAtRef = useRef(activeUpdatedAt)
   const [newSkill, setNewSkill] = useState('')
   const [newLang, setNewLang] = useState('')
@@ -408,8 +416,8 @@ function EditPage() {
   useEffect(() => {
     if (lastUpdatedAtRef.current === activeUpdatedAt) return
     lastUpdatedAtRef.current = activeUpdatedAt
-    setSaveStatus('Saving...')
-    const timer = window.setTimeout(() => setSaveStatus('All changes saved'), 750)
+    setSaveStatus(t('edit.save.saving'))
+    const timer = window.setTimeout(() => setSaveStatus(t('edit.save.saved')), 750)
     return () => window.clearTimeout(timer)
   }, [activeUpdatedAt])
 
@@ -457,7 +465,7 @@ function EditPage() {
   }
 
   function handleReset() {
-    if (confirm('Reset all CV data to defaults? This cannot be undone.')) {
+    if (confirm(t('edit.resetConfirm'))) {
       resetCv()
     }
   }
@@ -690,18 +698,18 @@ function EditPage() {
   })
 
   const sectionNavItems = [
-    { key: 'profile', title: 'Profile', anchorId: 'section-profile' },
-    { key: 'colors', title: 'Colors', anchorId: 'section-colors' },
-    { key: 'labels', title: 'Section Labels', anchorId: 'section-labels' },
+    { key: 'profile', title: t('edit.nav.profile'), anchorId: 'section-profile' },
+    { key: 'colors', title: t('edit.nav.colors'), anchorId: 'section-colors' },
+    { key: 'labels', title: t('edit.nav.labels'), anchorId: 'section-labels' },
     ...orderedSections.map((key) => {
-      if (key === 'skills' && showSkills) return { key, title: 'Core Skills', anchorId: `section-${key}` }
-      if (key === 'languages' && showLanguages) return { key, title: 'Languages', anchorId: `section-${key}` }
-      if (key === 'experience') return { key, title: 'Experience', anchorId: `section-${key}` }
-      if (key === 'projects' && showProjects) return { key, title: 'Selected Projects', anchorId: `section-${key}` }
-      if (key === 'education') return { key, title: 'Education', anchorId: `section-${key}` }
-      if (key === 'certifications' && showCertifications) return { key, title: 'Certifications', anchorId: `section-${key}` }
+      if (key === 'skills' && showSkills) return { key, title: t('edit.nav.skills'), anchorId: `section-${key}` }
+      if (key === 'languages' && showLanguages) return { key, title: t('edit.nav.languages'), anchorId: `section-${key}` }
+      if (key === 'experience') return { key, title: t('edit.nav.experience'), anchorId: `section-${key}` }
+      if (key === 'projects' && showProjects) return { key, title: t('edit.nav.projects'), anchorId: `section-${key}` }
+      if (key === 'education') return { key, title: t('edit.nav.education'), anchorId: `section-${key}` }
+      if (key === 'certifications' && showCertifications) return { key, title: t('edit.nav.certifications'), anchorId: `section-${key}` }
       const custom = (fullData.customSections ?? []).find((s) => s.id === key)
-      if (custom) return { key, title: custom.title || 'Custom Section', anchorId: `section-${key}` }
+      if (custom) return { key, title: custom.title || t('edit.nav.custom'), anchorId: `section-${key}` }
       return null
     }).filter((item): item is { key: string; title: string; anchorId: string } => item !== null),
   ]
@@ -728,7 +736,7 @@ function EditPage() {
         {(!isCompactLayout || activePane === 'form') && (
           <main style={{ ...s.formPanel, ...(isCompactLayout ? s.formPanelCompact : {}) }}>
           <section style={{ ...s.sectionNavigatorCard, ...(isCompactLayout ? s.sectionNavigatorCardCompact : {}) }}>
-            <div style={s.sectionNavigatorHead}>Quick Jump</div>
+            <div style={s.sectionNavigatorHead}>{t('edit.nav.quickJump')}</div>
             <div style={s.sectionNavigatorGrid}>
               {sectionNavItems.map((item) => (
                 <button
@@ -745,49 +753,50 @@ function EditPage() {
 
           {/* Profile */}
           <section id="section-profile" style={{ ...s.card, ...s.anchorCard }}>
-            <h2 style={s.cardTitle}>Profile</h2>
+            <h2 style={s.cardTitle}>{t('edit.profile.title')}</h2>
             <div style={s.fieldGrid}>
-              <Field label="Full Name">
+              <Field label={t('edit.profile.fullName')}>
                 <Input value={fullData.profile.name} onChange={(v) => updateProfile('name', v)} />
               </Field>
-              <Field label="Job Title">
+              <Field label={t('edit.profile.jobTitle')}>
                 <Input value={fullData.profile.title} onChange={(v) => updateProfile('title', v)} />
               </Field>
-              <Field label="Location">
+              <Field label={t('edit.profile.location')}>
                 <Input value={fullData.profile.location} onChange={(v) => updateProfile('location', v)} />
               </Field>
-              <Field label="Email">
+              <Field label={t('edit.profile.email')}>
                 <Input type="email" value={fullData.profile.email} onChange={(v) => updateProfile('email', v)} />
               </Field>
-              <Field label="Website">
+              <Field label={t('edit.profile.website')}>
                 <Input value={fullData.profile.website} onChange={(v) => updateProfile('website', v)} />
               </Field>
             </div>
-            <Field label="Summary" fullWidth>
+            <Field label={t('edit.profile.summary')} fullWidth>
               <Textarea value={fullData.profile.summary} onChange={(v) => updateProfile('summary', v)} rows={3} />
             </Field>
           </section>
 
           {/* Colors */}
           <section id="section-colors" style={{ ...s.card, ...s.anchorCard }}>
-            <h2 style={s.cardTitle}>Colors</h2>
+            <h2 style={s.cardTitle}>{t('edit.colors.title')}</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {template.colorSlots.map((slot) => {
                 const current = colors[slot.key] ?? slot.default
                 const isModified = colors[slot.key] !== undefined && colors[slot.key] !== slot.default
                 const presets = slot.presets ?? []
+                const slotLabel = colorSlotLabel(t, slot.key)
                 return (
                   <div key={slot.key} style={s.colorRow}>
                     <div style={s.colorLabelCol}>
-                      <label style={s.fieldLabel}>{slot.label}</label>
+                      <label style={s.fieldLabel}>{slotLabel}</label>
                       <div style={s.colorSwatchWrap}>
                         <input
                           type="color"
                           value={current}
                           onChange={(e) => setColors({ ...colors, [slot.key]: e.target.value })}
                           style={s.colorSwatch}
-                          title={`${slot.label} — open picker`}
-                          aria-label={`${slot.label} color picker`}
+                          title={t('edit.colors.openPicker', { label: slotLabel })}
+                          aria-label={t('edit.colors.picker.aria', { label: slotLabel })}
                         />
                         <input
                           type="text"
@@ -803,14 +812,14 @@ function EditPage() {
                           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                           style={s.hexInput}
                           spellCheck={false}
-                          aria-label={`${slot.label} hex value`}
+                          aria-label={t('edit.colors.hex.aria', { label: slotLabel })}
                         />
                         <button
                           type="button"
                           style={{ ...s.btnGhost, fontSize: '0.7rem', padding: '0.15rem 0.5rem', visibility: isModified ? 'visible' : 'hidden' }}
                           onClick={() => { const next = { ...colors }; delete next[slot.key]; setColors(next) }}
                         >
-                          Reset
+                          {t('edit.colors.reset')}
                         </button>
                       </div>
                     </div>
@@ -825,7 +834,7 @@ function EditPage() {
                               style={{ ...s.presetChip, ...(active ? s.presetChipActive : {}), background: hex }}
                               onClick={() => setColors({ ...colors, [slot.key]: hex })}
                               title={hex.toUpperCase()}
-                              aria-label={`Use ${hex.toUpperCase()}`}
+                              aria-label={t('edit.colors.useHex.aria', { hex: hex.toUpperCase() })}
                               aria-pressed={active}
                             />
                           )
@@ -840,7 +849,7 @@ function EditPage() {
 
           {/* Section Labels */}
           <section id="section-labels" style={{ ...s.card, ...s.anchorCard }}>
-            <h2 style={s.cardTitle}>Section Labels</h2>
+            <h2 style={s.cardTitle}>{t('edit.labels.title')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
               {Object.entries(getDefaultSectionLabelsForTemplate(templateId, locale)).map(([key, label]) => (
                 <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -870,7 +879,7 @@ function EditPage() {
             const sharedProps = { hiddenSections, pageBreaks, isFirst, isLast }
 
             if (key === 'skills' && showSkills) return (
-              <CollapsibleSection key="skills" title="Core Skills" sectionKey="skills" anchorId="section-skills" {...sharedProps}>
+              <CollapsibleSection key="skills" title={t('edit.nav.skills')} sectionKey="skills" anchorId="section-skills" {...sharedProps}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {fullData.skills.map((skill, i) => (
                     <div key={i} style={s.skillTag}>
@@ -880,32 +889,32 @@ function EditPage() {
                         onChange={(e) => updateSkill(i, e.target.value)}
                         style={s.skillTagInput}
                       />
-                      <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label="Remove skill">×</button>
+                      <button type="button" style={s.removeBtn} onClick={() => removeSkill(i)} aria-label={t('edit.skills.remove.aria')}>×</button>
                     </div>
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     type="text"
-                    placeholder="New skill..."
+                    placeholder={t('edit.skills.placeholder')}
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill() } }}
                     style={{ ...s.input, flex: 1, maxWidth: 200 }}
                   />
-                  <button type="button" style={s.btnAdd} onClick={addSkill}>Add</button>
+                  <button type="button" style={s.btnAdd} onClick={addSkill}>{t('edit.addBtn')}</button>
                 </div>
               </CollapsibleSection>
             )
 
             if (key === 'languages' && showLanguages) return (
-              <CollapsibleSection key="languages" title="Languages" sectionKey="languages" anchorId="section-languages" {...sharedProps}>
+              <CollapsibleSection key="languages" title={t('edit.nav.languages')} sectionKey="languages" anchorId="section-languages" {...sharedProps}>
                 <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>
-                  First row is Mother Tongue in the PDF — reorder to change.
+                  {t('edit.languages.motherTongueNote')}
                 </p>
                 {fullData.languages.map((lang, i) => {
                   const isCollapsed = collapsedItems.has(lang.id)
-                  const summary = `${lang.language || 'Untitled'}${i === 0 ? ' · Mother Tongue' : ''}`
+                  const summary = `${lang.language || t('edit.untitled')}${i === 0 ? ` · ${t('edit.languages.motherTongueShort')}` : ''}`
                   return (
                     <div key={lang.id} style={s.itemBlock}>
                       <ItemHeader
@@ -921,7 +930,7 @@ function EditPage() {
                       />
                       {!isCollapsed && (
                         <>
-                          <Field label="Language" fullWidth>
+                          <Field label={t('edit.languages.language')} fullWidth>
                             <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                               <input
                                 type="text"
@@ -930,11 +939,11 @@ function EditPage() {
                                 onChange={(e) => updateLanguage(i, 'language', e.target.value)}
                                 style={{ ...s.input, flex: 1 }}
                               />
-                              {i === 0 && <span style={s.motherTongueBadge}>Mother tongue</span>}
+                              {i === 0 && <span style={s.motherTongueBadge}>{t('edit.languages.motherTongue')}</span>}
                             </div>
                           </Field>
                           <div style={s.cefrRow}>
-                            {CEFR_FIELDS.map((f) => (
+                            {cefrFields(t).map((f) => (
                               <label key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                 <span style={s.cefrLabel} title={f.title}>{f.label}</span>
                                 <select
@@ -956,24 +965,24 @@ function EditPage() {
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     type="text"
-                    placeholder="Language name..."
+                    placeholder={t('edit.languages.placeholder')}
                     value={newLang}
                     onChange={(e) => setNewLang(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLanguage() } }}
                     style={{ ...s.input, flex: 1, maxWidth: 200 }}
                   />
-                  <button type="button" style={s.btnAdd} onClick={addLanguage}>Add</button>
+                  <button type="button" style={s.btnAdd} onClick={addLanguage}>{t('edit.addBtn')}</button>
                 </div>
               </CollapsibleSection>
             )
 
             if (key === 'experience') return (
-              <CollapsibleSection key="experience" title="Experience" sectionKey="experience" anchorId="section-experience" {...sharedProps}
-                addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>+ Add</button>}
+              <CollapsibleSection key="experience" title={t('edit.experience.title')} sectionKey="experience" anchorId="section-experience" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addExperience}>{t('edit.add')}</button>}
               >
                 {fullData.experiences.map((exp, i) => {
                   const isCollapsed = collapsedItems.has(exp.id)
-                  const summary = [exp.role, exp.company].filter(Boolean).join(' — ') || 'Untitled'
+                  const summary = [exp.role, exp.company].filter(Boolean).join(' — ') || t('edit.untitled')
                   return (
                     <div key={exp.id} style={s.itemBlock}>
                       <ItemHeader
@@ -990,19 +999,19 @@ function EditPage() {
                       {!isCollapsed && (
                         <>
                           <div style={s.fieldGrid}>
-                            <Field label="Role"><Input value={exp.role} focusId={`exp-role-${exp.id}`} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
-                            <Field label="Company"><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
-                            <Field label="Period"><Input value={exp.period} placeholder="e.g. 2022 - Present" onChange={(v) => updateExperience(i, 'period', v)} /></Field>
+                            <Field label={t('edit.experience.role')}><Input value={exp.role} focusId={`exp-role-${exp.id}`} onChange={(v) => updateExperience(i, 'role', v)} /></Field>
+                            <Field label={t('edit.experience.company')}><Input value={exp.company} onChange={(v) => updateExperience(i, 'company', v)} /></Field>
+                            <Field label={t('edit.period')}><Input value={exp.period} placeholder={t('edit.experience.period.placeholder')} onChange={(v) => updateExperience(i, 'period', v)} /></Field>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <span style={s.fieldLabel}>Highlights</span>
+                            <span style={s.fieldLabel}>{t('edit.experience.highlights')}</span>
                             {exp.highlights.map((h, hi) => (
                               <div key={hi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <input type="text" value={h} placeholder="Bullet point..." data-focus-id={`exp-bullet-${exp.id}-${hi}`} onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
-                                <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label="Remove highlight">×</button>
+                                <input type="text" value={h} placeholder={t('edit.bullet.placeholder')} data-focus-id={`exp-bullet-${exp.id}-${hi}`} onChange={(e) => updateHighlight(i, hi, e.target.value)} style={{ ...s.input, flex: 1 }} />
+                                <button type="button" style={s.removeBtn} onClick={() => removeHighlight(i, hi)} aria-label={t('edit.experience.bullet.remove.aria')}>×</button>
                               </div>
                             ))}
-                            <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>+ Add bullet</button>
+                            <button type="button" style={s.btnGhost} onClick={() => addHighlight(i)}>{t('edit.experience.addBullet')}</button>
                           </div>
                         </>
                       )}
@@ -1013,12 +1022,12 @@ function EditPage() {
             )
 
             if (key === 'projects' && showProjects) return (
-              <CollapsibleSection key="projects" title="Selected Projects" sectionKey="projects" anchorId="section-projects" {...sharedProps}
-                addButton={<button type="button" style={s.btnAdd} onClick={addProject}>+ Add</button>}
+              <CollapsibleSection key="projects" title={t('edit.projects.title')} sectionKey="projects" anchorId="section-projects" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addProject}>{t('edit.add')}</button>}
               >
                 {fullData.projects.map((project, i) => {
                   const isCollapsed = collapsedItems.has(project.id)
-                  const summary = project.name || 'Untitled'
+                  const summary = project.name || t('edit.untitled')
                   return (
                     <div key={project.id} style={s.itemBlock}>
                       <ItemHeader
@@ -1035,10 +1044,10 @@ function EditPage() {
                       {!isCollapsed && (
                         <>
                           <div style={s.fieldGrid}>
-                            <Field label="Name"><Input value={project.name} focusId={`proj-name-${project.id}`} onChange={(v) => updateProject(i, 'name', v)} /></Field>
-                            <Field label="Tech Stack"><Input value={project.stack} placeholder="e.g. React, TypeScript" onChange={(v) => updateProject(i, 'stack', v)} /></Field>
+                            <Field label={t('edit.projects.name')}><Input value={project.name} focusId={`proj-name-${project.id}`} onChange={(v) => updateProject(i, 'name', v)} /></Field>
+                            <Field label={t('edit.projects.stack')}><Input value={project.stack} placeholder={t('edit.projects.stack.placeholder')} onChange={(v) => updateProject(i, 'stack', v)} /></Field>
                           </div>
-                          <Field label="Description" fullWidth>
+                          <Field label={t('edit.projects.description')} fullWidth>
                             <Textarea value={project.description} onChange={(v) => updateProject(i, 'description', v)} rows={2} />
                           </Field>
                         </>
@@ -1050,12 +1059,12 @@ function EditPage() {
             )
 
             if (key === 'education') return (
-              <CollapsibleSection key="education" title="Education" sectionKey="education" anchorId="section-education" {...sharedProps}
-                addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>+ Add</button>}
+              <CollapsibleSection key="education" title={t('edit.education.title')} sectionKey="education" anchorId="section-education" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addEducation}>{t('edit.add')}</button>}
               >
                 {fullData.education.map((edu, i) => {
                   const isCollapsed = collapsedItems.has(edu.id)
-                  const summary = [edu.degree, edu.institution].filter(Boolean).join(' — ') || 'Untitled'
+                  const summary = [edu.degree, edu.institution].filter(Boolean).join(' — ') || t('edit.untitled')
                   return (
                     <div key={edu.id} style={s.itemBlock}>
                       <ItemHeader
@@ -1071,9 +1080,9 @@ function EditPage() {
                       />
                       {!isCollapsed && (
                         <div style={s.fieldGrid}>
-                          <Field label="Degree"><Input value={edu.degree} focusId={`edu-degree-${edu.id}`} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
-                          <Field label="Institution"><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
-                          <Field label="Period"><Input value={edu.period} placeholder="e.g. 2011 - 2014" onChange={(v) => updateEducation(i, 'period', v)} /></Field>
+                          <Field label={t('edit.education.degree')}><Input value={edu.degree} focusId={`edu-degree-${edu.id}`} onChange={(v) => updateEducation(i, 'degree', v)} /></Field>
+                          <Field label={t('edit.education.institution')}><Input value={edu.institution} onChange={(v) => updateEducation(i, 'institution', v)} /></Field>
+                          <Field label={t('edit.period')}><Input value={edu.period} placeholder={t('edit.education.period.placeholder')} onChange={(v) => updateEducation(i, 'period', v)} /></Field>
                         </div>
                       )}
                     </div>
@@ -1083,12 +1092,12 @@ function EditPage() {
             )
 
             if (key === 'certifications' && showCertifications) return (
-              <CollapsibleSection key="certifications" title="Certifications" sectionKey="certifications" anchorId="section-certifications" {...sharedProps}
-                addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>+ Add</button>}
+              <CollapsibleSection key="certifications" title={t('edit.certifications.title')} sectionKey="certifications" anchorId="section-certifications" {...sharedProps}
+                addButton={<button type="button" style={s.btnAdd} onClick={addCertification}>{t('edit.add')}</button>}
               >
                 {fullData.certifications.map((cert, i) => {
                   const isCollapsed = collapsedItems.has(cert.id)
-                  const summary = [cert.name, cert.issuer].filter(Boolean).join(' — ') || 'Untitled'
+                  const summary = [cert.name, cert.issuer].filter(Boolean).join(' — ') || t('edit.untitled')
                   return (
                     <div key={cert.id} style={s.itemBlock}>
                       <ItemHeader
@@ -1104,11 +1113,11 @@ function EditPage() {
                       />
                       {!isCollapsed && (
                         <div style={s.fieldGrid}>
-                          <Field label="Name" fullWidth>
-                            <Input value={cert.name} focusId={`cert-name-${cert.id}`} placeholder="e.g. AWS Certified Solutions Architect" onChange={(v) => updateCertification(i, 'name', v)} />
+                          <Field label={t('edit.certifications.name')} fullWidth>
+                            <Input value={cert.name} focusId={`cert-name-${cert.id}`} placeholder={t('edit.certifications.name.placeholder')} onChange={(v) => updateCertification(i, 'name', v)} />
                           </Field>
-                          <Field label="Issuer"><Input value={cert.issuer} placeholder="e.g. Amazon Web Services" onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
-                          <Field label="Year"><Input value={cert.year} placeholder="e.g. 2023" onChange={(v) => updateCertification(i, 'year', v)} /></Field>
+                          <Field label={t('edit.certifications.issuer')}><Input value={cert.issuer} placeholder={t('edit.certifications.issuer.placeholder')} onChange={(v) => updateCertification(i, 'issuer', v)} /></Field>
+                          <Field label={t('edit.certifications.year')}><Input value={cert.year} placeholder={t('edit.certifications.year.placeholder')} onChange={(v) => updateCertification(i, 'year', v)} /></Field>
                         </div>
                       )}
                     </div>
@@ -1121,7 +1130,7 @@ function EditPage() {
             if (custom) return (
               <CollapsibleSection
                 key={key}
-                title={custom.title || 'Custom Section'}
+                title={custom.title || t('edit.custom.title')}
                 sectionKey={key}
                 anchorId={`section-${key}`}
                 hiddenSections={hiddenSections}
@@ -1129,15 +1138,15 @@ function EditPage() {
                 isFirst={isFirst}
                 isLast={isLast}
                 addButton={
-                  <button type="button" style={s.removeBtnText} onClick={() => { removeCustomSection(key) }}>Delete section</button>
+                  <button type="button" style={s.removeBtnText} onClick={() => { removeCustomSection(key) }}>{t('edit.custom.delete')}</button>
                 }
               >
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <Field label="Section Title" fullWidth>
+                  <Field label={t('edit.custom.sectionTitle')} fullWidth>
                     <Input
                       value={custom.title}
                       focusId={`custom-title-${custom.id}`}
-                      placeholder="e.g. Volunteer Work"
+                      placeholder={t('edit.custom.titlePlaceholder')}
                       onChange={(v) => {
                         setFullData((prev) => ({
                           ...prev,
@@ -1148,14 +1157,14 @@ function EditPage() {
                   </Field>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={s.fieldLabel}>Bullets</span>
+                  <span style={s.fieldLabel}>{t('edit.custom.bullets')}</span>
                   {custom.bullets.map((b, bi) => (
                     <div key={bi} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <input
                         type="text"
                         value={b}
                         data-focus-id={`custom-bullet-${custom.id}-${bi}`}
-                        placeholder="Bullet point..."
+                        placeholder={t('edit.bullet.placeholder')}
                         onChange={(e) => {
                           setFullData((prev) => ({
                             ...prev,
@@ -1177,7 +1186,7 @@ function EditPage() {
                             ),
                           }))
                         }}
-                        aria-label="Remove bullet"
+                        aria-label={t('edit.custom.bullet.remove.aria')}
                       >×</button>
                     </div>
                   ))}
@@ -1193,7 +1202,7 @@ function EditPage() {
                       }))
                       requestFocus(`custom-bullet-${key}-${custom.bullets.length}`)
                     }}
-                  >+ Add bullet</button>
+                  >{t('edit.custom.addBullet')}</button>
                 </div>
               </CollapsibleSection>
             )
@@ -1210,7 +1219,7 @@ function EditPage() {
                 const id = addCustomSection()
                 requestFocus(`custom-title-${id}`)
               }}
-            >+ Add Custom Section</button>
+              >{t('edit.custom.add')}</button>
           </div>
           </main>
         )}
@@ -1218,15 +1227,15 @@ function EditPage() {
         {/* Live preview panel */}
         {(!isCompactLayout || activePane === 'preview') && (
           <aside style={{ ...s.previewPanel, ...(isCompactLayout ? s.previewPanelCompact : {}) }}>
-          <div style={s.previewLabel}>Live Preview · {template.name}</div>
+          <div style={s.previewLabel}>{t('edit.preview.label', { name: templateName(t, template.id) })}</div>
           {!previewDoc ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Loading template…</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>{t('edit.preview.loading')}</div>
           ) : (
             <BlobProvider document={previewDoc}>
               {({ url, loading, error }) => {
                 if (url) blobUrlRef.current = url
-                if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>Rendering preview…</div>
-                if (error) return <div style={{ padding: '2rem', textAlign: 'center', color: '#9c2f1f', fontSize: '0.85rem' }}>Error rendering preview</div>
+                if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>{t('edit.preview.rendering')}</div>
+                if (error) return <div style={{ padding: '2rem', textAlign: 'center', color: '#9c2f1f', fontSize: '0.85rem' }}>{t('edit.preview.error')}</div>
                 if (!url) return null
                 return (
                   <iframe
@@ -1238,7 +1247,7 @@ function EditPage() {
                       borderRadius: '0.25rem',
                       boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
                     }}
-                    title="CV Preview"
+                    title={t('edit.preview.iframeTitle')}
                   />
                 )
               }}

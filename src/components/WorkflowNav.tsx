@@ -1,12 +1,13 @@
 import { Link } from '@tanstack/react-router'
+import { LocaleSwitcher } from './LocaleSwitcher'
 
 type Step = 'templates' | 'edit' | 'preview'
 
-const STEPS: { key: Step; label: string; to: string }[] = [
-  { key: 'templates', label: 'Templates', to: '/templates' },
-  { key: 'edit', label: 'Edit', to: '/cv/edit' },
-  { key: 'preview', label: 'Preview', to: '/cv/print' },
-]
+const STEPS = [
+  { key: 'templates', label: 'Templates', to: '/{-$locale}/templates' },
+  { key: 'edit', label: 'Edit', to: '/{-$locale}/cv/edit' },
+  { key: 'preview', label: 'Preview', to: '/{-$locale}/cv/print' },
+] as const
 
 const backLink: React.CSSProperties = {
   fontFamily: 'inherit',
@@ -60,7 +61,7 @@ const arrow: React.CSSProperties = {
 export function WorkflowNav({ active }: { active: Step }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap', minWidth: 0 }}>
-      <Link to="/cvs" style={backLink}>
+      <Link to="/{-$locale}/cvs" style={backLink}>
         ← CVs
       </Link>
       <nav style={stepsNav}>
@@ -73,6 +74,7 @@ export function WorkflowNav({ active }: { active: Step }) {
           </span>
         ))}
       </nav>
+      <LocaleSwitcher />
     </div>
   )
 }

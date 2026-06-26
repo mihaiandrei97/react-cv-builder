@@ -1,16 +1,19 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useT } from '../lib/i18n'
+import { LocaleSwitcher } from '../components/LocaleSwitcher'
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/{-$locale}/')({
   component: Home,
 })
 
-const steps = [
-  { num: '01', label: 'Pick a template', desc: 'Choose from clean, professional layouts.' },
-  { num: '02', label: 'Fill in your details', desc: 'Edit everything in a live form editor.' },
-  { num: '03', label: 'Export to PDF', desc: 'Download a print-ready PDF instantly.' },
-]
-
 function Home() {
+  const t = useT()
+  const steps = [
+    { num: '01', label: t('home.step1.label'), desc: t('home.step1.desc') },
+    { num: '02', label: t('home.step2.label'), desc: t('home.step2.desc') },
+    { num: '03', label: t('home.step3.label'), desc: t('home.step3.desc') },
+  ]
+
   return (
     <main
       style={{
@@ -22,8 +25,13 @@ function Home() {
         padding: '3rem 1.5rem 4rem',
         background:
           'radial-gradient(ellipse 80% 60% at 50% -10%, #e8e2d3 0%, transparent 70%), var(--paper)',
+        position: 'relative',
       }}
     >
+      <div style={{ position: 'absolute', top: '1rem', right: '1.25rem' }}>
+        <LocaleSwitcher />
+      </div>
+
       {/* Hero */}
       <div style={{ textAlign: 'center', maxWidth: 560 }}>
         <span
@@ -41,7 +49,7 @@ function Home() {
             marginBottom: '1.25rem',
           }}
         >
-          CV Builder
+          {t('home.badge')}
         </span>
 
         <h1
@@ -53,9 +61,9 @@ function Home() {
             letterSpacing: '-0.02em',
           }}
         >
-          A CV{' '}
-          <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>worth</em>{' '}
-          keeping.
+          {t('home.hero.before')}{' '}
+          <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{t('home.hero.em')}</em>{' '}
+          {t('home.hero.after')}
         </h1>
 
         <p
@@ -66,12 +74,12 @@ function Home() {
             margin: '0 0 2rem',
           }}
         >
-          Pick a template, fill in your details, and download a print-ready PDF — no account needed.
+          {t('home.hero.subtitle')}
         </p>
 
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link
-            to="/cvs"
+            to="/{-$locale}/cvs"
             style={{
               fontWeight: 700,
               textDecoration: 'none',
@@ -83,7 +91,7 @@ function Home() {
               boxShadow: '0 2px 8px rgba(45,93,76,0.18)',
             }}
           >
-            Get started →
+            {t('home.cta')}
           </Link>
         </div>
       </div>

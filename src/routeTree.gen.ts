@@ -9,122 +9,170 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TemplatesRouteImport } from './routes/templates'
-import { Route as CvsRouteImport } from './routes/cvs'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as CvPrintRouteImport } from './routes/cv.print'
-import { Route as CvEditRouteImport } from './routes/cv.edit'
+import { Route as Char123LocaleChar125RouteImport } from './routes/{-$locale}'
+import { Route as Char123LocaleChar125IndexRouteImport } from './routes/{-$locale}.index'
+import { Route as Char123LocaleChar125TemplatesRouteImport } from './routes/{-$locale}.templates'
+import { Route as Char123LocaleChar125CvsRouteImport } from './routes/{-$locale}.cvs'
+import { Route as Char123LocaleChar125CvPrintRouteImport } from './routes/{-$locale}.cv.print'
+import { Route as Char123LocaleChar125CvEditRouteImport } from './routes/{-$locale}.cv.edit'
 
-const TemplatesRoute = TemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
+const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
+  id: '/{-$locale}',
+  path: '/{-$locale}',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CvsRoute = CvsRouteImport.update({
+const Char123LocaleChar125IndexRoute =
+  Char123LocaleChar125IndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
+const Char123LocaleChar125TemplatesRoute =
+  Char123LocaleChar125TemplatesRouteImport.update({
+    id: '/templates',
+    path: '/templates',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
+const Char123LocaleChar125CvsRoute = Char123LocaleChar125CvsRouteImport.update({
   id: '/cvs',
   path: '/cvs',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => Char123LocaleChar125Route,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CvPrintRoute = CvPrintRouteImport.update({
-  id: '/cv/print',
-  path: '/cv/print',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CvEditRoute = CvEditRouteImport.update({
-  id: '/cv/edit',
-  path: '/cv/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const Char123LocaleChar125CvPrintRoute =
+  Char123LocaleChar125CvPrintRouteImport.update({
+    id: '/cv/print',
+    path: '/cv/print',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
+const Char123LocaleChar125CvEditRoute =
+  Char123LocaleChar125CvEditRouteImport.update({
+    id: '/cv/edit',
+    path: '/cv/edit',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/cvs': typeof CvsRoute
-  '/templates': typeof TemplatesRoute
-  '/cv/edit': typeof CvEditRoute
-  '/cv/print': typeof CvPrintRoute
+  '/{-$locale}': typeof Char123LocaleChar125RouteWithChildren
+  '/{-$locale}/cvs': typeof Char123LocaleChar125CvsRoute
+  '/{-$locale}/templates': typeof Char123LocaleChar125TemplatesRoute
+  '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
+  '/{-$locale}/cv/edit': typeof Char123LocaleChar125CvEditRoute
+  '/{-$locale}/cv/print': typeof Char123LocaleChar125CvPrintRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/cvs': typeof CvsRoute
-  '/templates': typeof TemplatesRoute
-  '/cv/edit': typeof CvEditRoute
-  '/cv/print': typeof CvPrintRoute
+  '/{-$locale}/cvs': typeof Char123LocaleChar125CvsRoute
+  '/{-$locale}/templates': typeof Char123LocaleChar125TemplatesRoute
+  '/{-$locale}': typeof Char123LocaleChar125IndexRoute
+  '/{-$locale}/cv/edit': typeof Char123LocaleChar125CvEditRoute
+  '/{-$locale}/cv/print': typeof Char123LocaleChar125CvPrintRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/cvs': typeof CvsRoute
-  '/templates': typeof TemplatesRoute
-  '/cv/edit': typeof CvEditRoute
-  '/cv/print': typeof CvPrintRoute
+  '/{-$locale}': typeof Char123LocaleChar125RouteWithChildren
+  '/{-$locale}/cvs': typeof Char123LocaleChar125CvsRoute
+  '/{-$locale}/templates': typeof Char123LocaleChar125TemplatesRoute
+  '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
+  '/{-$locale}/cv/edit': typeof Char123LocaleChar125CvEditRoute
+  '/{-$locale}/cv/print': typeof Char123LocaleChar125CvPrintRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cvs' | '/templates' | '/cv/edit' | '/cv/print'
+  fullPaths:
+    | '/{-$locale}'
+    | '/{-$locale}/cvs'
+    | '/{-$locale}/templates'
+    | '/{-$locale}/'
+    | '/{-$locale}/cv/edit'
+    | '/{-$locale}/cv/print'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cvs' | '/templates' | '/cv/edit' | '/cv/print'
-  id: '__root__' | '/' | '/cvs' | '/templates' | '/cv/edit' | '/cv/print'
+  to:
+    | '/{-$locale}/cvs'
+    | '/{-$locale}/templates'
+    | '/{-$locale}'
+    | '/{-$locale}/cv/edit'
+    | '/{-$locale}/cv/print'
+  id:
+    | '__root__'
+    | '/{-$locale}'
+    | '/{-$locale}/cvs'
+    | '/{-$locale}/templates'
+    | '/{-$locale}/'
+    | '/{-$locale}/cv/edit'
+    | '/{-$locale}/cv/print'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CvsRoute: typeof CvsRoute
-  TemplatesRoute: typeof TemplatesRoute
-  CvEditRoute: typeof CvEditRoute
-  CvPrintRoute: typeof CvPrintRoute
+  Char123LocaleChar125Route: typeof Char123LocaleChar125RouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/templates': {
-      id: '/templates'
-      path: '/templates'
-      fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesRouteImport
+    '/{-$locale}': {
+      id: '/{-$locale}'
+      path: '/{-$locale}'
+      fullPath: '/{-$locale}'
+      preLoaderRoute: typeof Char123LocaleChar125RouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cvs': {
-      id: '/cvs'
-      path: '/cvs'
-      fullPath: '/cvs'
-      preLoaderRoute: typeof CvsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/{-$locale}/': {
+      id: '/{-$locale}/'
       path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/{-$locale}/'
+      preLoaderRoute: typeof Char123LocaleChar125IndexRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
     }
-    '/cv/print': {
-      id: '/cv/print'
+    '/{-$locale}/templates': {
+      id: '/{-$locale}/templates'
+      path: '/templates'
+      fullPath: '/{-$locale}/templates'
+      preLoaderRoute: typeof Char123LocaleChar125TemplatesRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/cvs': {
+      id: '/{-$locale}/cvs'
+      path: '/cvs'
+      fullPath: '/{-$locale}/cvs'
+      preLoaderRoute: typeof Char123LocaleChar125CvsRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/cv/print': {
+      id: '/{-$locale}/cv/print'
       path: '/cv/print'
-      fullPath: '/cv/print'
-      preLoaderRoute: typeof CvPrintRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/{-$locale}/cv/print'
+      preLoaderRoute: typeof Char123LocaleChar125CvPrintRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
     }
-    '/cv/edit': {
-      id: '/cv/edit'
+    '/{-$locale}/cv/edit': {
+      id: '/{-$locale}/cv/edit'
       path: '/cv/edit'
-      fullPath: '/cv/edit'
-      preLoaderRoute: typeof CvEditRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/{-$locale}/cv/edit'
+      preLoaderRoute: typeof Char123LocaleChar125CvEditRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
     }
   }
 }
 
+interface Char123LocaleChar125RouteChildren {
+  Char123LocaleChar125CvsRoute: typeof Char123LocaleChar125CvsRoute
+  Char123LocaleChar125TemplatesRoute: typeof Char123LocaleChar125TemplatesRoute
+  Char123LocaleChar125IndexRoute: typeof Char123LocaleChar125IndexRoute
+  Char123LocaleChar125CvEditRoute: typeof Char123LocaleChar125CvEditRoute
+  Char123LocaleChar125CvPrintRoute: typeof Char123LocaleChar125CvPrintRoute
+}
+
+const Char123LocaleChar125RouteChildren: Char123LocaleChar125RouteChildren = {
+  Char123LocaleChar125CvsRoute: Char123LocaleChar125CvsRoute,
+  Char123LocaleChar125TemplatesRoute: Char123LocaleChar125TemplatesRoute,
+  Char123LocaleChar125IndexRoute: Char123LocaleChar125IndexRoute,
+  Char123LocaleChar125CvEditRoute: Char123LocaleChar125CvEditRoute,
+  Char123LocaleChar125CvPrintRoute: Char123LocaleChar125CvPrintRoute,
+}
+
+const Char123LocaleChar125RouteWithChildren =
+  Char123LocaleChar125Route._addFileChildren(Char123LocaleChar125RouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  CvsRoute: CvsRoute,
-  TemplatesRoute: TemplatesRoute,
-  CvEditRoute: CvEditRoute,
-  CvPrintRoute: CvPrintRoute,
+  Char123LocaleChar125Route: Char123LocaleChar125RouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

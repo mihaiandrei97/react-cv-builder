@@ -6,10 +6,11 @@ import type { DocumentProps } from '@react-pdf/renderer'
 import { useActiveProfile, useCvData, cvStore } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
+import { useT, type TFunction, templateName } from '../lib/i18n'
 
-export const Route = createFileRoute('/cv/print')({
+export const Route = createFileRoute('/{-$locale}/cv/print')({
   beforeLoad: () => {
-    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/{-$locale}/cvs' })
   },
   component: PrintPage,
 })
@@ -17,15 +18,17 @@ export const Route = createFileRoute('/cv/print')({
 const PdfViewer = memo(function PdfViewer({
   docElement,
   onUrl,
+  t,
 }: {
   docElement: ReactElement<DocumentProps>
   onUrl: (url: string | null) => void
+  t: TFunction
 }) {
   return (
     <BlobProvider document={docElement}>
       {({ url, loading, error }) => {
-        if (loading) return <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Rendering PDF…</p>
-        if (error) return <p style={{ color: '#9c2f1f', fontSize: '0.9rem' }}>Error rendering PDF: {error.message}</p>
+        if (loading) return <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{t('print.renderingPdf')}</p>
+        if (error) return <p style={{ color: '#9c2f1f', fontSize: '0.9rem' }}>{t('print.renderError', { message: error.message })}</p>
         if (!url) return null
         onUrl(url)
         return (
@@ -40,7 +43,7 @@ const PdfViewer = memo(function PdfViewer({
                 borderRadius: '0.25rem',
                 boxShadow: '0 20px 45px rgba(34,34,34,0.12)',
               }}
-              title="CV PDF Preview"
+              title={t('print.iframeTitle')}
             />
         )
       }}
@@ -55,6 +58,7 @@ function PrintPage() {
   const profileName = activeProfile.name
   const blobUrlRef = useRef<string | null>(null)
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
+  const t = useT()
 
   const template = getTemplate(templateId)
   const docElement = useMemo(
@@ -97,9 +101,9 @@ function PrintPage() {
       <header style={s.header}>
         <WorkflowNav active="preview" />
         <div style={s.headerActions}>
-          <span style={s.templateBadge}>{template.name}</span>
+          <span style={s.templateBadge}>{templateName(t, template.id)}</span>
           <button type="button" onClick={downloadPdf} style={s.btnPrimary}>
-            Download PDF
+            {t('print.download')}
           </button>
         </div>
       </header>
@@ -107,9 +111,9 @@ function PrintPage() {
       {/* PDF viewer */}
       <main style={s.main}>
         {docElement ? (
-          <PdfViewer docElement={docElement} onUrl={handleUrl} />
+          <PdfViewer docElement={docElement} onUrl={handleUrl} t={t} />
         ) : (
-          <p style={s.loading}>Loading template…</p>
+          <p style={s.loading}>{t('print.loadingTemplate')}</p>
         )}
       </main>
     </div>
