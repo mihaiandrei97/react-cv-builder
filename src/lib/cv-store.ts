@@ -284,7 +284,7 @@ function reduceCvContent(state: ProfilesState, action: CvContentAction): Profile
         if (customSections.some((s) => s.id === action.id)) return profile
         const section: CustomSection = {
           id: action.id,
-          title: profile.locale === 'ro' ? 'Sectiune personalizata' : 'Custom Section',
+          title: '',
           bullets: [''],
         }
         return {

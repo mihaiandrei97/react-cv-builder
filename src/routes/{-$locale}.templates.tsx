@@ -5,10 +5,12 @@ import { TEMPLATES, loadTemplateComponent, getTemplate, type TemplateComponent, 
 import { useActiveProfile, saveTemplatePref, cvStore } from '../lib/cv-store'
 import { projectCv, type CvData } from '../lib/types'
 import { WorkflowNav } from '../components/WorkflowNav'
+import { type TFunction, templateName, templateDescription } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
 
-export const Route = createFileRoute('/templates')({
+export const Route = createFileRoute('/{-$locale}/templates')({
   beforeLoad: () => {
-    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/cvs' })
+    if (cvStore.state.profiles.length === 0) throw redirect({ to: '/{-$locale}/cvs' })
   },
   component: TemplatesPage,
 })
@@ -207,12 +209,14 @@ const TemplateListItem = memo(function TemplateListItem({
   isSelected,
   onSelect,
   compact,
+  t,
 }: {
   tpl: TemplateDefinition
   isActive: boolean
   isSelected: boolean
   onSelect: (id: string) => void
   compact: boolean
+  t: TFunction
 }) {
   if (compact) {
     return (
@@ -237,7 +241,7 @@ const TemplateListItem = memo(function TemplateListItem({
       >
         <LayoutSilhouette tpl={tpl} />
         <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected ? 'var(--ink)' : 'var(--muted)', whiteSpace: 'nowrap' }}>
-          {tpl.name}
+          {templateName(t, tpl.id)}
         </span>
         {isActive && <span style={{ ...activeBadgeStyle, position: 'absolute', top: 2, right: 2 }}>●</span>}
       </button>
@@ -267,11 +271,11 @@ const TemplateListItem = memo(function TemplateListItem({
       <LayoutSilhouette tpl={tpl} />
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{tpl.name}</span>
-          {isActive && <span style={activeBadgeStyle}>Active</span>}
+          <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{templateName(t, tpl.id)}</span>
+          {isActive && <span style={activeBadgeStyle}>{t('templates.active')}</span>}
         </div>
         <p style={{ margin: 0, fontSize: '0.74rem', color: 'var(--muted)', lineHeight: 1.4 }}>
-          {tpl.description}
+          {templateDescription(t, tpl.id)}
         </p>
       </div>
     </button>
@@ -280,7 +284,7 @@ const TemplateListItem = memo(function TemplateListItem({
 
 // ── Detail pane ───────────────────────────────────────────────────────────────
 
-const IframePreview = memo(function IframePreview({ url }: { url: string }) {
+const IframePreview = memo(function IframePreview({ url, title }: { url: string; title: string }) {
   return (
     <iframe
       src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
@@ -293,7 +297,7 @@ const IframePreview = memo(function IframePreview({ url }: { url: string }) {
         border: 'none',
         pointerEvents: 'none',
       }}
-      title="PDF Preview"
+      title={title}
     />
   )
 })
@@ -304,12 +308,14 @@ const TemplateDetail = memo(function TemplateDetail({
   isStale,
   onUse,
   isCompact,
+  t,
 }: {
   tpl: TemplateDefinition
   cv: CvData
   isStale: boolean
   onUse: () => void
   isCompact: boolean
+  t: TFunction
 }) {
   const [Doc, setDoc] = useState<TemplateComponent | null>(null)
 
@@ -330,11 +336,11 @@ const TemplateDetail = memo(function TemplateDetail({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minWidth: 0 }}>
       <div style={s.detailHeader}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: 0 }}>
-          <h2 style={s.detailName}>{tpl.name}</h2>
-          <p style={s.detailDesc}>{tpl.description}</p>
+          <h2 style={s.detailName}>{templateName(t, tpl.id)}</h2>
+          <p style={s.detailDesc}>{templateDescription(t, tpl.id)}</p>
         </div>
         <button type="button" style={s.btnUse} onClick={onUse}>
-          Use this template
+          {t('templates.use')}
         </button>
       </div>
       <div style={s.previewArea}>
@@ -342,7 +348,7 @@ const TemplateDetail = memo(function TemplateDetail({
           {!Doc ? (
             <div style={s.loadingState}>
               <Spinner />
-              Loading template…
+              {t('templates.loadingTemplate')}
             </div>
           ) : (
             <BlobProvider document={documentEl!}>
@@ -350,10 +356,10 @@ const TemplateDetail = memo(function TemplateDetail({
                 loading || !url ? (
                   <div style={s.loadingState}>
                     <Spinner />
-                    Rendering…
+                    {t('templates.rendering')}
                   </div>
                 ) : (
-                  <IframePreview url={url} />
+                  <IframePreview url={url} title={t('templates.iframeTitle')} />
                 )
               }
             </BlobProvider>
@@ -362,7 +368,7 @@ const TemplateDetail = memo(function TemplateDetail({
             <div style={s.staleOverlay}>
               <div style={s.staleBadge}>
                 <Spinner size={12} />
-                Regenerating…
+                {t('templates.regenerating')}
               </div>
             </div>
           )}
@@ -383,6 +389,7 @@ function TemplatesPage() {
   const locale = deferredProfile.locale
   const activeTemplateId = activeProfile.templateId
   const navigate = useNavigate()
+  const t = useT()
 
   const [selectedId, setSelectedId] = useState(activeTemplateId)
   const [isCompact, setIsCompact] = useState(
@@ -430,7 +437,7 @@ function TemplatesPage() {
 
   const handleUse = useCallback(() => {
     saveTemplatePref(selectedTpl.id)
-    navigate({ to: '/cv/edit' })
+    navigate({ to: '/{-$locale}/cv/edit' })
   }, [selectedTpl.id, navigate])
 
   function handleListKey(e: React.KeyboardEvent) {
@@ -454,12 +461,12 @@ function TemplatesPage() {
       <main style={s.main}>
         <section style={s.heroStrip}>
           <div style={s.heroStat}>
-            <span style={s.heroStatLabel}>Templates</span>
+            <span style={s.heroStatLabel}>{t('templates.statLabel')}</span>
             <strong style={s.heroStatValue}>{TEMPLATES.length}</strong>
           </div>
           <div style={s.heroDivider} />
           <div style={s.heroHint}>
-            Click a template to preview it with your data. Hit &ldquo;Use this template&rdquo; to make it your current layout.
+            {t('templates.hint')}
           </div>
         </section>
         <div style={isCompact ? s.splitCompact : s.split}>
@@ -467,7 +474,7 @@ function TemplatesPage() {
             style={isCompact ? s.listPaneCompact : s.listPane}
             tabIndex={0}
             onKeyDown={handleListKey}
-            aria-label="Template list"
+            aria-label={t('templates.listAriaLabel')}
           >
             {TEMPLATES.map((tpl) => (
               <TemplateListItem
@@ -477,6 +484,7 @@ function TemplatesPage() {
                 isSelected={tpl.id === selectedId}
                 onSelect={setSelectedId}
                 compact={isCompact}
+                t={t}
               />
             ))}
           </aside>
@@ -487,6 +495,7 @@ function TemplatesPage() {
               isStale={isStale}
               onUse={handleUse}
               isCompact={isCompact}
+              t={t}
             />
           </section>
         </div>

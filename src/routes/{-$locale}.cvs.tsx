@@ -13,18 +13,21 @@ import {
 } from '../lib/cv-store'
 import { TEMPLATES } from '../lib/templates'
 import type { CvLocale, CvProfile } from '../lib/types'
+import { type TFunction, templateName } from '../lib/i18n'
+import { useT } from '../lib/i18n/context'
+import { LocaleSwitcher } from '../components/LocaleSwitcher'
 
-export const Route = createFileRoute('/cvs')({
+export const Route = createFileRoute('/{-$locale}/cvs')({
   component: CvsPage,
 })
 
-function formatRelativeDate(ts: number) {
+function formatRelativeDate(ts: number, t: TFunction) {
   const diffMs = Date.now() - ts
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  if (diffDays <= 0) return 'today'
-  if (diffDays === 1) return 'yesterday'
-  if (diffDays < 7) return `${diffDays}d ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+  if (diffDays <= 0) return t('date.today')
+  if (diffDays === 1) return t('date.yesterday')
+  if (diffDays < 7) return t('date.daysAgo', { n: diffDays })
+  if (diffDays < 30) return t('date.weeksAgo', { n: Math.floor(diffDays / 7) })
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(ts))
 }
 
@@ -65,12 +68,13 @@ function CvCard({
 }) {
   const tpl = TEMPLATES.find((t) => t.id === profile.templateId) ?? TEMPLATES[0]
   const initial = getInitial(profile.name)
+  const t = useT()
 
   return (
     <div style={isActive ? s.cardActive : s.card} className="cv-card">
       <div style={isActive ? s.cardBarActive : s.cardBar} />
 
-      {isActive && <span style={s.activeBadge}>Active</span>}
+      {isActive && <span style={s.activeBadge}>{t('cvs.active')}</span>}
 
       <div style={s.cardHead}>
         <span style={isActive ? s.monogramActive : s.monogram}>{initial}</span>
@@ -91,7 +95,7 @@ function CvCard({
           ) : (
             <button
               type="button"
-              title="Click to rename"
+              title={t('cvs.renameHint')}
               onClick={onRenameStart}
               style={s.nameBtn}
             >
@@ -99,30 +103,30 @@ function CvCard({
             </button>
           )}
           <span style={s.cardUpdated}>
-            Updated {formatRelativeDate(profile.updatedAt ?? profile.createdAt ?? 0)}
+            {t('cvs.updated', { date: formatRelativeDate(profile.updatedAt ?? profile.createdAt ?? 0, t) })}
           </span>
         </div>
       </div>
 
       <div style={s.cardTags}>
-        <span style={s.tagTemplate}>{tpl.name}</span>
+        <span style={s.tagTemplate}>{templateName(t, tpl.id)}</span>
         <span style={s.tagLocale}>{profile.locale.toUpperCase()}</span>
       </div>
 
       <div style={s.cardFooter}>
         <button type="button" style={s.btnPrimary} onClick={onOpen}>
-          {isActive ? 'Open →' : 'Switch & open →'}
+          {t('cvs.openActive')}
         </button>
         <div style={s.cardActionRow}>
-          <button type="button" style={s.btnGhostSm} onClick={onDuplicate} title="Duplicate">
-            Duplicate
+          <button type="button" style={s.btnGhostSm} onClick={onDuplicate} title={t('common.duplicate')}>
+            {t('common.duplicate')}
           </button>
-          <button type="button" style={s.btnGhostSm} onClick={onExport} title="Export JSON backup">
-            Export
+          <button type="button" style={s.btnGhostSm} onClick={onExport} title={t('cvs.exportHint')}>
+            {t('common.export')}
           </button>
           {canDelete && (
-            <button type="button" style={s.btnDangerSm} onClick={onDelete} title="Delete">
-              Delete
+            <button type="button" style={s.btnDangerSm} onClick={onDelete} title={t('common.delete')}>
+              {t('common.delete')}
             </button>
           )}
         </div>
@@ -135,6 +139,7 @@ function CvsPage() {
   const profiles = useProfiles()
   const activeProfileId = useActiveProfileId()
   const navigate = useNavigate()
+  const t = useT()
 
   const [creatingNew, setCreatingNew] = useState(false)
   const [newName, setNewName] = useState('')
@@ -168,7 +173,7 @@ function CvsPage() {
 
   function handleOpen(id: string) {
     switchProfile(id)
-    navigate({ to: '/cv/edit' })
+    navigate({ to: '/{-$locale}/cv/edit' })
   }
 
   function handleCreate() {
@@ -178,12 +183,12 @@ function CvsPage() {
     setCreatingNew(false)
     setNewName('')
     setNewLocale('en')
-    navigate({ to: '/templates' })
+    navigate({ to: '/{-$locale}/templates' })
   }
 
   function handleDelete(id: string) {
     if (profiles.length <= 1) return
-    if (confirm('Delete this CV? This cannot be undone.')) {
+    if (confirm(t('cvs.deleteConfirm'))) {
       deleteProfile(id)
     }
   }
@@ -211,7 +216,7 @@ function CvsPage() {
     try {
       await importProfile(file)
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Import failed.')
+      setImportError(err instanceof Error ? err.message : t('cvs.importFailed'))
     }
   }
 
@@ -226,26 +231,27 @@ function CvsPage() {
       />
       <header style={s.header}>
         <div style={s.titleStack}>
-          <h1 style={s.title}>Your CVs</h1>
-          <p style={s.subtitle}>Pick up where you left off, or start something new.</p>
+          <h1 style={s.title}>{t('cvs.title')}</h1>
+          <p style={s.subtitle}>{t('cvs.subtitle')}</p>
         </div>
+        <LocaleSwitcher />
       </header>
 
       <main style={s.main}>
         {profiles.length === 0 ? (
           <section style={s.emptyState}>
             <div style={s.emptyIcon}>✦</div>
-            <h2 style={s.emptyTitle}>No CVs yet</h2>
+            <h2 style={s.emptyTitle}>{t('cvs.empty.title')}</h2>
             <p style={s.emptyHint}>
-              Create your first CV to pick a template and start filling in your details.
+              {t('cvs.empty.hint')}
             </p>
             {creatingNew ? (
               <div style={{ ...s.newCard, width: '100%', maxWidth: 460 }}>
-                <span style={s.newTitle}>New CV</span>
+                <span style={s.newTitle}>{t('cvs.new.title')}</span>
                 <input
                   autoFocus
                   type="text"
-                  placeholder="e.g. Frontend Dev, Freelance…"
+                  placeholder={t('cvs.new.namePlaceholder')}
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => {
@@ -258,29 +264,26 @@ function CvsPage() {
                   }}
                   style={s.newInput}
                 />
+                <div style={s.localeField}>
+                  <label style={s.localeFieldLabel} htmlFor="new-cv-locale-empty">{t('common.cvLanguage')}</label>
+                  <select
+                    id="new-cv-locale-empty"
+                    value={newLocale}
+                    onChange={(e) => setNewLocale(e.target.value as CvLocale)}
+                    style={s.localeSelect}
+                  >
+                    <option value="en">{t('common.lang.en')}</option>
+                    <option value="ro">{t('common.lang.ro')}</option>
+                  </select>
+                </div>
                 <div style={s.newRow}>
-                  <div style={s.localeToggle}>
-                    {(['en', 'ro'] as CvLocale[]).map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => setNewLocale(loc)}
-                        style={{
-                          ...(newLocale === loc ? s.localeBtnActive : s.localeBtn),
-                          borderRight: loc === 'en' ? '1px solid var(--line)' : 0,
-                        }}
-                      >
-                        {loc.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
                   <button
                     type="button"
                     onClick={handleCreate}
                     disabled={!newName.trim()}
                     style={newName.trim() ? s.btnPrimary : s.btnPrimaryDisabled}
                   >
-                    Create &amp; open
+                    {t('cvs.new.create')}
                   </button>
                   <button
                     type="button"
@@ -291,7 +294,7 @@ function CvsPage() {
                     }}
                     style={s.btnSecondary}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -301,7 +304,7 @@ function CvsPage() {
                 onClick={() => setCreatingNew(true)}
                 style={s.btnPrimary}
               >
-                + Create your first CV
+                {t('cvs.empty.create')}
               </button>
             )}
             <button
@@ -309,19 +312,19 @@ function CvsPage() {
               style={s.importLink}
               onClick={() => importInputRef.current?.click()}
             >
-              Or import a backup
+              {t('cvs.empty.importLink')}
             </button>
           </section>
         ) : (
           <>
             <section style={s.heroStrip}>
               <div style={s.heroStat}>
-                <span style={s.heroStatLabel}>CVs</span>
+                <span style={s.heroStatLabel}>{t('cvs.statLabel')}</span>
                 <strong style={s.heroStatValue}>{profiles.length}</strong>
               </div>
               <div style={s.heroDivider} />
               <div style={s.heroHint}>
-                Tip: keep one CV per role target — tune the summary and skills for each.
+                {t('cvs.tip')}
               </div>
             </section>
 
@@ -336,11 +339,11 @@ function CvsPage() {
 
             {creatingNew && (
               <div style={s.newCard}>
-                <span style={s.newTitle}>New CV</span>
+                <span style={s.newTitle}>{t('cvs.new.title')}</span>
                 <input
                   autoFocus
                   type="text"
-                  placeholder="e.g. Frontend Dev, Freelance…"
+                  placeholder={t('cvs.new.namePlaceholder')}
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => {
@@ -353,29 +356,26 @@ function CvsPage() {
                   }}
                   style={s.newInput}
                 />
+                <div style={s.localeField}>
+                  <label style={s.localeFieldLabel} htmlFor="new-cv-locale">{t('common.cvLanguage')}</label>
+                  <select
+                    id="new-cv-locale"
+                    value={newLocale}
+                    onChange={(e) => setNewLocale(e.target.value as CvLocale)}
+                    style={s.localeSelect}
+                  >
+                    <option value="en">{t('common.lang.en')}</option>
+                    <option value="ro">{t('common.lang.ro')}</option>
+                  </select>
+                </div>
                 <div style={s.newRow}>
-                  <div style={s.localeToggle}>
-                    {(['en', 'ro'] as CvLocale[]).map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => setNewLocale(loc)}
-                        style={{
-                          ...(newLocale === loc ? s.localeBtnActive : s.localeBtn),
-                          borderRight: loc === 'en' ? '1px solid var(--line)' : 0,
-                        }}
-                      >
-                        {loc.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
                   <button
                     type="button"
                     onClick={handleCreate}
                     disabled={!newName.trim()}
                     style={newName.trim() ? s.btnPrimary : s.btnPrimaryDisabled}
                   >
-                    Create &amp; open
+                    {t('cvs.new.create')}
                   </button>
                   <button
                     type="button"
@@ -386,7 +386,7 @@ function CvsPage() {
                     }}
                     style={s.btnSecondary}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -420,15 +420,15 @@ function CvsPage() {
                   className="cv-card-new"
                 >
                   <span style={s.newTilePlus}>+</span>
-                  <span style={s.newTileLabel}>New CV</span>
-                  <span style={s.newTileHint}>Start from a fresh template</span>
+                  <span style={s.newTileLabel}>{t('cvs.new.tileLabel')}</span>
+                  <span style={s.newTileHint}>{t('cvs.new.tileHint')}</span>
                 </button>
               )}
             </div>
 
             <footer style={s.footer}>
               <button type="button" style={s.importLink} onClick={() => importInputRef.current?.click()}>
-                Import backup
+                {t('cvs.importBackup')}
               </button>
             </footer>
           </>
@@ -806,31 +806,27 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     flexWrap: 'wrap',
   },
-  localeToggle: {
+  localeField: {
     display: 'flex',
-    borderRadius: '0.35rem',
-    overflow: 'hidden',
-    border: '1px solid var(--line)',
-    flexShrink: 0,
+    flexDirection: 'column',
+    gap: '0.3rem',
   },
-  localeBtn: {
-    fontFamily: 'inherit',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    color: 'var(--muted)',
-    background: 'transparent',
-    border: 0,
-    padding: '0.3rem 0.5rem',
-    cursor: 'pointer',
-  },
-  localeBtnActive: {
-    fontFamily: 'inherit',
-    fontSize: '0.75rem',
+  localeFieldLabel: {
+    fontSize: '0.74rem',
     fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: 'var(--muted)',
+  },
+  localeSelect: {
+    fontFamily: 'inherit',
+    fontSize: '0.9rem',
     color: 'var(--ink)',
-    background: '#fffdf7',
-    border: 0,
-    padding: '0.3rem 0.5rem',
+    background: 'var(--paper)',
+    border: '1px solid var(--line)',
+    borderRadius: '0.35rem',
+    padding: '0.45rem 0.65rem',
+    width: '100%',
     cursor: 'pointer',
   },
   newTile: {
