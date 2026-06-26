@@ -140,6 +140,29 @@ function Home() {
           </div>
         ))}
       </div>
+
+      {/* Privacy / open-source notice */}
+      <p
+        style={{
+          marginTop: '2rem',
+          fontSize: '0.8rem',
+          color: 'var(--muted)',
+          textAlign: 'center',
+          lineHeight: 1.6,
+          maxWidth: 480,
+        }}
+      >
+        {t('home.notice')}{' '}
+        <a
+          href="https://github.com/mihaiandrei97/react-cv-builder"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+        >
+          {t('home.notice.github')}
+        </a>
+        .
+      </p>
     </main>
   )
 }

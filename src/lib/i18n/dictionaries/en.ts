@@ -52,6 +52,8 @@ export const en = {
   "home.step2.desc": "Edit everything in a live form editor.",
   "home.step3.label": "Export to PDF",
   "home.step3.desc": "Download a print-ready PDF instantly.",
+  "home.notice": "Your data never leaves your browser — nothing is stored on any server.",
+  "home.notice.github": "View source on GitHub",
 
   // ── Print page (/cv/print) ──────────────────────────────────────────────────
   "print.download": "Download PDF",

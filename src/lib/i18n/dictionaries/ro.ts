@@ -55,6 +55,8 @@ export const ro: Record<TranslationKey, string> = {
   "home.step2.desc": "Editează totul într-un editor live.",
   "home.step3.label": "Exportă în PDF",
   "home.step3.desc": "Descarcă un PDF gata de tipărire instant.",
+  "home.notice": "Datele tale nu părăsesc browserul — nimic nu este stocat pe vreun server.",
+  "home.notice.github": "Vezi codul sursă pe GitHub",
 
   // ── Print page (/cv/print) ──────────────────────────────────────────────────
   "print.download": "Descarcă PDF",
