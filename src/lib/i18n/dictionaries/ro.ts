@@ -9,6 +9,8 @@ export const ro: Record<TranslationKey, string> = {
   "common.lang.en": "Engleză",
   "common.lang.ro": "Română",
   "common.cvLanguage": "Limba CV-ului",
+  "common.confirmReset": "Reseteaz\u0103",
+  "common.confirmDelete": "\u0218terge",
 
   // ── Relative dates ─────────────────────────────────────────────────────────
   "date.today": "azi",

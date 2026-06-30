@@ -6,7 +6,9 @@ export const en = {
   "common.duplicate": "Duplicate",
   "common.lang.en": "English",
   "common.lang.ro": "Romanian",
-  "common.cvLanguage": "Language of cv",
+  "common.cvLanguage": "CV language",
+  "common.confirmReset": "Reset",
+  "common.confirmDelete": "Delete",
 
   // ── Relative dates ─────────────────────────────────────────────────────────
   "date.today": "today",

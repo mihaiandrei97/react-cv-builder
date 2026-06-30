@@ -16,6 +16,7 @@ import type { CvLocale, CvProfile } from '../lib/types'
 import { type TFunction, templateName } from '../lib/i18n'
 import { useT } from '../lib/i18n/context'
 import { LocaleSwitcher } from '../components/LocaleSwitcher'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 export const Route = createFileRoute('/{-$locale}/cvs')({
   component: CvsPage,
@@ -146,6 +147,7 @@ function CvsPage() {
   const [newLocale, setNewLocale] = useState<CvLocale>('en')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [deleteId, setDeleteId] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const importInputRef = useRef<HTMLInputElement>(null)
 
@@ -188,9 +190,7 @@ function CvsPage() {
 
   function handleDelete(id: string) {
     if (profiles.length <= 1) return
-    if (confirm(t('cvs.deleteConfirm'))) {
-      deleteProfile(id)
-    }
+    setDeleteId(id)
   }
 
   function handleDuplicate(id: string) {
@@ -434,6 +434,16 @@ function CvsPage() {
           </>
         )}
       </main>
+      <ConfirmDialog
+        open={deleteId !== null}
+        title={t('common.delete')}
+        message={t('cvs.deleteConfirm')}
+        confirmLabel={t('common.confirmDelete')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={() => { if (deleteId) deleteProfile(deleteId); setDeleteId(null) }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

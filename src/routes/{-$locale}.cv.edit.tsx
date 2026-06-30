@@ -6,6 +6,7 @@ import { getDefaultSectionLabelsForTemplate } from '../lib/types'
 import { useActiveProfile, useCvData, resetCv, toggleSection, togglePageBreak, moveSection, DEFAULT_SECTION_ORDER, setColors, setSectionLabels, addCustomSection, removeCustomSection, setFullData, cvStore, saveTemplatePref } from '../lib/cv-store'
 import { getTemplate, loadTemplateComponent, type TemplateComponent, TEMPLATES } from '../lib/templates'
 import { WorkflowNav } from '../components/WorkflowNav'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { type TFunction, templateName, templateDescription, colorSlotLabel, sectionLabel } from '../lib/i18n'
 import { useT } from '../lib/i18n/context'
 
@@ -381,6 +382,7 @@ function EditPage() {
   const [newLang, setNewLang] = useState('')
   const [activePane, setActivePane] = useState<'form' | 'preview'>('form')
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(() => new Set())
+  const [resetOpen, setResetOpen] = useState(false)
   const focusTargetRef = useRef<string | null>(null)
 
   function toggleItemCollapse(id: string) {
@@ -466,9 +468,7 @@ function EditPage() {
   }
 
   function handleReset() {
-    if (confirm(t('edit.resetConfirm'))) {
-      resetCv()
-    }
+    setResetOpen(true)
   }
 
   function downloadPdf() {
@@ -1257,11 +1257,19 @@ function EditPage() {
           </aside>
         )}
       </div>
+      <ConfirmDialog
+        open={resetOpen}
+        title={t('edit.topbar.reset')}
+        message={t('edit.resetConfirm')}
+        confirmLabel={t('common.confirmReset')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onConfirm={() => { resetCv(); setResetOpen(false) }}
+        onCancel={() => setResetOpen(false)}
+      />
     </div>
   )
 }
-
-// ── Styles ────────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
   topBar: {
