@@ -259,7 +259,14 @@ function CollapsibleSection({
   const hasBreak = pageBreaks.includes(sectionKey)
   const t = useT()
   return (
-    <section id={anchorId} style={isHidden ? { ...s.card, ...s.anchorCard, opacity: 0.7 } : { ...s.card, ...s.anchorCard }}>
+    <>
+      {hasBreak && (
+        <div style={s.breakIndicator} aria-hidden>
+          <span style={s.breakChip}>{t('edit.section.pageBreak')}</span>
+          <div style={s.breakLine} />
+        </div>
+      )}
+    <section id={anchorId} style={isHidden ? { ...s.card, ...s.anchorCard, opacity: 0.7 } : { ...s.card, ...(hasBreak ? { ...s.anchorCard, ...s.cardWithBreak } : s.anchorCard) }}>
       <div style={s.sectionHeader}>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <h2 style={s.cardTitle}>{title}</h2>
@@ -297,6 +304,7 @@ function CollapsibleSection({
       </div>
       {!isHidden && children}
     </section>
+    </>
   )
 }
 
@@ -1602,6 +1610,36 @@ const s: Record<string, React.CSSProperties> = {
   },
   anchorCard: {
     scrollMarginTop: '6rem',
+  },
+  cardWithBreak: {
+    borderTopWidth: '3px',
+    borderTopStyle: 'solid',
+    borderTopColor: 'var(--accent)',
+  },
+  breakIndicator: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    margin: '0 0 0.25rem',
+    color: 'var(--accent)',
+  },
+  breakLine: {
+    flex: 1,
+    borderTop: '2px dashed var(--accent)',
+    opacity: 0.5,
+    transform: 'translateY(-0.5rem)',
+  },
+  breakChip: {
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'var(--accent)',
+    background: '#fdf0e6',
+    border: '1px solid #f0c89a',
+    borderRadius: '999px',
+    padding: '0.15rem 0.55rem',
+    whiteSpace: 'nowrap',
   },
   card: {
     background: '#fffdf7',
